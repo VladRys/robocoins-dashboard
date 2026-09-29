@@ -17,23 +17,8 @@ class StudentRepository:
             select(Student).where(Student.hash_access_key == hash_access_key)
         ).scalar_one_or_none()
 
-
-    async def _generate_random_id(self) -> int:
-        """Generate a random student ID."""
-        return random.randint(100000, 999999)
-
-    async def generate_unique_student_id(self) -> int:
-        """Generate a unique student ID."""
-        while True:
-            new_id = await self._generate_random_id()
-            existing_student = await self.get_student_by_id(new_id)
-            if not existing_student:
-                return new_id
-            
-
     async def create_student(self, student: Student) -> Student:
         """Create a new student record."""
-        student.id = await self.generate_unique_student_id()
         self.session.add(student)
         await self.session.commit()
         await self.session.refresh(student)
