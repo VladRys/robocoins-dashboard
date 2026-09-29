@@ -12,10 +12,14 @@ student_router = APIRouter(
     tags=["students"],
 )
 
-@student_router.post("/", response_model=StudentResponse)
-async def create_student(student: StudentCreateRequest, db: AsyncSession = Depends(get_db), service: StudentService = Depends(get_student_service)) -> StudentResponse:
+@student_router.post("/register", response_model=StudentResponse)
+async def create_student(
+    student: StudentCreateRequest,
+    db: AsyncSession = Depends(get_db),
+    service: StudentService = Depends(get_student_service),
+) -> StudentResponse:
     new_student = await service.create_student(student)
-    
+
     return StudentResponse(
         id=new_student.id,
         name=new_student.name,
@@ -23,4 +27,4 @@ async def create_student(student: StudentCreateRequest, db: AsyncSession = Depen
         avatar=new_student.avatar,
         balance=new_student.balance,
         hash_access_key=new_student.hash_access_key,
-    ) 
+    )
