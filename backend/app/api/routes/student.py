@@ -2,8 +2,6 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from core.database import get_db
-
-from models.student import Student
 from schemas.student import StudentCreateRequest, StudentResponse
 from services.student import StudentService, get_student_service
 
@@ -28,3 +26,15 @@ async def create_student(
         balance=new_student.balance,
         hash_access_key=new_student.hash_access_key,
     )
+
+
+@student_router.get("/{student_id}", response_model=StudentResponse)
+async def get_student_by_id(
+    student_id: int,
+    service: StudentService = Depends(get_student_service),
+) -> StudentResponse:
+    student = await service.get_student_by_id(student_id)
+    if student is None:
+        raise HTTPException(status_code=404, detail="Student not found")
+
+    return StudentResponse.model_validate(student)

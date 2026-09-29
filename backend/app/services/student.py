@@ -43,7 +43,7 @@ class StudentService:
         )
         return await self.repository.create_student(new_student)
 
-    async def get_student_by_id(self, student_id: int) -> Student:
+    async def get_student_by_id(self, student_id: int) -> Student | None:
         return await self.repository.get_student_by_id(student_id)
 
 
