@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>RoboCoins</title>
+<style>
+:root{--bg:#f5f7fb;--panel:#fff;--line:#e2e7f0;--text:#111827;--muted:#687386;--blue:#2454ff;--green:#16a36a;--red:#e0525d}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 90% -10%,#dce5ff 0,transparent 35%),var(--bg);color:var(--text);font-family:Inter,system-ui,sans-serif;min-height:100vh;display:grid;place-items:center;padding:20px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:18px;box-shadow:0 14px 40px rgba(25,45,90,.08);padding:26px;width:100%;max-width:420px}
+h1{margin:0 0 18px;font-size:22px;text-align:center}
+label{display:block;font-size:12px;color:var(--muted);margin:12px 0 6px}
+input,select{width:100%;padding:11px;border:1px solid var(--line);border-radius:10px;outline:none;font:inherit;background:#fff;color:var(--text)}
+input:focus,select:focus{border-color:var(--blue)}
+.row{display:flex;gap:8px}.row>*{flex:1}
+button{width:100%;margin-top:16px;padding:12px;border:0;border-radius:10px;background:var(--blue);color:#fff;font-weight:700;cursor:pointer}
+button:disabled{opacity:.6;cursor:wait}
+.result{margin-top:16px;padding:14px;border-radius:12px;background:#f0f7f2;border:1px solid #cde9d6;display:none}
+.result.show{display:block}.result b{font-size:18px}
+.err{margin-top:12px;padding:12px;border-radius:10px;background:#fdf0f1;border:1px solid #f5c6ca;color:#a33;display:none;font-size:13px}.err.show{display:block}
+.muted{font-size:11px;color:var(--muted);margin-top:14px}.coin{font-size:40px;text-align:center}
+a{color:var(--blue);word-break:break-all}
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="coin">🪙</div>
+  <h1>RoboCoins</h1>
+  <label>Backend URL</label>
+  <input id="api" value="http://localhost:8001" />
+  <label>Имя</label>
+  <input id="name" placeholder="Макс" maxlength="32" />
+  <label>Группа</label>
+  <input id="group" placeholder="Junior" maxlength="32" />
+  <label>Аватар</label>
+  <select id="avatar"><option>🐯</option><option>🐻</option><option>🦊</option><option>🐼</option><option>🤖</option><option>⭐</option></select>
+  <button id="btn" onclick="register()">Зарегистрироваться</button>
+  <div class="err" id="err"></div>
+  <div class="result" id="res"></div>
+</div>
+<script>
+async function register(){
+  const btn=document.getElementById('btn'),err=document.getElementById('err'),res=document.getElementById('res');
+  err.classList.remove('show');res.classList.remove('show');btn.disabled=true;btn.textContent='Минуту...';
+  const api=document.getElementById('api').value.replace(/\/$/,'');
+  const body={name:document.getElementById('name').value.trim(),group:document.getElementById('group').value.trim(),avatar:document.getElementById('avatar').value};
+  if(!body.name||!body.group){fail('Введи имя и группу 🙂');return}
+  try{
+    const r=await fetch(api+'/student/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    if(!r.ok){fail('Бэкенд ответил '+r.status+': '+(await r.text()).slice(0,200));return}
+    const s=await r.json();
+    const link=location.href.split('?')[0]+'?id='+s.id+'&key='+s.hash_access_key;
+    res.innerHTML='Готово, <b>'+escapeHtml(s.name)+'</b>! 🎉<br>ID: <b>'+s.id+'</b><br>Баланс: <b>'+s.balance+' 🪙</b><br><br>Ссылка для входа:<br><a href="'+link+'">'+link+'</a>';
+    res.classList.add('show');
+  }catch(e){fail('Не достучался до '+api+'. Бэкенд запущен? '+e)}
+  finally{btn.disabled=false;btn.textContent='Зарегистрироваться'}
+  function fail(t){err.textContent=t;err.classList.add('show')}
+  function escapeHtml(x){return x.replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
+}
+</script>
+</body>
+</html>

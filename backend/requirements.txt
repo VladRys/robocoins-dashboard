@@ -1,0 +1,8 @@
+fastapi>=0.141.1
+uvicorn>=0.54.0
+sqlalchemy[asyncio]>=2.1.1
+python-dotenv>=1.2.3
+psycopg[binary]>=3.3.6
+asyncpg>=0.31.0
+aiosqlite>=0.21.0
+pytest>=8.3
