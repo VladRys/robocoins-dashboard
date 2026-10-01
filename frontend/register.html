@@ -1,62 +1,108 @@
-<!doctype html>
-<html lang="ru">
-<head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>RoboCoins</title>
+<!doctype html><html lang="uk"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>RoboCoins</title>
 <style>
-:root{--bg:#f5f7fb;--panel:#fff;--line:#e2e7f0;--text:#111827;--muted:#687386;--blue:#2454ff;--green:#16a36a;--red:#e0525d}
-*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 90% -10%,#dce5ff 0,transparent 35%),var(--bg);color:var(--text);font-family:Inter,system-ui,sans-serif;min-height:100vh;display:grid;place-items:center;padding:20px}
-.card{background:var(--panel);border:1px solid var(--line);border-radius:18px;box-shadow:0 14px 40px rgba(25,45,90,.08);padding:26px;width:100%;max-width:420px}
-h1{margin:0 0 18px;font-size:22px;text-align:center}
-label{display:block;font-size:12px;color:var(--muted);margin:12px 0 6px}
-input,select{width:100%;padding:11px;border:1px solid var(--line);border-radius:10px;outline:none;font:inherit;background:#fff;color:var(--text)}
-input:focus,select:focus{border-color:var(--blue)}
-.row{display:flex;gap:8px}.row>*{flex:1}
-button{width:100%;margin-top:16px;padding:12px;border:0;border-radius:10px;background:var(--blue);color:#fff;font-weight:700;cursor:pointer}
-button:disabled{opacity:.6;cursor:wait}
-.result{margin-top:16px;padding:14px;border-radius:12px;background:#f0f7f2;border:1px solid #cde9d6;display:none}
-.result.show{display:block}.result b{font-size:18px}
-.err{margin-top:12px;padding:12px;border-radius:10px;background:#fdf0f1;border:1px solid #f5c6ca;color:#a33;display:none;font-size:13px}.err.show{display:block}
-.muted{font-size:11px;color:var(--muted);margin-top:14px}.coin{font-size:40px;text-align:center}
-a{color:var(--blue);word-break:break-all}
-</style>
-</head>
-<body>
-<div class="card">
-  <div class="coin">🪙</div>
-  <h1>RoboCoins</h1>
-  <label>Backend URL</label>
-  <input id="api" value="http://localhost:8001" />
-  <label>Имя</label>
-  <input id="name" placeholder="Макс" maxlength="32" />
-  <label>Группа</label>
-  <input id="group" placeholder="Junior" maxlength="32" />
-  <label>Аватар</label>
-  <select id="avatar"><option>🐯</option><option>🐻</option><option>🦊</option><option>🐼</option><option>🤖</option><option>⭐</option></select>
-  <button id="btn" onclick="register()">Зарегистрироваться</button>
-  <div class="err" id="err"></div>
-  <div class="result" id="res"></div>
-</div>
+:root{--b:#1769ff;--b2:#0d55d9;--bg:#f4f7fb;--text:#101828;--muted:#667085;--line:#e3e9f2;--ok:#16a36a;--red:#e0525d}
+*{box-sizing:border-box}body{margin:0;min-height:100vh;font-family:Inter,system-ui,sans-serif;color:var(--text);background:radial-gradient(circle at 15% 10%,#1769ff18,transparent 30%),radial-gradient(circle at 85% 85%,#42c7ff18,transparent 30%),var(--bg);display:flex;justify-content:center;overflow:hidden}
+.progress{position:fixed;top:0;left:0;right:0;height:4px;background:#e7edf6}.progress span{display:block;height:100%;width:33.3%;background:linear-gradient(90deg,#1769ff,#42c7ff);transition:.45s}
+.page{width:min(1080px,100%);min-height:100vh;padding:26px 28px;display:flex;flex-direction:column}.header{display:flex;justify-content:space-between;align-items:center}.logo{display:flex;align-items:center;gap:10px;font-weight:900;font-size:21px;letter-spacing:-.7px}.mark{width:34px;height:34px;border-radius:10px;background:linear-gradient(145deg,#1769ff,#53a0ff);display:grid;place-items:center;color:#fff}.stepno{font-size:13px;font-weight:750;color:var(--muted)}
+.gear{border:1px solid var(--line);background:#fff;border-radius:10px;width:34px;height:34px;cursor:pointer;font-size:16px;color:var(--muted)}
+main{flex:1;display:grid;place-items:center}.wizard{width:min(620px,100%);text-align:center}.step{display:none;animation:in .35s ease}.step.active{display:block}@keyframes in{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+.eyebrow{color:var(--b);font-size:13px;font-weight:850;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:12px}h1{font-size:clamp(32px,5vw,50px);line-height:1.05;letter-spacing:-2px;margin:0 0 13px}p{color:var(--muted);font-size:16px;line-height:1.5;max-width:470px;margin:0 auto 30px}
+input,.trigger{width:min(480px,100%);height:64px;border:2px solid var(--line);border-radius:18px;background:#fff;padding:0 20px;font-size:18px;outline:0;text-align:center;box-shadow:0 10px 30px #142a500d}input:focus{border-color:var(--b);box-shadow:0 0 0 5px #1769ff18}
+.btn{height:54px;border:0;border-radius:16px;padding:0 28px;background:var(--b);color:#fff;font-weight:850;font-size:15px;cursor:pointer;box-shadow:0 10px 22px #1769ff33}.btn:hover{background:var(--b2)}.btn:disabled{opacity:.45;cursor:not-allowed}
+.select{position:relative;width:min(480px,100%);margin:auto}.trigger{display:flex;align-items:center;justify-content:space-between;cursor:pointer;text-align:left;font-size:17px;font-weight:750}.opts{display:none;position:absolute;z-index:5;top:72px;left:0;right:0;background:#fff;border:1px solid var(--line);border-radius:18px;padding:7px;box-shadow:0 24px 70px #142a5020}.select.open .opts{display:block}.opt{padding:14px;border-radius:12px;font-weight:700;cursor:pointer}.opt:hover,.opt.sel{background:#edf4ff;color:var(--b)}
+.back{border:0;background:none;color:var(--muted);font-weight:700;cursor:pointer;margin-top:17px}.avatarstage{height:275px;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden}.av{position:absolute;display:grid;place-items:center;border-radius:34px;transition:.35s;user-select:none}.center{width:190px;height:190px;font-size:105px;background:linear-gradient(145deg,#fff,#eef5ff);border:1px solid #dce7f7;box-shadow:0 22px 50px #142a5024;z-index:3}.left,.right{width:130px;height:130px;font-size:70px;background:#fff;opacity:.4;z-index:2}.left{transform:translateX(-205px) scale(.82)}.right{transform:translateX(205px) scale(.82)}.avname{font-size:18px;font-weight:850}.dots{display:flex;justify-content:center;gap:7px;margin:12px 0 22px}.dot{width:7px;height:7px;border-radius:50%;background:#d4dce9}.dot.on{width:22px;border-radius:6px;background:var(--b)}.controls{display:flex;justify-content:center;gap:14px}.arrow{width:48px;height:48px;border:1px solid var(--line);background:#fff;border-radius:14px;font-size:21px;cursor:pointer}.hint{font-size:13px;color:#98a2b3;margin-top:14px}.success{font-size:82px;margin-bottom:10px}.pills{display:flex;justify-content:center;gap:10px;flex-wrap:wrap;margin:25px 0}.pill{background:#fff;border:1px solid var(--line);padding:10px 14px;border-radius:14px;font-weight:750}.link{background:#fff;border:1px solid var(--line);border-radius:16px;padding:14px 18px;margin-top:6px;font-size:13px;word-break:break-all}.link a{color:var(--b);font-weight:700;text-decoration:none}.error{display:none;margin:0 auto 20px;max-width:480px;background:#fdf0f1;border:1px solid #f5c6ca;color:#a33;padding:13px 16px;border-radius:14px;font-size:14px;font-weight:650}.error.show{display:block}.footer{text-align:center;color:#98a2b3;font-size:12px;padding-top:15px}
+@media(max-width:640px){.page{padding:20px 17px}.avatarstage{height:240px}.center{width:165px;height:165px;font-size:90px}.left{transform:translateX(-150px) scale(.72)}.right{transform:translateX(150px) scale(.72)}input,.trigger{height:60px}.btn{width:min(480px,100%)}h1{letter-spacing:-1.4px}}
+</style></head><body>
+<div class="progress"><span id="bar"></span></div><div class="page"><header class="header"><div class="logo"><div class="mark">R</div>ROBOCOINS</div><div style="display:flex;align-items:center;gap:10px"><span class="stepno" id="stepno">Крок 1 з 3</span><button class="gear" id="gear" title="Backend URL">⚙</button></div></header>
+<main><section class="wizard">
+<div class="step active" id="s1"><div class="eyebrow">Вітаємо</div><h1>Як тебе звати?</h1><p>Введи ім'я або нікнейм для свого профілю.</p><input id="name" maxlength="32" placeholder="Наприклад, Владислав"><br><br><button class="btn" id="n1" disabled>Далі →</button></div>
+<div class="step" id="s2"><div class="eyebrow">Твій курс</div><h1>Обери свій курс</h1><p>Обери групу, в якій ти займаєшся.</p><div class="select" id="sel"><button class="trigger" type="button"><span id="course">🤖 Обери курс</span><span>⌄</span></button><div class="opts"><div class="opt" data-v="Robotics 2026">🤖 Робототехніка · 2026</div><div class="opt" data-v="Arduino">⚡ Arduino</div><div class="opt" data-v="Python">🐍 Python</div></div></div><br><button class="btn" id="n2" disabled>Далі →</button><br><button class="back" data-back="1">← Назад</button></div>
+<div class="step" id="s3"><div class="eyebrow">Останній крок</div><h1>Обери свого робота</h1><p>Цей аватар буде відображатися у твоєму профілі.</p><div class="avatarstage" id="stage"></div><div class="avname" id="avname"></div><div class="dots" id="dots"></div><div class="controls"><button class="arrow" id="prev">←</button><button class="btn" id="finish">Готово →</button><button class="arrow" id="next">→</button></div><div class="hint">Можна свайпнути вліво або вправо</div><button class="back" data-back="2">← Назад</button></div>
+<div class="step" id="s4"><div class="success">🚀</div><div class="eyebrow">Готово</div><h1>Ласкаво просимо, <span id="done"></span>!</h1><p>Твій профілю RoboCoins створено.</p><div class="pills"><div class="pill" id="dc"></div><div class="pill" id="da"></div><div class="pill" id="db"></div><div class="pill" id="di"></div></div><div class="link">Посилання для входу:<br><a id="dl" href="#"></a></div><div class="error" id="err"></div><button class="btn" onclick="location.reload()">Почати заново</button></div>
+</section></main><footer class="footer">RoboCoins · Robotics Progress System</footer></div>
 <script>
-async function register(){
-  const btn=document.getElementById('btn'),err=document.getElementById('err'),res=document.getElementById('res');
-  err.classList.remove('show');res.classList.remove('show');btn.disabled=true;btn.textContent='Минуту...';
-  const api=document.getElementById('api').value.replace(/\/$/,'');
-  const body={name:document.getElementById('name').value.trim(),group:document.getElementById('group').value.trim(),avatar:document.getElementById('avatar').value};
-  if(!body.name||!body.group){fail('Введи имя и группу 🙂');return}
-  try{
-    const r=await fetch(api+'/student/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
-    if(!r.ok){fail('Бэкенд ответил '+r.status+': '+(await r.text()).slice(0,200));return}
-    const s=await r.json();
-    const link=location.href.split('?')[0]+'?id='+s.id+'&key='+s.hash_access_key;
-    res.innerHTML='Готово, <b>'+escapeHtml(s.name)+'</b>! 🎉<br>ID: <b>'+s.id+'</b><br>Баланс: <b>'+s.balance+' 🪙</b><br><br>Ссылка для входа:<br><a href="'+link+'">'+link+'</a>';
-    res.classList.add('show');
-  }catch(e){fail('Не достучался до '+api+'. Бэкенд запущен? '+e)}
-  finally{btn.disabled=false;btn.textContent='Зарегистрироваться'}
-  function fail(t){err.textContent=t;err.classList.add('show')}
-  function escapeHtml(x){return x.replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
+const avatars=[['🤖','Robot'],['👾','Pixel'],['🦊','Fox'],['🐼','Panda'],['🐸','Frog'],['🐱','Cat'],['🦄','Unicorn'],['🚀','Rocket'],['🧠','Brain'],['⚡','Energy']];
+const DEFAULT_API='http://localhost:8001';
+let api=localStorage.getItem('robocoins_api')||DEFAULT_API;
+let ai=0,group='',course='';
+const $=id=>document.getElementById(id);
+
+$('gear').onclick=()=>{
+  const v=prompt('Backend URL',api);
+  if(v===null)return;
+  api=v.trim().replace(/\/+$/,'');
+  if(api)localStorage.setItem('robocoins_api',api);
+};
+
+function show(n){
+  for(let i=1;i<=4;i++)$('s'+i).classList.toggle('active',i===n);
+  $('bar').style.width=Math.min(n,3)/3*100+'%';
+  $('stepno').textContent=n===4?'Готово':`Крок ${n} з 3`;
+  $('err').classList.remove('show');
 }
-</script>
-</body>
-</html>
+
+$('name').oninput=()=>{$('n1').disabled=!$('name').value.trim()};
+$('n1').onclick=()=>show(2);
+
+$('sel').querySelector('.trigger').onclick=()=>$('sel').classList.toggle('open');
+document.querySelectorAll('.opt').forEach(o=>o.onclick=()=>{
+  group=o.dataset.v;course=o.textContent;
+  $('course').textContent=course;
+  $('sel').classList.remove('open');
+  document.querySelectorAll('.opt').forEach(x=>x.classList.remove('sel'));
+  o.classList.add('sel');
+  $('n2').disabled=false;
+});
+$('n2').onclick=()=>{render();show(3)};
+document.querySelectorAll('[data-back]').forEach(b=>b.onclick=()=>show(+b.dataset.back));
+
+function render(){
+  let st=$('stage');st.innerHTML='';
+  [-1,0,1].forEach((off,p)=>{
+    let x=(ai+off+avatars.length)%avatars.length;
+    let e=document.createElement('div');
+    e.className='av '+(p===1?'center':p===0?'left':'right');
+    e.textContent=avatars[x][0];st.append(e)
+  });
+  $('avname').textContent=avatars[ai][1];
+  $('dots').innerHTML=avatars.map((_,i)=>`<span class="dot ${i===ai?'on':''}"></span>`).join('');
+}
+function move(d){ai=(ai+d+avatars.length)%avatars.length;render()}
+$('prev').onclick=()=>move(-1);
+$('next').onclick=()=>move(1);
+
+let sx=0;
+$('stage').ontouchstart=e=>sx=e.touches[0].clientX;
+$('stage').ontouchend=e=>{let d=e.changedTouches[0].clientX-sx;if(Math.abs(d)>45)move(d<0?1:-1)};
+
+function fail(t){$('err').textContent=t;$('err').classList.add('show')}
+
+$('finish').onclick=async()=>{
+  const btn=$('finish'),name=$('name').value.trim();
+  btn.disabled=true;btn.textContent='Створюємо…';
+  try{
+    const r=await fetch(api+'/student/register',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({name,group,avatar:avatars[ai][0]})
+    });
+    if(!r.ok)throw new Error('Бекенд відповів '+r.status+': '+(await r.text()).slice(0,200));
+    const s=await r.json();
+    $('done').textContent=s.name;
+    $('dc').textContent='📚 '+course;
+    $('da').textContent=avatars[ai][0]+' '+avatars[ai][1];
+    $('db').textContent='🪙 '+s.balance;
+    $('di').textContent='ID '+s.id;
+    const link=location.href.split('?')[0]+'?id='+s.id+'&key='+s.hash_access_key;
+    $('dl').textContent=link;$('dl').href=link;
+    show(4);
+  }catch(e){
+    fail('Не вдалося створити профіль. '+e.message);
+  }finally{
+    btn.disabled=false;btn.textContent='Готово →';
+  }
+};
+
+document.addEventListener('click',e=>{if(!$('sel').contains(e.target))$('sel').classList.remove('open')});
+render();
+</script></body></html>
