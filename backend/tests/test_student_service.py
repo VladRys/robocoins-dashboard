@@ -1,6 +1,5 @@
 import asyncio
 import logging
-import os
 import sys
 from pathlib import Path
 from types import SimpleNamespace
@@ -8,7 +7,7 @@ from unittest.mock import AsyncMock
 
 import pytest
 from fastapi import HTTPException
-from sqlalchemy import delete
+from sqlalchemy.engine import URL
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "app"))
@@ -61,22 +60,17 @@ def test_get_student_by_id_returns_404_when_missing():
     logger.info("Missing student correctly returned HTTP 404")
 
 
-def test_create_student_generates_unique_hash():
-    logger.info("Starting PostgreSQL student creation integration test")
-    database_url = os.getenv("TEST_DATABASE_URL")
-    if not database_url:
-        pytest.skip("Set TEST_DATABASE_URL to run the PostgreSQL integration test")
-    if not database_url.startswith(("postgresql://", "postgresql+psycopg://", "postgresql+asyncpg://")):
-        pytest.fail("TEST_DATABASE_URL must point to a PostgreSQL database")
-    if database_url.startswith("postgresql://"):
-        database_url = database_url.replace(
-            "postgresql://", "postgresql+psycopg://", 1
-        )
-
+def test_create_student_generates_unique_hash(tmp_path: Path):
+    logger.info("Starting SQLite student creation integration test")
     async def run_test():
-        engine = create_async_engine(database_url, pool_pre_ping=True)
+        engine = create_async_engine(
+            URL.create(
+                "sqlite+aiosqlite",
+                database=str(tmp_path / "students.db"),
+            ),
+            pool_pre_ping=True,
+        )
         session_factory = async_sessionmaker(engine, expire_on_commit=False)
-        created_hashes = []
 
         try:
             async with engine.begin() as connection:
@@ -91,12 +85,10 @@ def test_create_student_generates_unique_hash():
                 first_student = await service.create_student(
                     StudentCreateRequest(name="Макс", group="Junior", avatar="🐯")
                 )
-                created_hashes.append(first_student.hash_access_key)
                 logger.info("Created first student id=%s", first_student.id)
                 second_student = await service.create_student(
                     StudentCreateRequest(name="Иван", group="Junior", avatar="🐻")
                 )
-                created_hashes.append(second_student.hash_access_key)
                 logger.info("Created second student id=%s", second_student.id)
 
                 first_student_id = first_student.id
@@ -113,15 +105,6 @@ def test_create_student_generates_unique_hash():
                 assert first_student.id != second_student.id
                 logger.info("Verified persisted student data and unique identifiers")
         finally:
-            if created_hashes:
-                logger.info("Cleaning up integration-test student records")
-                async with session_factory() as cleanup_session:
-                    await cleanup_session.execute(
-                        delete(Student).where(
-                            Student.hash_access_key.in_(created_hashes)
-                        )
-                    )
-                    await cleanup_session.commit()
             await engine.dispose()
 
     asyncio.run(run_test())
