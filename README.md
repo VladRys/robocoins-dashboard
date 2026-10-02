@@ -145,7 +145,8 @@ source .venv/bin/activate
 
 pip install -r requirements.txt
 
-uvicorn app.main:app --reload
+cd app
+uvicorn main:app --reload
 ```
 
 ### Frontend
