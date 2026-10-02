@@ -23,8 +23,10 @@ input,.trigger{width:min(480px,100%);height:64px;border:2px solid var(--line);bo
 </section></main><footer class="footer">RoboCoins · Robotics Progress System</footer></div>
 <script>
 const avatars=[['🤖','Robot'],['👾','Pixel'],['🦊','Fox'],['🐼','Panda'],['🐸','Frog'],['🐱','Cat'],['🦄','Unicorn'],['🚀','Rocket'],['🧠','Brain'],['⚡','Energy']];
-const DEFAULT_API='http://localhost:8000';
+const IS_LOCAL=['localhost','127.0.0.1'].includes(location.hostname);
+const DEFAULT_API=IS_LOCAL?'http://localhost:8000':'/api';
 let api=localStorage.getItem('robocoins_api')||DEFAULT_API;
+if(!IS_LOCAL&&api==='http://localhost:8000')api=DEFAULT_API;
 let ai=0,group='',course='';
 const $=id=>document.getElementById(id);
 
