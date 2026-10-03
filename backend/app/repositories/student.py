@@ -20,6 +20,13 @@ class StudentRepository:
         )
         return result.scalar_one_or_none()
 
+    async def get_student_by_access_code(self, access_code: str) -> Student | None:
+        """Fetch a student by their access code."""
+        result = await self.session.execute(
+            select(Student).where(Student.access_code == access_code)
+        )
+        return result.scalar_one_or_none()
+    
     async def create_student(self, student: Student) -> Student:
         """Create a new student record."""
         self.session.add(student)

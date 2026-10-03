@@ -29,6 +29,7 @@ async def create_student(
         avatar=new_student.avatar,
         balance=new_student.balance,
         hash_access_key=new_student.hash_access_key,
+        access_code=new_student.access_code,
         status=StatusEnum.SUCCESS,
         code=200
     )

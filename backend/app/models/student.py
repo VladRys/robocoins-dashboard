@@ -12,5 +12,8 @@ class Student(Base):
     avatar: Mapped[str] = mapped_column(String, nullable=True)
     balance: Mapped[int] = mapped_column(Integer, default=0)
     hash_access_key: Mapped[str] = mapped_column(String, nullable=False, unique=True)
-    
+
+    # Access code - keyword for auth.
+    access_code: Mapped[str] = mapped_column(String, nullable=False, unique=True)
+
     # TODO: Add achievements, transactions, and other relevant fields as needed

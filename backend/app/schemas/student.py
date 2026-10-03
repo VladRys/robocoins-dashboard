@@ -17,3 +17,6 @@ class StudentResponse(BaseModel):
     avatar: str | None = None
     balance: int
     hash_access_key: str
+
+    # Access code - keyword for auth.
+    access_code: str
