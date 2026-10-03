@@ -1,7 +1,7 @@
 from sqlalchemy import Column, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column
 
-from core.database import Base
+from app.core.database import Base
 
 class Student(Base):
     __tablename__ = "students"

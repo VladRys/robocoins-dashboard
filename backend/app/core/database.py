@@ -3,7 +3,7 @@ from collections.abc import AsyncIterator
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import DeclarativeBase
 
-from core.config import Config as cfg
+from app.core.config import Config as cfg
 
 engine = create_async_engine(
     cfg.DATABASE_URL,

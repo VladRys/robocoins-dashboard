@@ -1,0 +1,10 @@
+{
+  "rewrites": [
+    { "source": "/", "destination": "/register.html" },
+    { "source": "/registration", "destination": "/register.html" },
+    {
+      "source": "/api/:path*",
+      "destination": "https://robocoins-dashboard.vercel.app/:path*"
+    }
+  ]
+}
