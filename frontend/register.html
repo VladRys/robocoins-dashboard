@@ -11,6 +11,7 @@ input,.trigger{width:min(480px,100%);height:64px;border:2px solid var(--line);bo
 .btn{height:54px;border:0;border-radius:16px;padding:0 28px;background:var(--b);color:#fff;font-weight:850;font-size:15px;cursor:pointer;box-shadow:0 10px 22px #1769ff33}.btn:hover{background:var(--b2)}.btn:disabled{opacity:.45;cursor:not-allowed}
 .select{position:relative;width:min(480px,100%);margin:auto}.trigger{display:flex;align-items:center;justify-content:space-between;cursor:pointer;text-align:left;font-size:17px;font-weight:750}.opts{display:none;position:absolute;z-index:5;top:72px;left:0;right:0;background:#fff;border:1px solid var(--line);border-radius:18px;padding:7px;box-shadow:0 24px 70px #142a5020}.select.open .opts{display:block}.opt{padding:14px;border-radius:12px;font-weight:700;cursor:pointer}.opt:hover,.opt.sel{background:#edf4ff;color:var(--b)}
 .avatarstage{height:275px;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden}.av{position:absolute;display:grid;place-items:center;border-radius:34px;transition:.35s;user-select:none}.center{width:190px;height:190px;font-size:105px;background:linear-gradient(145deg,#fff,#eef5ff);border:1px solid #dce7f7;box-shadow:0 22px 50px #142a5024;z-index:3}.left,.right{width:130px;height:130px;font-size:70px;background:#fff;opacity:.4;z-index:2}.left{transform:translateX(-205px) scale(.82)}.right{transform:translateX(205px) scale(.82)}.avname{font-size:18px;font-weight:850}.dots{display:flex;justify-content:center;gap:7px;margin:12px 0 22px}.dot{width:7px;height:7px;border-radius:50%;background:#d4dce9}.dot.on{width:22px;border-radius:6px;background:var(--b)}.controls{display:flex;justify-content:center;gap:14px}.arrow{width:48px;height:48px;border:1px solid var(--line);background:#fff;border-radius:14px;font-size:21px;cursor:pointer}.hint{font-size:13px;color:#98a2b3;margin-top:14px}.success{font-size:82px;margin-bottom:10px}.pills{display:flex;justify-content:center;gap:10px;flex-wrap:wrap;margin:25px 0}.pill{background:#fff;border:1px solid var(--line);padding:10px 14px;border-radius:14px;font-weight:750}.notice{max-width:480px;margin:6px auto 20px;padding:15px 18px;border:1px solid #f0c36a;border-radius:16px;background:#fff8e6;color:#805b12;font-size:14px;font-weight:750;line-height:1.5}.error{display:none;margin:0 auto 20px;max-width:480px;background:#fdf0f1;border:1px solid #f5c6ca;color:#a33;padding:13px 16px;border-radius:14px;font-size:14px;font-weight:650}.error.show{display:block}.footer{text-align:center;color:#98a2b3;font-size:12px;padding-top:15px}
+.access-code{max-width:480px;margin:0 auto 20px;padding:15px 18px;border:1px solid #cbdcff;border-radius:16px;background:#fff;display:flex;align-items:center;justify-content:space-between;gap:12px;text-align:left}.access-code-label{display:block;color:var(--muted);font-size:12px;font-weight:700;margin-bottom:4px}.access-code-value{font-size:18px;font-weight:850;letter-spacing:1px;overflow-wrap:anywhere}.copy-btn{flex:none;border:0;border-radius:11px;background:#edf4ff;color:var(--b2);padding:11px 14px;font-weight:800;cursor:pointer}.copy-btn:hover{background:#dceaff}
 @media(max-width:640px){.page{padding:20px 17px}.avatarstage{height:240px}.center{width:165px;height:165px;font-size:90px}.left{transform:translateX(-150px) scale(.72)}.right{transform:translateX(150px) scale(.72)}input,.trigger{height:60px}.btn{width:min(480px,100%)}h1{letter-spacing:-1.4px}}
 </style></head><body>
 <div class="progress"><span id="bar"></span></div><div class="page"><header class="header"><div class="logo"><div class="mark">R</div>ROBOCOINS</div><div style="display:flex;align-items:center;gap:10px"><span class="stepno" id="stepno">Крок 1 з 3</span><button class="gear" id="gear" title="Backend URL">⚙</button></div></header>
@@ -18,7 +19,7 @@ input,.trigger{width:min(480px,100%);height:64px;border:2px solid var(--line);bo
 <div class="step active" id="s1"><div class="eyebrow">Вітаємо</div><h1>Як тебе звати?</h1><p>Введи ім'я або нікнейм для свого профілю.</p><input id="name" maxlength="32" placeholder="Наприклад, Владислав"><br><br><button class="btn" id="n1" disabled>Далі →</button></div>
 <div class="step" id="s2"><div class="eyebrow">Твій курс</div><h1>Обери свій курс</h1><p>Обери групу, в якій ти займаєшся.</p><div class="select" id="sel"><button class="trigger" type="button"><span id="course">🤖 Обери курс</span><span>⌄</span></button><div class="opts"><div class="opt" data-v="Arduino Junior">&#9889; Arduino Junior</div></div></div><br><button class="btn" id="n2" disabled>Далі →</button></div>
 <div class="step" id="s3"><div class="eyebrow">Останній крок</div><h1>Обери свого робота</h1><p>Цей аватар буде відображатися у твоєму профілі.</p><div class="avatarstage" id="stage"></div><div class="avname" id="avname"></div><div class="dots" id="dots"></div><div class="controls"><button class="arrow" id="prev">←</button><button class="btn" id="finish">Готово →</button><button class="arrow" id="next">→</button></div><div class="hint">Можна свайпнути вліво або вправо</div></div>
-<div class="step" id="s4"><div class="success">🚀</div><div class="eyebrow">Готово</div><h1>Ласкаво просимо, <span id="done"></span>!</h1><p>Твій профілю RoboCoins створено.</p><div class="pills"><div class="pill" id="dc"></div><div class="pill" id="da"></div><div class="pill" id="db"></div><div class="pill" id="di"></div></div><div class="notice" role="status">🚧 Платформа ще в розробці. Скоро стане доступною!</div><div class="error" id="err"></div>
+<div class="step" id="s4"><div class="success">🚀</div><div class="eyebrow">Готово</div><h1>Ласкаво просимо, <span id="done"></span>!</h1><p>Твій профілю RoboCoins створено.</p><div class="pills"><div class="pill" id="dc"></div><div class="pill" id="da"></div><div class="pill" id="db"></div><div class="pill" id="di"></div></div><div class="notice" role="status">🚧 Платформа ще в розробці. Скоро стане доступною!</div><div class="access-code"><div><span class="access-code-label">Твій код доступу</span><span class="access-code-value" id="access-code"></span></div><button class="copy-btn" id="copy-code" type="button">Копіювати</button></div><div class="error" id="err"></div>
 </div>
 </section></main><footer class="footer">RoboCoins · Robotics Progress System</footer></div>
 <script>
@@ -85,9 +86,28 @@ function showFinal(s){
   $('da').textContent=s.avatar+' '+s.avatarName;
   $('db').textContent='🪙 '+s.balance;
   $('di').textContent='ID '+s.id;
+  $('access-code').textContent=s.access_code||'';
+  $('copy-code').hidden=!s.access_code;
   $('gear').hidden=true;
   show(4);
 }
+
+$('copy-code').onclick=async()=>{
+  const btn=$('copy-code'),code=$('access-code').textContent;
+  if(!code)return;
+  try{
+    await navigator.clipboard.writeText(code);
+    btn.textContent='Скопійовано';
+    setTimeout(()=>btn.textContent='Копіювати',1600);
+  }catch{
+    const field=document.createElement('textarea');
+    field.value=code;field.style.position='fixed';field.style.opacity='0';
+    document.body.append(field);field.select();
+    const copied=document.execCommand('copy');field.remove();
+    btn.textContent=copied?'Скопійовано':'Не вдалося скопіювати';
+    setTimeout(()=>btn.textContent='Копіювати',1600);
+  }
+};
 
 $('finish').onclick=async()=>{
   const btn=$('finish'),name=$('name').value.trim();
@@ -100,7 +120,7 @@ $('finish').onclick=async()=>{
     });
     if(!r.ok)throw new Error('Бекенд відповів '+r.status+': '+(await r.text()).slice(0,200));
     const s=await r.json();
-    const registration={name:s.name,course,avatar:avatars[ai][0],avatarName:avatars[ai][1],balance:s.balance,id:s.id};
+    const registration={name:s.name,course,avatar:avatars[ai][0],avatarName:avatars[ai][1],balance:s.balance,id:s.id,access_code:s.access_code};
     sessionStorage.setItem('robocoins_registration_complete',JSON.stringify(registration));
     showFinal(registration);
   }catch(e){
