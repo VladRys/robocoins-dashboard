@@ -25,7 +25,8 @@ async def create_student(
     return StudentResponse(
         id=new_student.id,
         name=new_student.name,
-        group=new_student.group,
+        group_id=new_student.group_id,
+        course = new_student.course,
         avatar=new_student.avatar,
         balance=new_student.balance,
         hash_access_key=new_student.hash_access_key,

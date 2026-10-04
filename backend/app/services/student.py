@@ -25,7 +25,7 @@ class StudentService:
         """Generate a random access code. (symbols + digits)"""
         characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
         return "".join(random.choice(characters) for _ in range(8))
-    
+
     async def _generate_random_id(self) -> int:
         """Generate a random student ID."""
         return random.randint(100000, 999999)
@@ -50,9 +50,10 @@ class StudentService:
         new_student = Student(
             id = await self.generate_unique_student_id(),
             name=student.name,
-            group=student.group,
             avatar=student.avatar,
             balance=0,
+            course = student.course,
+            group_id = None, # TODO: Do smth with group assignment
             hash_access_key=self.generate_hash_access_key(),
             access_code=await self.generate_unique_access_code()
         )
