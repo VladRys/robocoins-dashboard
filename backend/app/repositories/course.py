@@ -1,7 +1,8 @@
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from models.course import Course
 
-from backend.app.models.course import Course
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 
 class CourseRepository:
@@ -24,7 +25,9 @@ class CourseRepository:
     
     async def get_all_courses(self):
         """Fetch all courses."""
-        result = await self.session.execute(select(Course))
+        result = await self.session.execute(
+            select(Course).options(selectinload(Course.groups))
+        )
         return result.scalars().all()
     
     

@@ -1,8 +1,9 @@
 
-from backend.app.repositories.course import CourseRepository
-from backend.app.models.course import Course
-from backend.app.core.database import get_db
 from fastapi import Depends
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from core.database import get_db
+from repositories.course import CourseRepository
 
 
 class CourseService:
@@ -17,3 +18,7 @@ class CourseService:
 
     async def get_all_courses(self):
         return await self.course_repository.get_all_courses()
+
+
+def get_course_service(db: AsyncSession = Depends(get_db)) -> CourseService:
+    return CourseService(CourseRepository(db))

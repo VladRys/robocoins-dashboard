@@ -13,32 +13,75 @@ input,.trigger{width:min(480px,100%);height:64px;border:2px solid var(--line);bo
 .avatarstage{height:275px;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden}.av{position:absolute;display:grid;place-items:center;border-radius:34px;transition:.35s;user-select:none}.center{width:190px;height:190px;font-size:105px;background:linear-gradient(145deg,#fff,#eef5ff);border:1px solid #dce7f7;box-shadow:0 22px 50px #142a5024;z-index:3}.left,.right{width:130px;height:130px;font-size:70px;background:#fff;opacity:.4;z-index:2}.left{transform:translateX(-205px) scale(.82)}.right{transform:translateX(205px) scale(.82)}.avname{font-size:18px;font-weight:850}.dots{display:flex;justify-content:center;gap:7px;margin:12px 0 22px}.dot{width:7px;height:7px;border-radius:50%;background:#d4dce9}.dot.on{width:22px;border-radius:6px;background:var(--b)}.controls{display:flex;justify-content:center;gap:14px}.arrow{width:48px;height:48px;border:1px solid var(--line);background:#fff;border-radius:14px;font-size:21px;cursor:pointer}.hint{font-size:13px;color:#98a2b3;margin-top:14px}.success{font-size:82px;margin-bottom:10px}.pills{display:flex;justify-content:center;gap:10px;flex-wrap:wrap;margin:25px 0}.pill{background:#fff;border:1px solid var(--line);padding:10px 14px;border-radius:14px;font-weight:750}.notice{max-width:480px;margin:6px auto 20px;padding:15px 18px;border:1px solid #f0c36a;border-radius:16px;background:#fff8e6;color:#805b12;font-size:14px;font-weight:750;line-height:1.5}.error{display:none;margin:0 auto 20px;max-width:480px;background:#fdf0f1;border:1px solid #f5c6ca;color:#a33;padding:13px 16px;border-radius:14px;font-size:14px;font-weight:650}.error.show{display:block}.footer{text-align:center;color:#98a2b3;font-size:12px;padding-top:15px}
 .access-code{max-width:480px;margin:0 auto 20px;padding:15px 18px;border:1px solid #cbdcff;border-radius:16px;background:#fff;display:flex;align-items:center;justify-content:space-between;gap:12px;text-align:left}.access-code-label{display:block;color:var(--muted);font-size:12px;font-weight:700;margin-bottom:4px}.access-code-value{font-size:18px;font-weight:850;letter-spacing:1px;overflow-wrap:anywhere}.copy-btn{flex:none;border:0;border-radius:11px;background:#edf4ff;color:var(--b2);padding:11px 14px;font-weight:800;cursor:pointer}.copy-btn:hover{background:#dceaff}
 @media(max-width:640px){.page{padding:20px 17px}.avatarstage{height:240px}.center{width:165px;height:165px;font-size:90px}.left{transform:translateX(-150px) scale(.72)}.right{transform:translateX(150px) scale(.72)}input,.trigger{height:60px}.btn{width:min(480px,100%)}h1{letter-spacing:-1.4px}}
+html{min-height:100%}
+body{min-height:100vh;min-height:100svh;overflow-x:hidden;overflow-y:auto}
+.page{min-height:100vh;min-height:100svh}
+.select.open{z-index:10}
+.opts{max-height:min(42svh,320px);overflow-y:auto;overscroll-behavior:contain}
+.api-state{width:min(480px,100%);margin:10px auto 0;padding:12px 14px;border:1px solid var(--line);border-radius:12px;background:#fff;color:var(--muted);display:flex;align-items:center;gap:10px;text-align:left;font-size:14px;line-height:1.4}
+.api-state[hidden]{display:none}
+.api-state.loading{border-color:#cbdcff;background:#f4f8ff;color:#315b9e}
+.api-state.loading::before{content:"";width:16px;height:16px;flex:none;border:2px solid #b9cff7;border-top-color:var(--b);border-radius:50%;animation:spin .8s linear infinite}
+.api-state.empty{border-color:#f0d59a;background:#fff9eb;color:#805b12}
+.api-state.error{border-color:#f2c3c8;background:#fff3f4;color:#a33}
+.api-state button{flex:none;margin-left:auto;border:0;border-radius:8px;padding:7px 10px;background:#fff;color:var(--b2);font:inherit;font-weight:750;cursor:pointer}
+.api-state.error button{color:#a33}
+@keyframes spin{to{transform:rotate(360deg)}}
+@media(max-width:640px){
+  .page{padding:max(16px,env(safe-area-inset-top)) 16px max(16px,env(safe-area-inset-bottom))}
+  main{display:flex;align-items:center;justify-content:center;padding:30px 0}
+  .wizard{width:100%}
+  h1{font-size:34px;line-height:1.12;letter-spacing:-1.2px}
+  p{font-size:15px;margin-bottom:24px}
+  input,.trigger{height:58px;padding:0 16px;font-size:16px}
+  .trigger{gap:12px}
+  .btn{width:100%;min-height:52px;height:auto;padding:14px 20px}
+  .select .opts{top:calc(100% + 8px);max-height:min(42svh,280px)}
+  .opt{display:flex;align-items:center;min-height:48px;padding:12px 14px;text-align:left}
+  .avatarstage{height:210px}
+  .center{width:148px;height:148px;font-size:82px}
+  .left,.right{width:92px;height:92px;font-size:54px}
+  .left{transform:translateX(-100px) scale(.8)}
+  .right{transform:translateX(100px) scale(.8)}
+  .controls{gap:10px}
+  .arrow{flex:0 0 44px;width:44px;height:44px}
+  .controls .btn{flex:1;width:auto;min-width:0;height:50px;min-height:50px;padding:0 8px}
+  .success{font-size:64px}
+  .pills{gap:8px;margin:20px 0}
+  .pill{max-width:100%;overflow-wrap:anywhere}
+  .access-code{padding:14px;align-items:flex-start}
+  .footer{padding-bottom:4px}
+}
+@media(max-width:640px) and (max-height:700px){
+  main{padding:20px 0}
+  .avatarstage{height:170px}
+  .center{width:128px;height:128px;font-size:72px}
+  .left,.right{width:78px;height:78px;font-size:46px}
+  .left{transform:translateX(-88px) scale(.8)}
+  .right{transform:translateX(88px) scale(.8)}
+}
+@media(prefers-reduced-motion:reduce){
+  .step,.progress span,.av,.api-state.loading::before{animation:none;transition:none}
+}
 </style></head><body>
-<div class="progress"><span id="bar"></span></div><div class="page"><header class="header"><div class="logo"><div class="mark">R</div>ROBOCOINS</div><div style="display:flex;align-items:center;gap:10px"><span class="stepno" id="stepno">Крок 1 з 3</span><button class="gear" id="gear" title="Backend URL">⚙</button></div></header>
+<div class="progress"><span id="bar"></span></div><div class="page"><header class="header"><div class="logo"><div class="mark">R</div>ROBOCOINS</div><div style="display:flex;align-items:center;gap:10px"><span class="stepno" id="stepno">Крок 1 з 3</span></div></header>
 <main><section class="wizard">
 <div class="step active" id="s1"><div class="eyebrow">Вітаємо</div><h1>Як тебе звати?</h1><p>Введи ім'я або нікнейм для свого профілю.</p><input id="name" maxlength="32" placeholder="Наприклад, Владислав"><br><br><button class="btn" id="n1" disabled>Далі →</button></div>
-<div class="step" id="s2"><div class="eyebrow">Твій курс</div><h1>Обери свій курс</h1>
-    <!-- TODO: Add group choice --!>
-<p>Обери групу, в якій ти займаєшся.</p><div class="select" id="sel"><button class="trigger" type="button"><span id="course">🤖 Обери курс</span><span>⌄</span></button><div class="opts"><div class="opt" data-v="Arduino Junior">&#9889; Arduino Junior</div></div></div><br><button class="btn" id="n2" disabled>Далі →</button></div>
-<div class="step" id="s3"><div class="eyebrow">Останній крок</div><h1>Обери свого робота</h1><p>Цей аватар буде відображатися у твоєму профілі.</p><div class="avatarstage" id="stage"></div><div class="avname" id="avname"></div><div class="dots" id="dots"></div><div class="controls"><button class="arrow" id="prev">←</button><button class="btn" id="finish">Готово →</button><button class="arrow" id="next">→</button></div><div class="hint">Можна свайпнути вліво або вправо</div></div>
-<div class="step" id="s4"><div class="success">🚀</div><div class="eyebrow">Готово</div><h1>Ласкаво просимо, <span id="done"></span>!</h1><p>Твій профілю RoboCoins створено.</p><div class="pills"><div class="pill" id="dc"></div><div class="pill" id="da"></div><div class="pill" id="db"></div><div class="pill" id="di"></div></div><div class="notice" role="status">🚧 Платформа ще в розробці. Скоро стане доступною!</div><div class="access-code"><div><span class="access-code-label">Твій код доступу</span><span class="access-code-value" id="access-code"></span></div><button class="copy-btn" id="copy-code" type="button">Копіювати</button></div><div class="error" id="err"></div>
+<div class="step" id="s2"><div class="eyebrow">Твій курс</div><h1>Обери свій курс</h1><p>Спочатку обери курс, а потім групу в межах цього курсу.</p><div class="select" id="courseSelect"><button class="trigger" type="button"><span id="courseLabel">🤖 Обери курс</span><span>⌄</span></button><div class="opts" id="courseOptions"></div></div><div class="api-state" id="courseState" role="status" aria-live="polite" hidden></div><div class="select" id="groupSelect" style="margin-top:16px"><button class="trigger" type="button" id="groupTrigger" disabled><span id="groupLabel">🧩 Обери групу</span><span>⌄</span></button><div class="opts" id="groupOptions"></div></div><div class="api-state" id="groupState" role="status" aria-live="polite" hidden></div><br><button class="btn" id="n2" disabled>Далі →</button></div>
+<div class="step" id="s3"><div class="eyebrow">Останній крок</div><h1>Обери свого робота</h1><p>Цей аватар буде відображатися у твоєму профілі.</p><div class="avatarstage" id="stage"></div><div class="avname" id="avname"></div><div class="dots" id="dots"></div><div class="controls"><button class="arrow" id="prev">←</button><button class="btn" id="finish">Готово →</button><button class="arrow" id="next">→</button></div><div class="hint">Можна свайпнути вліво або вправо</div><div class="error" id="err" role="alert"></div></div>
+<div class="step" id="s4"><div class="success">🚀</div><div class="eyebrow">Готово</div><h1>Ласкаво просимо, <span id="done"></span>!</h1><p>Твій профілю RoboCoins створено.</p><div class="pills"><div class="pill" id="dc"></div><div class="pill" id="da"></div><div class="pill" id="db"></div><div class="pill" id="di"></div></div><div class="notice" role="status">🚧 Платформа ще в розробці. Скоро стане доступною!</div><div class="access-code"><div><span class="access-code-label">Твій код доступу</span><span class="access-code-value" id="access-code"></span></div><button class="copy-btn" id="copy-code" type="button">Копіювати</button></div>
 </div>
 </section></main><footer class="footer">RoboCoins · Robotics Progress System</footer></div>
 <script>
 const avatars=[['🤖','Robot'],['👾','Pixel'],['🦊','Fox'],['🐼','Panda'],['🐸','Frog'],['🐱','Cat'],['🦄','Unicorn'],['🚀','Rocket'],['🧠','Brain'],['⚡','Energy']];
-const IS_LOCAL=['localhost','127.0.0.1'].includes(location.hostname);
-const DEFAULT_API=IS_LOCAL?'http://localhost:8000':'/api';
-let api=localStorage.getItem('robocoins_api')||DEFAULT_API;
-if(!IS_LOCAL&&api==='http://localhost:8000')api=DEFAULT_API;
-let ai=0,group='',course='';
+const api=['localhost','127.0.0.1'].includes(window.location.hostname)
+  ? 'http://localhost:8000'
+  : 'https://robocoins-dashboard.vercel.app';
+let ai=0;
+let selectedCourse=null;
+let selectedGroup=null;
+let courses=[];
 const $=id=>document.getElementById(id);
-
-$('gear').onclick=()=>{
-  const v=prompt('Backend URL',api);
-  if(v===null)return;
-  api=v.trim().replace(/\/+$/,'');
-  if(api)localStorage.setItem('robocoins_api',api);
-};
 
 function show(n){
   for(let i=1;i<=4;i++)$('s'+i).classList.toggle('active',i===n);
@@ -47,25 +90,121 @@ function show(n){
   $('err').classList.remove('show');
 }
 
+function fail(t){$('err').textContent=t;$('err').classList.add('show')}
+
+function setApiState(id,type,message,retry){
+  const state=$(id);
+  state.replaceChildren();
+  state.hidden=!message;
+  state.className='api-state'+(type?' '+type:'');
+  if(!message)return;
+
+  const text=document.createElement('span');
+  text.textContent=message;
+  state.appendChild(text);
+  if(retry){
+    const button=document.createElement('button');
+    button.type='button';
+    button.textContent='Повторити';
+    button.onclick=retry;
+    state.appendChild(button);
+  }
+}
+
 $('name').oninput=()=>{$('n1').disabled=!$('name').value.trim()};
 $('n1').onclick=()=>show(2);
 
-$('sel').querySelector('.trigger').onclick=()=>$('sel').classList.toggle('open');
-document.querySelectorAll('.opt').forEach(o=>o.onclick=()=>{
-  group=o.dataset.v;course=o.textContent;
-  $('course').textContent=course;
-  $('sel').classList.remove('open');
-  document.querySelectorAll('.opt').forEach(x=>x.classList.remove('sel'));
-  o.classList.add('sel');
+async function loadCourses(){
+  setApiState('courseState','loading','Завантажуємо курси…');
+  $('courseSelect').querySelector('.trigger').disabled=true;
+  try{
+    const response=await fetch(`${api}/course`);
+    if(!response.ok)throw new Error(`HTTP ${response.status}`);
+    courses=await response.json();
+    renderCourseOptions();
+    $('courseSelect').querySelector('.trigger').disabled=courses.length===0;
+    setApiState('courseState',courses.length?'':'empty',courses.length?'':'Курси поки не знайдені.');
+  }catch(error){
+    $('courseSelect').querySelector('.trigger').disabled=true;
+    setApiState('courseState','error','Не вдалося завантажити курси.',loadCourses);
+  }
+}
+
+function renderCourseOptions(){
+  const container=$('courseOptions');
+  container.innerHTML='';
+  courses.forEach((course)=>{
+    const option=document.createElement('div');
+    option.className='opt';
+    option.textContent=course.name;
+    option.dataset.courseId=String(course.id);
+    option.onclick=()=>selectCourse(course);
+    container.appendChild(option);
+  });
+}
+
+function selectCourse(course){
+  selectedCourse=course;
+  selectedGroup=null;
+  $('courseLabel').textContent=course.name;
+  $('groupLabel').textContent='🧩 Обери групу';
+  $('groupTrigger').disabled=true;
+  $('groupOptions').innerHTML='';
+  $('n2').disabled=true;
+  setApiState('groupState','','');
+  $('courseSelect').classList.remove('open');
+  loadGroups(course.id);
+}
+
+async function loadGroups(courseId){
+  setApiState('groupState','loading','Завантажуємо групи…');
+  $('groupTrigger').disabled=true;
+  try{
+    const response=await fetch(`${api}/group/course/${courseId}`);
+    if(!response.ok)throw new Error(`HTTP ${response.status}`);
+    const groups=await response.json();
+    if(!selectedCourse||selectedCourse.id!==courseId)return;
+    renderGroupOptions(groups);
+    setApiState('groupState',groups.length?'':'empty',groups.length?'':'Для цього курсу групи не знайдені.');
+  }catch(error){
+    if(!selectedCourse||selectedCourse.id!==courseId)return;
+    setApiState('groupState','error','Не вдалося завантажити групи.',()=>loadGroups(courseId));
+  }
+}
+
+function renderGroupOptions(groups){
+  const container=$('groupOptions');
+  container.innerHTML='';
+  if(!groups.length)return;
+
+  $('groupTrigger').disabled=false;
+  groups.forEach((group)=>{
+    const option=document.createElement('div');
+    option.className='opt';
+    option.textContent=group.name;
+    option.dataset.groupId=String(group.id);
+    option.onclick=()=>selectGroup(group);
+    container.appendChild(option);
+  });
+}
+
+function selectGroup(group){
+  selectedGroup=group;
+  $('groupLabel').textContent=group.name;
+  setApiState('groupState','','');
+  $('groupSelect').classList.remove('open');
   $('n2').disabled=false;
-});
+}
+
+$('courseSelect').querySelector('.trigger').onclick=()=>$('courseSelect').classList.toggle('open');
+$('groupSelect').querySelector('.trigger').onclick=()=>$('groupSelect').classList.toggle('open');
 $('n2').onclick=()=>{render();show(3)};
 
 function render(){
   let st=$('stage');st.innerHTML='';
   [-1,0,1].forEach((off,p)=>{
-    let x=(ai+off+avatars.length)%avatars.length;
-    let e=document.createElement('div');
+    const x=(ai+off+avatars.length)%avatars.length;
+    const e=document.createElement('div');
     e.className='av '+(p===1?'center':p===0?'left':'right');
     e.textContent=avatars[x][0];st.append(e)
   });
@@ -80,8 +219,6 @@ let sx=0;
 $('stage').ontouchstart=e=>sx=e.touches[0].clientX;
 $('stage').ontouchend=e=>{let d=e.changedTouches[0].clientX-sx;if(Math.abs(d)>45)move(d<0?1:-1)};
 
-function fail(t){$('err').textContent=t;$('err').classList.add('show')}
-
 function showFinal(s){
   $('done').textContent=s.name;
   $('dc').textContent='📚 '+s.course;
@@ -90,7 +227,6 @@ function showFinal(s){
   $('di').textContent='ID '+s.id;
   $('access-code').textContent=s.access_code||'';
   $('copy-code').hidden=!s.access_code;
-  $('gear').hidden=true;
   show(4);
 }
 
@@ -115,14 +251,16 @@ $('finish').onclick=async()=>{
   const btn=$('finish'),name=$('name').value.trim();
   btn.disabled=true;btn.textContent='Створюємо…';
   try{
-    const r=await fetch(api+'/student/register',{
+    if(!selectedCourse||!selectedGroup)throw new Error('Спочатку виберіть курс та групу.');
+    const payload={name,avatar:avatars[ai][0],course_name:selectedCourse.name,group_id:selectedGroup.id};
+    const r=await fetch(`${api}/student/register`,{
       method:'POST',
       headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({name,group,avatar:avatars[ai][0]})
+      body:JSON.stringify(payload)
     });
     if(!r.ok)throw new Error('Бекенд відповів '+r.status+': '+(await r.text()).slice(0,200));
     const s=await r.json();
-    const registration={name:s.name,course,avatar:avatars[ai][0],avatarName:avatars[ai][1],balance:s.balance,id:s.id,access_code:s.access_code};
+    const registration={name:s.name,course:selectedCourse.name,avatar:avatars[ai][0],avatarName:avatars[ai][1],balance:s.balance,id:s.id,access_code:s.access_code};
     sessionStorage.setItem('robocoins_registration_complete',JSON.stringify(registration));
     showFinal(registration);
   }catch(e){
@@ -132,8 +270,15 @@ $('finish').onclick=async()=>{
   }
 };
 
-document.addEventListener('click',e=>{if(!$('sel').contains(e.target))$('sel').classList.remove('open')});
+document.addEventListener('click',e=>{
+  const clickedSelector=$('courseSelect').contains(e.target)||$('groupSelect').contains(e.target);
+  if(!clickedSelector){
+    $('courseSelect').classList.remove('open');
+    $('groupSelect').classList.remove('open');
+  }
+});
 render();
+loadCourses();
 const completedRegistration=sessionStorage.getItem('robocoins_registration_complete');
 if(completedRegistration){
   try{showFinal(JSON.parse(completedRegistration))}

@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from backend.app.core.database import get_db
+from core.database import get_db
 from schemas.group import GroupCreateRequest, GroupResponse
 from services.group import GroupService, get_group_service
 
@@ -42,8 +42,9 @@ async def get_group_by_id(
         id=group.id,
         name=group.name,
         course_id=group.course_id,
-        students=group.students
-        )
+        students=[student.id for student in group.students],
+        students_count=len(group.students),
+    )
 
 @group_router.get("/name/{name}", response_model=GroupResponse)
 async def get_group_by_name(
@@ -60,7 +61,8 @@ async def get_group_by_name(
         id=group.id,
         name=group.name,
         course_id=group.course_id,
-        students=group.students
+        students=[student.id for student in group.students],
+        students_count=len(group.students),
     )
     
 @group_router.get("/course/{course_id}", response_model=list[GroupResponse])
@@ -76,7 +78,8 @@ async def get_groups_by_course_id(
             id=group.id,
             name=group.name,
             course_id=group.course_id,
-            students=group.students
+            students=[student.id for student in group.students],
+            students_count=len(group.students),
         )
         for group in groups
     ]
