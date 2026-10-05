@@ -4,8 +4,8 @@ from core.enums import StatusEnum
 class StudentCreateRequest(BaseModel):
     name: str
     avatar: str
-    course: str
-    group_id: int 
+    course_name: str
+    group_id: int
 
 class StudentResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
@@ -13,8 +13,8 @@ class StudentResponse(BaseModel):
     code: int = 200
     id: int
     name: str
-    course: str
-    group_id: int 
+    course_name: str
+    group_id: int
     avatar: str | None = None
     balance: int
     hash_access_key: str

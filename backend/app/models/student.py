@@ -19,7 +19,7 @@ class Student(Base):
 
     group_id: Mapped[int] = mapped_column(ForeignKey("groups.id"), nullable=False)
     group: Mapped["Group"] = relationship(back_populates="students")
-    course: Mapped[str] = mapped_column(String, nullable=False)
+    course_name: Mapped[str] = mapped_column(ForeignKey("courses.name"), nullable=False)
     avatar: Mapped[str | None] = mapped_column(String, nullable=True)
     balance: Mapped[int] = mapped_column(Integer, default=0)
     hash_access_key: Mapped[str] = mapped_column(String, nullable=False, unique=True)

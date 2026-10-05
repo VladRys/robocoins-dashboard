@@ -53,8 +53,8 @@ class StudentService:
             name=student.name,
             avatar=student.avatar,
             balance=0,
-            course = student.course,
-            group_id = self.repository.assign_student_to_group(student_id, student.group_id),
+            course_name=student.course_name,
+            group_id=student.group_id,
             hash_access_key=self.generate_hash_access_key(),
             access_code=await self.generate_unique_access_code(),
         )

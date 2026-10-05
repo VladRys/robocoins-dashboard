@@ -27,10 +27,12 @@ def test_get_student_by_id_returns_student():
     student = Student(
         id=123456,
         name="Макс",
-        group="Junior",
+        group_id=1,
+        course_name="Python",
         avatar="🐯",
         balance=0,
         hash_access_key="test-hash",
+        access_code="ABC12345",
     )
     service = SimpleNamespace(
         get_student_by_id=AsyncMock(return_value=student)
@@ -40,7 +42,7 @@ def test_get_student_by_id_returns_student():
 
     assert response.id == 123456
     assert response.name == "Макс"
-    assert response.group == "Junior"
+    assert response.course_name == "Python"
     assert response.avatar == "🐯"
     assert response.balance == 0
     assert response.hash_access_key == "test-hash"
@@ -83,11 +85,11 @@ def test_create_student_generates_unique_hash(tmp_path: Path):
                 )
 
                 first_student = await service.create_student(
-                    StudentCreateRequest(name="Макс", group="Junior", avatar="🐯")
+                    StudentCreateRequest(name="Макс", course_name="Python", group_id=1, avatar="🐯")
                 )
                 logger.info("Created first student id=%s", first_student.id)
                 second_student = await service.create_student(
-                    StudentCreateRequest(name="Иван", group="Junior", avatar="🐻")
+                    StudentCreateRequest(name="Иван", course_name="Python", group_id=1, avatar="🐻")
                 )
                 logger.info("Created second student id=%s", second_student.id)
 

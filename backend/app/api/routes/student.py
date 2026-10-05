@@ -26,13 +26,13 @@ async def create_student(
         id=new_student.id,
         name=new_student.name,
         group_id=new_student.group_id,
-        course = new_student.course,
+        course_name=new_student.course_name,
         avatar=new_student.avatar,
         balance=new_student.balance,
         hash_access_key=new_student.hash_access_key,
         access_code=new_student.access_code,
         status=StatusEnum.SUCCESS,
-        code=200
+        code=200,
     )
 
 
