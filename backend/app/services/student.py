@@ -47,15 +47,16 @@ class StudentService:
                 return new_id
 
     async def create_student(self, student: StudentCreateRequest) -> Student:
+        student_id = await self.generate_unique_student_id()
         new_student = Student(
-            id = await self.generate_unique_student_id(),
+            id=student_id,
             name=student.name,
             avatar=student.avatar,
             balance=0,
             course = student.course,
-            group_id = None, # TODO: Do smth with group assignment
+            group_id = self.repository.assign_student_to_group(student_id, student.group_id),
             hash_access_key=self.generate_hash_access_key(),
-            access_code=await self.generate_unique_access_code()
+            access_code=await self.generate_unique_access_code(),
         )
         return await self.repository.create_student(new_student)
 

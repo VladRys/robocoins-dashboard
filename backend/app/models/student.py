@@ -1,7 +1,15 @@
-from sqlalchemy import Column, ForeignKey, String, Integer
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+from sqlalchemy import ForeignKey, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
+
+if TYPE_CHECKING:
+    from app.models.group import Group
+
 
 class Student(Base):
     __tablename__ = "students"
@@ -9,11 +17,10 @@ class Student(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
     name: Mapped[str] = mapped_column(String, nullable=False)
 
-    # TODO: refactor model for many groups for single student.
-    group_id: Mapped[int] = mapped_column(ForeignKey("groups.id"))
-    group: Mapped["Group"] = relationship(back_populates="students", nullable = False)
+    group_id: Mapped[int] = mapped_column(ForeignKey("groups.id"), nullable=False)
+    group: Mapped["Group"] = relationship(back_populates="students")
     course: Mapped[str] = mapped_column(String, nullable=False)
-    avatar: Mapped[str] = mapped_column(String, nullable=True)
+    avatar: Mapped[str | None] = mapped_column(String, nullable=True)
     balance: Mapped[int] = mapped_column(Integer, default=0)
     hash_access_key: Mapped[str] = mapped_column(String, nullable=False, unique=True)
 

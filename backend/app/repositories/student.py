@@ -33,3 +33,13 @@ class StudentRepository:
         await self.session.commit()
         await self.session.refresh(student)
         return student
+    
+    async def assign_student_to_group(self, student_id: int, group_id: int) -> Student | None:
+        """Assign a student to a group."""
+        student = await self.get_student_by_id(student_id)
+        if student:
+            student.group_id = group_id
+            await self.session.commit()
+            await self.session.refresh(student)
+            return student
+        return None
