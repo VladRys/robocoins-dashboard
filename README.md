@@ -115,6 +115,24 @@ Both the **rewards and their prices are fully configurable**, allowing each clas
 
 Every coin operation is stored in the transaction history.
 
+### Balance API
+
+The backend supports these balance endpoints:
+
+* `GET /student/{student_id}/balance` — read the current balance.
+* `POST /student/{student_id}/balance/transactions` — add or deduct coins. Send
+  `{"operation": "deposit", "amount": 5, "reason": "Completed a challenge"}` or
+  use `"deduct"` to subtract coins from the balance.
+* `GET /student/{student_id}/transactions?limit=50&offset=0` — read the
+  student's transaction history, newest first, in a response containing
+  `transactions`, `status`, and `code`. If the student exists but has no
+  transactions yet, `transactions` is an empty array and `code` is `200`.
+
+Amounts must be positive, and a deduction cannot make the balance negative.
+The balance update and transaction record are committed together. These endpoints
+do not yet authenticate callers; authorization should be added before exposing
+them to an untrusted network.
+
 ---
 
 ## 🚀 Getting Started

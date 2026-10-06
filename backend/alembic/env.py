@@ -7,6 +7,7 @@ from alembic import context
 
 from app.core.database import Base
 from app.models.student import Student
+from app.models.transaction import BalanceTransaction
 from app.core.config import Config as cfg
 
 # this is the Alembic Config object, which provides

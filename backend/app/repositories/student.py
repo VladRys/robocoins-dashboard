@@ -1,5 +1,5 @@
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, update
 
 from models.student import Student
 
@@ -10,6 +10,19 @@ class StudentRepository:
     async def get_student_by_id(self, student_id: int) -> Student | None:
         """Fetch a student by their ID."""
         return await self.session.get(Student, student_id)
+
+    async def change_balance(self, student_id: int, amount: int) -> int | None:
+        """Atomically change a balance, rejecting changes that would make it negative."""
+        result = await self.session.execute(
+            update(Student)
+            .where(
+                Student.id == student_id,
+                Student.balance + amount >= 0,
+            )
+            .values(balance=Student.balance + amount)
+            .returning(Student.balance)
+        )
+        return result.scalar_one_or_none()
 
     async def get_student_by_hash_access_key(
         self, hash_access_key: str
