@@ -15,18 +15,12 @@ from services.balance import (
     BalanceService,
     InsufficientBalanceError,
     StudentNotFoundError,
+    get_balance_service,
 )
 
 coins_router = APIRouter(prefix="/student", tags=["balance"])
 
-
-def get_balance_service(session: AsyncSession = Depends(get_db)) -> BalanceService:
-    return BalanceService(
-        session,
-        StudentRepository(session),
-        TransactionRepository(session),
-    )
-
+#TODO: Added any auth and permission checks for each endpoint, if needed.
 
 @coins_router.get("/{student_id}/balance", response_model=BalanceResponse)
 async def get_student_balance_by_id(

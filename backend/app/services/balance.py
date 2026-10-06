@@ -1,3 +1,4 @@
+from backend.app.core.database import get_db
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.transaction import BalanceTransaction
@@ -5,6 +6,7 @@ from repositories.student import StudentRepository
 from repositories.transaction import TransactionRepository
 from schemas.balance import BalanceChangeRequest
 
+from fastapi import Depends 
 
 class StudentNotFoundError(Exception):
     pass
@@ -67,3 +69,10 @@ class BalanceService:
             limit,
             offset,
         )
+        
+def get_balance_service(session: AsyncSession = Depends(get_db)) -> BalanceService:
+    return BalanceService(
+        session,
+        StudentRepository(session),
+        TransactionRepository(session),
+    )
