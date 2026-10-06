@@ -1,0 +1,54 @@
+.hero {
+  --radius: var(--rounded-xl);
+
+  position: relative;
+  width: 100%;
+
+  div {
+    position: absolute;
+    inset: 0;
+    z-index: -10;
+    width: 100%;
+    background: var(--foreground);
+    border-radius: var(--radius);
+    transform: translate(0.5rem, 0.5rem);
+    transition: transform 200ms cubic-bezier(0.165, 0.84, 0.44, 1);
+    transition-delay: 75ms;
+  }
+
+  input {
+    padding: var(--spacing-md) var(--spacing-lg);
+    font-family: Rubik, sans-serif;
+    width: 100%;
+    font-size: 1.5rem;
+    font-weight: 500;
+    color: var(--foreground);
+    outline: none;
+    outline-offset: 2px;
+    background: var(--surface);
+    border: 3px solid var(--foreground);
+    border-radius: var(--radius);
+
+    &::placeholder {
+      color: var(--muted);
+    }
+  }
+
+  &:focus-within {
+    div {
+      transform: translate(0, 0);
+    }
+  }
+}
+
+@media (width >= 480px) {
+  .hero {
+    div {
+      transform: translate(0.75rem, 0.75rem);
+    }
+
+    input {
+      font-size: 2rem;
+    }
+  }
+}

@@ -1,0 +1,14 @@
+.wrapper {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: 3rem var(--spacing-xl);
+  overflow-x: hidden;
+}
+
+.coins {
+  margin-bottom: -80%;
+  font-size: 140vw;
+  color: var(--brand);
+  transform: translate(-20%, -35%);
+}
