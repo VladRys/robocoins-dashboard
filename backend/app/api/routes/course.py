@@ -8,7 +8,6 @@ course_router = APIRouter(
     tags=["courses"],
 )
 
-
 @course_router.get("", response_model=list[CourseResponse])
 async def get_courses(
     service: CourseService = Depends(get_course_service),
