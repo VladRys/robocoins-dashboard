@@ -1,25 +1,24 @@
-import { useField } from "#/hooks";
+import { useForm } from "@tanstack/react-form";
 
-import { useRegisterContext } from "../../../register-provider/register-provider";
+import { RegisterStep, useRegisterContext } from "../../../register-provider";
 
 export function useStepName() {
-  const context = useRegisterContext();
+  const register = useRegisterContext();
 
-  const nameField = useField("");
-
-  const handleRegister = () => {
-    if (nameField.getValue().trim() === "") return;
-  };
+  const form = useForm({
+    defaultValues: { name: register.state.name ?? "" },
+    onSubmit: ({ value }) => {
+      register.goTo(RegisterStep.Group, { name: value.name.trim() });
+    },
+  });
 
   return {
     state: {},
     queries: {},
     mutations: {},
-    functions: {
-      handleRegister,
-    },
+    functions: {},
     features: {
-      nameField,
+      form,
     },
   };
 }

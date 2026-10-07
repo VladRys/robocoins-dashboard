@@ -4,20 +4,12 @@ import { ComponentProps } from "react";
 import styles from "./typography.module.css";
 
 export interface TypographyProps extends ComponentProps<"div"> {
-  variant: "title" | "caption";
+  variant: "title" | "subtitle" | "accent" | "caption";
 }
 
-export function Typography({
-  variant,
-  children,
-  className,
-  ...props
-}: TypographyProps) {
+export function Typography({ variant, children, className, ...props }: TypographyProps) {
   return (
-    <div
-      {...props}
-      className={cn(styles.typography, styles[variant], className)}
-    >
+    <div {...props} className={cn(styles.typography, styles[variant], className)}>
       {children}
     </div>
   );

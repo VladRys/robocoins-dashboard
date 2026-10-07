@@ -1,8 +1,11 @@
-import { ComponentType } from "react";
 import { createFileRoute, redirect } from "@tanstack/react-router";
+import { ComponentType } from "react";
 
-import { RegisterStep, useRegisterContext } from "./-components/register-provider/register-provider";
-import { StepName } from "./-components/steps";
+import {
+  RegisterStep,
+  useRegisterContext,
+} from "./-components/register-provider/register-provider";
+import { StepAvatar, StepGroup, StepName, StepView } from "./-components/steps";
 
 export const Route = createFileRoute("/(auth)/register/")({
   component: RouteComponent,
@@ -13,12 +16,15 @@ export const Route = createFileRoute("/(auth)/register/")({
 
 const STEPS: Record<RegisterStep, ComponentType> = {
   name: StepName,
+  group: StepGroup,
+  avatar: StepAvatar,
+  view: StepView,
 };
 
 function RouteComponent() {
-  const { step } = useRegisterContext();
+  const register = useRegisterContext();
 
-  const Step = STEPS[step];
+  const Step = STEPS[register.state.step];
 
   return <Step />;
 }

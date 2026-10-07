@@ -8,6 +8,12 @@ import "dotenv/config";
 export default defineConfig({
   input: `${process.env.API_URL}/openapi.json`,
   output: { path: "./generated/api", clean: true },
-  plugins: [pluginTs(), pluginFetch(), pluginReactQuery()],
+  plugins: [
+    pluginTs(),
+    pluginFetch({
+      baseURL: "/api",
+    }),
+    pluginReactQuery({ hooks: true }),
+  ],
   adapter: adapterOas(),
 });

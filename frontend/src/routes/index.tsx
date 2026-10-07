@@ -7,9 +7,8 @@ export const Route = createFileRoute("/")({
   beforeLoad: ({ context }) => {
     if (context.user) return;
 
-    const to = localStorage.getItem(LOCALSTORAGE_DID_REGISTER)
-      ? "/login"
-      : "/register";
+    const to = localStorage.getItem(LOCALSTORAGE_DID_REGISTER) ? "/login" : "/register";
+
     throw redirect({ to });
   },
 });

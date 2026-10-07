@@ -1,0 +1,17 @@
+.carousel {
+  position: relative;
+}
+
+.viewport {
+  overflow: hidden;
+}
+
+.container {
+  display: flex;
+  touch-action: pan-y pinch-zoom;
+}
+
+.item {
+  flex: 0 0 var(--carousel-item-size, 100%);
+  min-width: 0;
+}

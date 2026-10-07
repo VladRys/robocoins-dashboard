@@ -3,12 +3,17 @@ import { tanstackRouter } from "@tanstack/router-plugin/vite";
 import react from "@vitejs/plugin-react";
 import unocss from "unocss/vite";
 import { defineConfig } from "vite-plus";
+import "dotenv/config";
 
 export default defineConfig({
   resolve: { tsconfigPaths: true },
   server: {
     proxy: {
-      "/api": process.env.API_URL!,
+      "/api": {
+        target: process.env.API_URL,
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api/, ""),
+      },
     },
   },
   plugins: [

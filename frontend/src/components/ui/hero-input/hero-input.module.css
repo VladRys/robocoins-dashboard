@@ -17,9 +17,9 @@
   }
 
   input {
+    width: 100%;
     padding: var(--spacing-md) var(--spacing-lg);
     font-family: Rubik, sans-serif;
-    width: 100%;
     font-size: 1.5rem;
     font-weight: 500;
     color: var(--foreground);
@@ -31,6 +31,14 @@
 
     &::placeholder {
       color: var(--muted);
+    }
+
+    &[aria-invalid="true"] {
+      background: var(--error);
+
+      &::placeholder {
+        color: var(--error-hover);
+      }
     }
   }
 
