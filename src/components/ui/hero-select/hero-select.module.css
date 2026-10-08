@@ -46,6 +46,9 @@
   background: var(--surface);
   border: 3px solid var(--foreground);
   border-radius: var(--radius);
+  transition:
+    background 100ms ease-in-out,
+    color 100ms ease-in-out;
 
   &[data-placeholder] {
     color: var(--muted);

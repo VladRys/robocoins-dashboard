@@ -24,12 +24,14 @@ export interface MistakeCaptionProps {
   to: RegisterStep
 }
 
+const COMPONENTS = { components: { a: Back } }
+
 export function MistakeCaption({ to }: MistakeCaptionProps) {
   const t = useTranslate()
 
   return (
     <Typography variant="caption" className="text-center mt-4">
-      {t.rich('caption.mistake', { to }, { components: { a: Back } })}
+      {t.rich('caption.mistake', { to }, COMPONENTS)}
     </Typography>
   )
 }

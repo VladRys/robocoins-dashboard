@@ -15,9 +15,7 @@ export function StepView() {
     <div className="flex flex-1 flex-col">
       <Typography variant="title">{t('step.view.title')}</Typography>
       <div className="flex items-center gap-3 mt-4">
-        {state.avatarSrc && (
-          <img src={state.avatarSrc} alt="" draggable={false} className="w-10 h-10" />
-        )}
+        {state.avatar && <img src={state.avatar} draggable={false} className="w-10 h-10" />}
         <Typography variant="accent">{state.name}</Typography>
       </div>
       <Typography variant="subtitle" className="mt-2">

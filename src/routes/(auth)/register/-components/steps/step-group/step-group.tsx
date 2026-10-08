@@ -16,27 +16,17 @@ import { MistakeCaption } from '../components/mistake-caption'
 import { useStepGroup } from './hooks'
 
 export function StepGroup() {
-  const { state, queries, features } = useStepGroup()
+  const { state, queries, functions, features } = useStepGroup()
 
   const t = useTranslate()
 
   return (
-    <form
-      className="flex flex-1 flex-col"
-      onSubmit={(event) => {
-        event.preventDefault()
-        void features.form.handleSubmit()
-      }}
-    >
+    <form className="flex flex-1 flex-col" onSubmit={functions.handleSubmit}>
       <Typography variant="title">{t('step.course-select.title')}</Typography>
       <features.form.Field
         name="courseName"
-        validators={{
-          onSubmit: ({ value }) => (value === '' ? 'field.course.error.empty' : undefined),
-        }}
-        listeners={{
-          onChange: () => features.form.setFieldValue('groupId', ''),
-        }}
+        validators={features.fields.courseName.validators}
+        listeners={features.fields.courseName.listeners}
       >
         {(field) => (
           <HeroSelect
@@ -44,7 +34,7 @@ export function StepGroup() {
             value={field.state.value}
             onValueChange={(value) => field.handleChange(value ?? '')}
           >
-            <HeroSelectTrigger className="mt-2" aria-invalid={field.state.meta.errors.length > 0}>
+            <HeroSelectTrigger className="mt-2" aria-invalid={!!field.state.meta.errors.length}>
               <HeroSelectValue placeholder={t('field.course.placeholder')} />
             </HeroSelectTrigger>
             <HeroSelectContent>
@@ -61,12 +51,7 @@ export function StepGroup() {
       <Typography className="mt-8" variant="caption">
         {t('field.group.label')}
       </Typography>
-      <features.form.Field
-        name="groupId"
-        validators={{
-          onSubmit: ({ value }) => (value === '' ? 'field.group.error.empty' : undefined),
-        }}
-      >
+      <features.form.Field name="groupId" validators={features.fields.groupId.validators}>
         {(field) => (
           <HeroSelect
             items={state.groups}

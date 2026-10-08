@@ -1,9 +1,19 @@
 import { useTranslate } from '@kanjou/react'
 import { useForm, useSelector } from '@tanstack/react-form'
+import type { SyntheticEvent } from 'react'
 
 import { useGetCoursesCourseGet } from '#/api/hooks'
 
 import { RegisterStep, useRegisterContext } from '../../../register-provider'
+
+const VALIDATORS = {
+  courseName: {
+    onSubmit: ({ value }: { value: string }) => value === '' || undefined,
+  },
+  groupId: {
+    onSubmit: ({ value }: { value: string }) => value === '' || undefined,
+  },
+}
 
 export function useStepGroup() {
   const t = useTranslate()
@@ -38,6 +48,15 @@ export function useStepGroup() {
       value: `${group}`,
     }))
 
+  const handleSubmit = (event: SyntheticEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    void form.handleSubmit()
+  }
+
+  const handleResetGroup = () => {
+    form.setFieldValue('groupId', '')
+  }
+
   return {
     state: {
       courseName,
@@ -48,9 +67,22 @@ export function useStepGroup() {
       courses: coursesQuery,
     },
     mutations: {},
-    functions: {},
+    functions: {
+      handleSubmit,
+    },
     features: {
       form,
+      fields: {
+        courseName: {
+          validators: VALIDATORS.courseName,
+          listeners: {
+            onChange: handleResetGroup,
+          },
+        },
+        groupId: {
+          validators: VALIDATORS.groupId,
+        },
+      },
     },
   }
 }

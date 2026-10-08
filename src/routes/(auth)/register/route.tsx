@@ -2,13 +2,13 @@ import { createFileRoute, Outlet } from '@tanstack/react-router'
 import { cn } from 'cn'
 
 import { RegisterProvider } from './-components/register-provider/register-provider'
-import { registerDraft } from './-lib'
+import { registerState } from './-lib'
 
 import styles from './route.module.css'
 
 export const Route = createFileRoute('/(auth)/register')({
   component: RouteComponent,
-  loader: () => registerDraft.load(),
+  loader: () => registerState.load(),
 })
 
 function RouteComponent() {

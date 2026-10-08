@@ -7,6 +7,6 @@ export const AVATARS = {
   'star-struck': '/star-struck.png',
   cold: '/cold.png',
 } as const
-export type AvatarKey = keyof typeof AVATARS
+export type Avatar = keyof typeof AVATARS
 
-export const AVATAR_KEYS = Object.keys(AVATARS) as AvatarKey[]
+export const AVATAR_KEYS = Object.keys(AVATARS) as Avatar[]

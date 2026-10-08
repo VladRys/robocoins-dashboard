@@ -3,12 +3,12 @@ import { LOCALSTORAGE_REGISTER_STATE } from '../-constants'
 
 export const DEFAULT_REGISTER_STATE: RegisterState = { step: 'name' }
 
-export const registerDraft = {
+export const registerState = {
   load(): RegisterState {
     try {
-      const draft = localStorage.getItem(LOCALSTORAGE_REGISTER_STATE)
+      const state = localStorage.getItem(LOCALSTORAGE_REGISTER_STATE)
 
-      if (draft) return JSON.parse(draft)
+      if (state) return JSON.parse(state)
     } catch {
       this.clear()
     }

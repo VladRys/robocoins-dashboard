@@ -1,9 +1,10 @@
 import { useForm } from '@tanstack/react-form'
 import { useEffect, useState } from 'react'
+import type { SyntheticEvent } from 'react'
 
 import type { CarouselApi } from '#/components/ui'
 
-import { AVATAR_KEYS, AvatarKey } from '../../../../-constants'
+import { AVATAR_KEYS, Avatar } from '../../../../-constants'
 import { RegisterStep, useRegisterContext } from '../../../register-provider'
 
 export function useStepAvatar() {
@@ -13,7 +14,7 @@ export function useStepAvatar() {
   const initialIndex = savedIndex === -1 ? Math.floor(AVATAR_KEYS.length / 2) : savedIndex
 
   const form = useForm({
-    defaultValues: { avatar: AVATAR_KEYS[initialIndex] as AvatarKey },
+    defaultValues: { avatar: AVATAR_KEYS[initialIndex] as Avatar },
     onSubmit: ({ value }) => {
       register.goTo(RegisterStep.View, { avatar: value.avatar })
     },
@@ -24,14 +25,19 @@ export function useStepAvatar() {
   useEffect(() => {
     if (!api) return
 
-    const onSelect = () => form.setFieldValue('avatar', AVATAR_KEYS[api.selectedScrollSnap()])
+    const handleSelect = () => form.setFieldValue('avatar', AVATAR_KEYS[api.selectedScrollSnap()])
 
-    api.on('select', onSelect)
+    api.on('select', handleSelect)
 
     return () => {
-      api.off('select', onSelect)
+      api.off('select', handleSelect)
     }
   }, [api, form])
+
+  const handleSubmit = (event: SyntheticEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    void form.handleSubmit()
+  }
 
   return {
     state: {
@@ -41,6 +47,7 @@ export function useStepAvatar() {
     mutations: {},
     functions: {
       setApi,
+      handleSubmit,
     },
     features: {
       form,

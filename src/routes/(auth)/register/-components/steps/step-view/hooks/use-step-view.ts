@@ -4,7 +4,7 @@ import { useCreateStudentStudentRegisterPost } from '#/api/hooks'
 import { LOCALSTORAGE_DID_REGISTER } from '#/routes/-constants'
 
 import { AVATARS } from '../../../../-constants'
-import { registerDraft } from '../../../../-lib'
+import { registerState } from '../../../../-lib'
 import { useRegisterContext } from '../../../register-provider'
 
 export function useStepView() {
@@ -15,14 +15,12 @@ export function useStepView() {
   const registerMutation = useCreateStudentStudentRegisterPost({
     mutation: {
       onSuccess: () => {
-        registerDraft.clear()
+        registerState.clear()
         localStorage.setItem(LOCALSTORAGE_DID_REGISTER, 'true')
         void navigate({ to: '/' })
       },
     },
   })
-
-  const avatar = register.state.avatar as keyof typeof AVATARS | undefined
 
   const handleFinish = () => {
     const { name, avatar, courseName, groupId } = register.state
@@ -34,10 +32,12 @@ export function useStepView() {
     })
   }
 
+  const avatar = register.state.avatar
+
   return {
     state: {
       name: register.state.name,
-      avatarSrc: avatar ? AVATARS[avatar] : undefined,
+      avatar: avatar && AVATARS[avatar],
       courseName: register.state.courseName,
       groupId: register.state.groupId,
     },

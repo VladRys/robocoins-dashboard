@@ -1,6 +1,7 @@
-import { createContext, Dispatch, ReactNode, SetStateAction, use, useMemo, useState } from 'react'
+import { createContext, ReactNode, use, useMemo, useState } from 'react'
 
-import { registerDraft } from '../../-lib'
+import { Avatar } from '../../-constants'
+import { registerState } from '../../-lib'
 
 export const RegisterStep = {
   Name: 'name',
@@ -13,16 +14,14 @@ export type RegisterStep = (typeof RegisterStep)[keyof typeof RegisterStep]
 export interface RegisterState {
   step: RegisterStep
   name?: string
-  avatar?: string
+  avatar?: Avatar
   groupId?: number
   courseName?: string
 }
 
 interface RegisterContextValue {
   goTo: (step: RegisterStep, updates?: Partial<Omit<RegisterState, 'step'>>) => void
-  update: (updates: Partial<RegisterState>) => void
   state: RegisterState
-  setState: Dispatch<SetStateAction<RegisterState>>
 }
 
 const RegisterContext = createContext<RegisterContextValue>({} as RegisterContextValue)
@@ -35,23 +34,13 @@ export interface RegisterProviderProps {
 export function RegisterProvider({ initialState, children }: RegisterProviderProps) {
   const [state, setState] = useState<RegisterState>(initialState)
 
-  const _setState: Dispatch<SetStateAction<RegisterState>> = (action) => {
-    setState((current) => {
-      const next = typeof action === 'function' ? action(current) : action
-      registerDraft.save(next)
-      return next
-    })
-  }
-
-  const update = (updates: Partial<RegisterState>) => {
-    _setState((current) => ({ ...current, ...updates }))
-  }
-
   const goTo = (step: RegisterStep, updates?: Partial<Omit<RegisterState, 'step'>>) => {
-    _setState((current) => ({ ...current, ...updates, step }))
+    const next = { ...state, ...updates, step }
+    setState(next)
+    registerState.save(next)
   }
 
-  const contextValue = useMemo(() => ({ state, setState: _setState, update, goTo }), [state])
+  const contextValue = useMemo(() => ({ state, goTo }), [state])
 
   return <RegisterContext value={contextValue}>{children}</RegisterContext>
 }
