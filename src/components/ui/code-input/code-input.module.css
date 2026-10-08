@@ -1,0 +1,47 @@
+.code-input {
+  --radius: var(--rounded-xl);
+  --cell-size: 2.25rem;
+
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr 2px 1fr 2px 1fr 2px 1fr;
+  gap: var(--spacing-md);
+  place-items: center center;
+  padding: var(--spacing-md);
+  font-family: 'Rubik Mono One', monospace;
+  font-size: 2.25rem;
+  font-weight: 500;
+  color: var(--foreground);
+  background: var(--surface);
+  border: 3px solid var(--foreground);
+  border-radius: var(--radius);
+
+  &::after {
+    --offset: var(--spacing-md);
+
+    position: absolute;
+    z-index: -10;
+    width: 100%;
+    height: 100%;
+    content: '';
+    background: var(--foreground);
+    border-radius: var(--radius);
+    transform: translate(var(--offset), var(--offset));
+  }
+
+  span {
+    width: var(--cell-size);
+    height: var(--cell-size);
+  }
+}
+
+.divider {
+  width: 2px;
+  height: 100%;
+  background: var(--muted);
+}
+
+.hint {
+  font-size: var(--cell-size);
+  color: var(--muted);
+}

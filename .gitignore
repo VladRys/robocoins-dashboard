@@ -1,9 +1,5 @@
 node_modules/
-routeTree.gen.ts
-.tanstack/
 generated/
-.zed/
-code-input/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

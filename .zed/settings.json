@@ -1,0 +1,49 @@
+{
+  "format_on_save": "on",
+  "prettier": { "allowed": false },
+  "formatter": [
+    { "language_server": { "name": "oxfmt" } },
+    { "code_action": "source.fixAll.oxc" },
+    { "code_action": "source.fixAll.stylelint" }
+  ],
+  "lsp": {
+    "oxlint": {
+      "initialization_options": {
+        "settings": {
+          "run": "onType",
+          "fixKind": "safe_fix",
+          "typeAware": true,
+          "unusedDisableDirectives": "deny"
+        }
+      }
+    },
+    "oxfmt": {
+      "initialization_options": {
+        "settings": {
+          "fmt.configPath": "./vite.config.ts",
+          "run": "onSave"
+        }
+      }
+    }
+  },
+  "languages": {
+    "TypeScript": {
+      "language_servers": [
+        "...",
+        "!vtsls",
+        "!typescript-language-server",
+        "!eslint",
+        "!tailwindcss-language-server"
+      ]
+    },
+    "TSX": {
+      "language_servers": [
+        "...",
+        "!vtsls",
+        "!typescript-language-server",
+        "!eslint",
+        "!tailwindcss-language-server"
+      ]
+    }
+  }
+}
