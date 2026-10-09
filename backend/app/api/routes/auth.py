@@ -1,5 +1,5 @@
-from backend.app.schemas.student import StudentResponse
 from fastapi import Depends, HTTPException, APIRouter, Request, Response
+from schemas.student import StudentResponse
 from schemas.auth import StudentLogin, StudentLoginResponse, StudentLogoutResponse
 from services.student import StudentService, get_student_service
 from services.session import SessionService, get_session_service
@@ -17,8 +17,7 @@ async def login(login_request: StudentLogin, response: Response, request: Reques
     if not student:
         raise HTTPException(status_code=404, detail="Wrong access code")
 
-    session = await session_service.create_session(student.id)
-    session_token = session.token_hash
+    session_token = await session_service.create_session(student.id)
 
     response.set_cookie(
         key="session_token",
