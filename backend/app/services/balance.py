@@ -1,4 +1,4 @@
-from backend.app.core.database import get_db
+from core.database import get_db
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.transaction import BalanceTransaction

@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends
 
 from schemas.course import CourseResponse
+from schemas.group import GroupResponse
 from services.course import CourseService, get_course_service
 
 course_router = APIRouter(
@@ -17,7 +18,16 @@ async def get_courses(
         CourseResponse(
             id=course.id,
             name=course.name,
-            groups=[group.id for group in course.groups],
+            groups=[
+                GroupResponse(
+                    id=group.id,
+                    name=group.name,
+                    course_id=group.course_id,
+                    students=[student.id for student in group.students],
+                    students_count=len(group.students),
+                )
+                for group in course.groups
+            ],
             groups_count=len(course.groups),
         )
         for course in courses
