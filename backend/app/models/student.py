@@ -9,6 +9,7 @@ from app.core.database import Base
 
 if TYPE_CHECKING:
     from app.models.group import Group
+    from app.models.course import Course
     from app.models.transaction import BalanceTransaction
 
 
@@ -25,6 +26,7 @@ class Student(Base):
         cascade="all, delete-orphan",
     )
     course_name: Mapped[str] = mapped_column(ForeignKey("courses.name"), nullable=False)
+    course: Mapped["Course"] = relationship(back_populates="students", viewonly=True)
     avatar: Mapped[str | None] = mapped_column(String, nullable=True)
     balance: Mapped[int] = mapped_column(Integer, default=0)
     hash_access_key: Mapped[str] = mapped_column(String, nullable=False, unique=True)

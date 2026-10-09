@@ -33,9 +33,16 @@ app.add_middleware(
 app.include_router(router)
 
 
+# TODO: mb move redirects to frontend-side.
 @app.get("/registration", include_in_schema=False)
 async def registration_page() -> FileResponse:
     page_path = Path(__file__).resolve().parents[2] / "frontend" / "register.html"
+    return FileResponse(page_path, media_type="text/html")
+
+
+@app.get("/login", include_in_schema=False)
+async def login_page() -> FileResponse:
+    page_path = Path(__file__).resolve().parents[2] / "frontend" / "login.html"
     return FileResponse(page_path, media_type="text/html")
 
 

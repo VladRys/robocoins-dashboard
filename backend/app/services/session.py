@@ -1,4 +1,7 @@
 import secrets
+from fastapi import Depends
+from sqlalchemy.ext.asyncio import AsyncSession
+from core.database import get_db
 from models.session import Session
 from repositories.session import SessionRepository
 
@@ -19,7 +22,7 @@ class SessionService:
     async def delete_session(self, session_token: str):
         return await self.repository.delete_session(session_token)
 
-def get_session_service(db_session: AsyncSession) -> SessionService:
+def get_session_service(db_session: AsyncSession = Depends(get_db)) -> SessionService:
     repository = SessionRepository(db_session)
     return SessionService(repository)
 
