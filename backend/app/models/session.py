@@ -16,3 +16,6 @@ class Session(Base):
     expires_at: Mapped[datetime] = mapped_column(
         default=lambda: datetime.now(timezone.utc).replace(tzinfo=None) + timedelta(days=7)
     )
+    
+    def is_expired(self) -> bool:
+        return datetime.now(timezone.utc).replace(tzinfo=None) > self.expires_at

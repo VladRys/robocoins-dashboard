@@ -1,5 +1,6 @@
+from backend.app.schemas.student import StudentResponse
 from fastapi import Depends, HTTPException, APIRouter, Request, Response
-from schemas.auth import StudentLogin, StudentLoginResponse
+from schemas.auth import StudentLogin, StudentLoginResponse, StudentLogoutResponse
 from services.student import StudentService, get_student_service
 from services.session import SessionService, get_session_service
 
@@ -33,7 +34,7 @@ async def login(login_request: StudentLogin, response: Response, request: Reques
         session_token=session_token,
         )
 
-@auth_router.post("/logout")
+@auth_router.post("/logout", response_model=StudentLogoutResponse)
 async def logout(request: Request, response: Response, session_service: SessionService = Depends(get_session_service)):
     token = request.cookies.get("session_token")
 
@@ -43,7 +44,11 @@ async def logout(request: Request, response: Response, session_service: SessionS
     await session_service.delete_session(token)
     response.delete_cookie("session_token")
 
-@auth_router.get("/me", response_model=StudentLoginResponse)
+    return StudentLogoutResponse(
+        message="Logout successful"
+    )
+
+@auth_router.get("/me", response_model=StudentResponse)
 async def get_current_student(request: Request, student_service: StudentService = Depends(get_student_service), session_service: SessionService = Depends(get_session_service)):
     token = request.cookies.get("session_token")
 
@@ -55,12 +60,23 @@ async def get_current_student(request: Request, student_service: StudentService 
     if not session:
         raise HTTPException(status_code=401, detail="Invalid session token")
 
+    if session.is_expired():
+        await session_service.delete_session(token)
+        raise HTTPException(status_code=401, detail="Session expired")
+    
     student = await student_service.get_student_by_id(session.student_id)
 
     if not student:
         raise HTTPException(status_code=404, detail="Student not found")
 
-    return StudentLoginResponse(
-        message="Current student retrieved successfully",
-        session_token=token,
-        )
+    # Also can be redirected to /auth/login if the session is expired or invalid, but for now, we just return the student data.
+    
+    return StudentResponse(
+        id=student.id,
+        name=student.name,
+        group_id=student.group_id,
+        course_name=student.course_name,
+        avatar=student.avatar,
+        balance=student.balance,
+        access_code=student.access_code
+    )

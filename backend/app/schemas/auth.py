@@ -11,3 +11,8 @@ class StudentLoginResponse(BaseModel):
     session_token: str
     status: str = StatusEnum.SUCCESS
     code: int = 200
+
+class StudentLogoutResponse(BaseModel):
+    message: str
+    status: str = StatusEnum.SUCCESS
+    code: int = 200
