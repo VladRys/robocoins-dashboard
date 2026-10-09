@@ -43,4 +43,24 @@ async def logout(request: Request, response: Response, session_service: SessionS
     await session_service.delete_session(token)
     response.delete_cookie("session_token")
 
+@auth_router.get("/me", response_model=StudentLoginResponse)
+async def get_current_student(request: Request, student_service: StudentService = Depends(get_student_service), session_service: SessionService = Depends(get_session_service)):
+    token = request.cookies.get("session_token")
 
+    if not token:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+
+    session = await session_service.get_session_by_token(token)
+
+    if not session:
+        raise HTTPException(status_code=401, detail="Invalid session token")
+
+    student = await student_service.get_student_by_id(session.student_id)
+
+    if not student:
+        raise HTTPException(status_code=404, detail="Student not found")
+
+    return StudentLoginResponse(
+        message="Current student retrieved successfully",
+        session_token=token,
+        )
