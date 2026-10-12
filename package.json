@@ -20,7 +20,8 @@
     "cn": "^0.4.0",
     "embla-carousel-react": "^8.6.0",
     "react": "^19.3.0",
-    "react-dom": "^19.3.0"
+    "react-dom": "^19.3.0",
+    "zod": "^4.6.5"
   },
   "devDependencies": {
     "@iconify-json/ph": "^1.2.2",

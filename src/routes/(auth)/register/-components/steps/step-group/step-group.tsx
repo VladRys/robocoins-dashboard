@@ -11,7 +11,7 @@ import {
   Typography,
 } from '#/components/ui'
 
-import { RegisterStep } from '../../register-provider'
+import { RegisterStep } from '../../../-schemas'
 import { MistakeCaption } from '../components/mistake-caption'
 import { useStepGroup } from './hooks'
 
@@ -23,11 +23,7 @@ export function StepGroup() {
   return (
     <form className="flex flex-1 flex-col" onSubmit={functions.handleSubmit}>
       <Typography variant="title">{t('step.course-select.title')}</Typography>
-      <features.form.Field
-        name="courseName"
-        validators={features.fields.courseName.validators}
-        listeners={features.fields.courseName.listeners}
-      >
+      <features.form.Field name="courseName" listeners={features.fields.courseName.listeners}>
         {(field) => (
           <HeroSelect
             items={state.courses}
@@ -51,7 +47,7 @@ export function StepGroup() {
       <Typography className="mt-8" variant="caption">
         {t('field.group.label')}
       </Typography>
-      <features.form.Field name="groupId" validators={features.fields.groupId.validators}>
+      <features.form.Field name="groupId">
         {(field) => (
           <HeroSelect
             items={state.groups}
@@ -61,7 +57,7 @@ export function StepGroup() {
             <HeroSelectTrigger
               className="mt-2"
               disabled={!state.courseName}
-              aria-invalid={!!field.state.meta.errors.length && !!state.courseName}
+              aria-invalid={!!field.state.meta.errors.length}
             >
               <HeroSelectValue placeholder={t('field.group.placeholder')} />
             </HeroSelectTrigger>

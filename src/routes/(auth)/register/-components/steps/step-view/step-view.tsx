@@ -2,7 +2,7 @@ import { useTranslate } from '@kanjou/react'
 
 import { HeroButton, Typography } from '#/components/ui'
 
-import { RegisterStep } from '../../register-provider'
+import { RegisterStep } from '../../../-schemas'
 import { MistakeCaption } from '../components/mistake-caption'
 import { useStepView } from './hooks'
 

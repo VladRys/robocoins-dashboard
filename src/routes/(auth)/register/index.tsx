@@ -1,8 +1,9 @@
 import { createFileRoute, redirect } from '@tanstack/react-router'
 import { ComponentType } from 'react'
 
-import { RegisterStep, useRegisterContext } from './-components/register-provider/register-provider'
+import { useRegisterContext } from './-components/register-provider'
 import { StepAvatar, StepGroup, StepName, StepView } from './-components/steps'
+import { RegisterStep } from './-schemas'
 
 export const Route = createFileRoute('/(auth)/register/')({
   component: RouteComponent,
@@ -19,9 +20,9 @@ const STEPS: Record<RegisterStep, ComponentType> = {
 }
 
 function RouteComponent() {
-  const register = useRegisterContext()
+  const { state } = useRegisterContext()
 
-  const Step = STEPS[register.state.step]
+  const Step = STEPS[state.step]
 
   return <Step />
 }

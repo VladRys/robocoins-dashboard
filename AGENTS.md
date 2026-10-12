@@ -20,6 +20,7 @@ Single-context layout: root `GLOSSARY.md` plus `docs/adr/`. See `docs/agents/dom
 4. Event handlers created in hooks are named `handleX`. Props are named `onX`.
 5. Never use comments.
 6. Don't destructure hooks. `model` hooks are exempt - identified by their return shape (`state`, `queries`, `mutations`, `functions`, `features`). Don't do for values too, like `{ ... } = event` and etc.
+7. Schemas are named in PascalCase with a `Schema` suffix, e.g. `RegisterStateSchema`, `StepNameSchema`.
 
 ## Structure
 

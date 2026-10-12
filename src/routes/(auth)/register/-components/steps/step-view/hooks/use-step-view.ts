@@ -3,8 +3,8 @@ import { useNavigate } from '@tanstack/react-router'
 import { useCreateStudentStudentRegisterPost } from '#/api/hooks'
 import { LOCALSTORAGE_DID_REGISTER } from '#/routes/-constants'
 
-import { AVATARS } from '../../../../-constants'
-import { registerState } from '../../../../-lib'
+import { AVATARS, LOCALSTORAGE_REGISTER_STATE } from '../../../../-constants'
+import { CompleteRegisterStateSchema } from '../../../../-schemas'
 import { useRegisterContext } from '../../../register-provider'
 
 export function useStepView() {
@@ -15,7 +15,7 @@ export function useStepView() {
   const registerMutation = useCreateStudentStudentRegisterPost({
     mutation: {
       onSuccess: () => {
-        registerState.clear()
+        localStorage.removeItem(LOCALSTORAGE_REGISTER_STATE)
         localStorage.setItem(LOCALSTORAGE_DID_REGISTER, 'true')
         void navigate({ to: '/' })
       },
@@ -23,9 +23,11 @@ export function useStepView() {
   })
 
   const handleFinish = () => {
-    const { name, avatar, courseName, groupId } = register.state
+    const draft = CompleteRegisterStateSchema.safeParse(register.state)
 
-    if (!name || !avatar || !courseName || groupId === undefined) return
+    if (!draft.success) return
+
+    const { name, avatar, courseName, groupId } = draft.data
 
     registerMutation.mutate({
       body: { name, avatar, course_name: courseName, group_id: groupId },
@@ -41,7 +43,6 @@ export function useStepView() {
       courseName: register.state.courseName,
       groupId: register.state.groupId,
     },
-    queries: {},
     mutations: {
       register: registerMutation,
     },

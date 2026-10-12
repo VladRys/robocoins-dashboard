@@ -3,7 +3,8 @@ import { ReactNode } from 'react'
 
 import { Button, Typography } from '#/components/ui'
 
-import { RegisterStep, useRegisterContext } from '../../../register-provider'
+import { RegisterStep } from '../../../../-schemas'
+import { useRegisterContext } from '../../../register-provider'
 
 interface BackProps {
   to: RegisterStep
@@ -14,7 +15,7 @@ function Back({ children, to }: BackProps) {
   const register = useRegisterContext()
 
   return (
-    <Button variant="link" onClick={() => register.goTo(to)}>
+    <Button variant="link" onClick={() => register.setState({ step: to })}>
       <Typography variant="caption">{children}</Typography>
     </Button>
   )

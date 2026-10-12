@@ -9,7 +9,7 @@ import {
 } from '#/components/ui'
 
 import { AVATARS, AVATAR_KEYS } from '../../../-constants'
-import { RegisterStep } from '../../register-provider'
+import { RegisterStep } from '../../../-schemas'
 import { MistakeCaption } from '../components/mistake-caption'
 import { useStepAvatar } from './hooks'
 

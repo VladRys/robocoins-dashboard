@@ -27,6 +27,15 @@
     }
   },
   "languages": {
+    "JavaScript": {
+      "language_servers": [
+        "...",
+        "!vtsls",
+        "!typescript-language-server",
+        "!eslint",
+        "!tailwindcss-language-server"
+      ]
+    },
     "TypeScript": {
       "language_servers": [
         "...",

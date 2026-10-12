@@ -1,26 +1,12 @@
 import { createContext, ReactNode, use, useMemo, useState } from 'react'
 
-import { Avatar } from '../../-constants'
-import { registerState } from '../../-lib'
+import { LOCALSTORAGE_REGISTER_STATE } from '../../-constants'
+import type { RegisterState } from '../../-schemas'
 
-export const RegisterStep = {
-  Name: 'name',
-  Group: 'group',
-  Avatar: 'avatar',
-  View: 'view',
-} as const
-export type RegisterStep = (typeof RegisterStep)[keyof typeof RegisterStep]
-
-export interface RegisterState {
-  step: RegisterStep
-  name?: string
-  avatar?: Avatar
-  groupId?: number
-  courseName?: string
-}
+type NewState = Partial<Omit<RegisterState, 'step'>> & Pick<RegisterState, 'step'>
 
 interface RegisterContextValue {
-  goTo: (step: RegisterStep, updates?: Partial<Omit<RegisterState, 'step'>>) => void
+  setState: (newState: NewState) => void
   state: RegisterState
 }
 
@@ -34,13 +20,13 @@ export interface RegisterProviderProps {
 export function RegisterProvider({ initialState, children }: RegisterProviderProps) {
   const [state, setState] = useState<RegisterState>(initialState)
 
-  const goTo = (step: RegisterStep, updates?: Partial<Omit<RegisterState, 'step'>>) => {
-    const next = { ...state, ...updates, step }
+  const _setState = (newState: NewState) => {
+    const next = { ...state, ...newState }
     setState(next)
-    registerState.save(next)
+    localStorage.setItem(LOCALSTORAGE_REGISTER_STATE, JSON.stringify(next))
   }
 
-  const contextValue = useMemo(() => ({ state, goTo }), [state])
+  const contextValue = useMemo(() => ({ state, setState: _setState }), [state])
 
   return <RegisterContext value={contextValue}>{children}</RegisterContext>
 }

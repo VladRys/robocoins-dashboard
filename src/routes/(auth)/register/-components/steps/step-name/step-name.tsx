@@ -13,7 +13,7 @@ export function StepName() {
     <form className="flex flex-1 flex-col" onSubmit={functions.handleSubmit}>
       <Typography variant="title">{t('action.registration.title')}</Typography>
       <Typography variant="caption">{t('action.registration.description')}</Typography>
-      <features.form.Field name="name" validators={features.fields.name.validators}>
+      <features.form.Field name="name">
         {(field) => (
           <HeroInput
             name={field.name}

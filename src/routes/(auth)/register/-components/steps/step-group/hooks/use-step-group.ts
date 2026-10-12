@@ -4,16 +4,9 @@ import type { SyntheticEvent } from 'react'
 
 import { useGetCoursesCourseGet } from '#/api/hooks'
 
-import { RegisterStep, useRegisterContext } from '../../../register-provider'
-
-const VALIDATORS = {
-  courseName: {
-    onSubmit: ({ value }: { value: string }) => value === '' || undefined,
-  },
-  groupId: {
-    onSubmit: ({ value }: { value: string }) => value === '' || undefined,
-  },
-}
+import { StepGroupSchema } from '../-schemas'
+import { RegisterStep } from '../../../../-schemas'
+import { useRegisterContext } from '../../../register-provider'
 
 export function useStepGroup() {
   const t = useTranslate()
@@ -27,8 +20,10 @@ export function useStepGroup() {
       courseName: register.state.courseName ?? '',
       groupId: register.state.groupId?.toString() ?? '',
     },
+    validators: { onChange: StepGroupSchema },
     onSubmit: ({ value }) => {
-      register.goTo(RegisterStep.Avatar, {
+      register.setState({
+        step: RegisterStep.Avatar,
         groupId: +value.groupId,
         courseName: value.courseName,
       })
@@ -74,13 +69,9 @@ export function useStepGroup() {
       form,
       fields: {
         courseName: {
-          validators: VALIDATORS.courseName,
           listeners: {
             onChange: handleResetGroup,
           },
-        },
-        groupId: {
-          validators: VALIDATORS.groupId,
         },
       },
     },

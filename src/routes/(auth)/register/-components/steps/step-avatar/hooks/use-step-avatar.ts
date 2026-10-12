@@ -4,8 +4,9 @@ import type { SyntheticEvent } from 'react'
 
 import type { CarouselApi } from '#/components/ui'
 
-import { AVATAR_KEYS, Avatar } from '../../../../-constants'
-import { RegisterStep, useRegisterContext } from '../../../register-provider'
+import { AVATAR_KEYS } from '../../../../-constants'
+import { RegisterStep } from '../../../../-schemas'
+import { useRegisterContext } from '../../../register-provider'
 
 export function useStepAvatar() {
   const register = useRegisterContext()
@@ -14,9 +15,9 @@ export function useStepAvatar() {
   const initialIndex = savedIndex === -1 ? Math.floor(AVATAR_KEYS.length / 2) : savedIndex
 
   const form = useForm({
-    defaultValues: { avatar: AVATAR_KEYS[initialIndex] as Avatar },
+    defaultValues: { avatar: AVATAR_KEYS[initialIndex] },
     onSubmit: ({ value }) => {
-      register.goTo(RegisterStep.View, { avatar: value.avatar })
+      register.setState({ step: RegisterStep.View, avatar: value.avatar })
     },
   })
 

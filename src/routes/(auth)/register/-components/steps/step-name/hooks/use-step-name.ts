@@ -1,21 +1,18 @@
 import { useForm } from '@tanstack/react-form'
 import type { SyntheticEvent } from 'react'
 
-import { RegisterStep, useRegisterContext } from '../../../register-provider'
-
-const VALIDATORS = {
-  name: {
-    onSubmit: ({ value }: { value: string }) => value.trim() === '' || undefined,
-  },
-}
+import { StepNameSchema } from '../-schemas'
+import { RegisterStep } from '../../../../-schemas'
+import { useRegisterContext } from '../../../register-provider'
 
 export function useStepName() {
   const register = useRegisterContext()
 
   const form = useForm({
     defaultValues: { name: register.state.name ?? '' },
+    validators: { onChange: StepNameSchema },
     onSubmit: ({ value }) => {
-      register.goTo(RegisterStep.Group, { name: value.name.trim() })
+      register.setState({ step: RegisterStep.Group, name: value.name.trim() })
     },
   })
 
@@ -33,11 +30,6 @@ export function useStepName() {
     },
     features: {
       form,
-      fields: {
-        name: {
-          validators: VALIDATORS.name,
-        },
-      },
     },
   }
 }

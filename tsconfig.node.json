@@ -8,5 +8,5 @@
     "strictNullChecks": true,
     "types": ["node"]
   },
-  "include": ["./*.config.ts", "stylelint.config.js"]
+  "include": ["./*.config.*"]
 }
