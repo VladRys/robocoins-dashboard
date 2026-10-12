@@ -1,0 +1,86 @@
+.group {
+  --radius: var(--rounded-xl);
+
+  position: relative;
+  display: flex;
+  gap: var(--spacing-sm);
+  align-items: center;
+  width: 100%;
+  background: var(--surface);
+  border: 3px solid var(--foreground);
+  border-radius: var(--radius);
+  transition: background 100ms ease-in-out;
+
+  &::after {
+    position: absolute;
+    inset: 0;
+    z-index: -10;
+    width: 100%;
+    content: '';
+    background: var(--foreground);
+    border-radius: var(--radius);
+    transform: translate(0.5rem, 0.5rem);
+    transition: transform 200ms cubic-bezier(0.165, 0.84, 0.44, 1);
+    transition-delay: 75ms;
+  }
+
+  &:focus-within::after {
+    transform: translate(0, 0);
+  }
+}
+
+.group > div {
+  flex: 1;
+  background: transparent;
+  border: 0;
+
+  &::after {
+    content: none;
+  }
+}
+
+.group input {
+  background: transparent;
+  border: 0;
+}
+
+.group:has(input[aria-invalid='true']) {
+  background: var(--error);
+
+  input::placeholder {
+    color: var(--error-hover);
+  }
+}
+
+.button {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  padding: 0 var(--spacing-sm);
+  margin-right: var(--spacing-xs);
+  font-family: 'Rubik Variable', sans-serif;
+  font-size: 1.5rem;
+  color: var(--muted);
+  cursor: pointer;
+  outline: none;
+  background: transparent;
+  border: 0;
+  transition: color 200ms ease-in-out;
+
+  &:hover {
+    color: var(--foreground);
+  }
+
+  &:focus-visible {
+    outline: 3px solid var(--brand-hover);
+  }
+}
+
+@media (width >= 480px) {
+  .group::after {
+    transform: translate(0.75rem, 0.75rem);
+  }
+}

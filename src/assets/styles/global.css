@@ -31,7 +31,7 @@
 }
 
 body {
-  font-family: Rubik, sans-serif;
+  font-family: 'Rubik Variable', sans-serif;
   color: var(--foreground);
   background: var(--background);
 }

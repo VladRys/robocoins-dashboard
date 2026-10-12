@@ -1,4 +1,4 @@
-import { defineConfig, presetIcons, presetMini, presetWebFonts } from 'unocss'
+import { defineConfig, presetIcons, presetMini } from 'unocss'
 
 const custom = {
   asterisk:
@@ -14,13 +14,6 @@ export default defineConfig({
     }),
     presetMini({
       preflight: false,
-    }),
-    presetWebFonts({
-      provider: 'fontsource',
-      fonts: {
-        sans: 'Rubik',
-        mono: 'Rubik Mono One',
-      },
     }),
   ],
 })

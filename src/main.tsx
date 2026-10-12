@@ -4,6 +4,8 @@ import { createRouter, Link, RouterProvider } from '@tanstack/react-router'
 import { ReactNode } from 'react'
 import { createRoot } from 'react-dom/client'
 import locales from 'virtual:kanjou/locales'
+import '@fontsource-variable/rubik'
+import '@fontsource/rubik-mono-one'
 
 import '#/assets/styles/global.css'
 import 'virtual:uno.css'

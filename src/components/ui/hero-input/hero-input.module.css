@@ -2,13 +2,16 @@
   --radius: var(--rounded-xl);
 
   position: relative;
+  display: flex;
+  align-items: center;
   width: 100%;
 
-  div {
+  &::after {
     position: absolute;
     inset: 0;
     z-index: -10;
     width: 100%;
+    content: '';
     background: var(--foreground);
     border-radius: var(--radius);
     transform: translate(0.5rem, 0.5rem);
@@ -16,50 +19,48 @@
     transition-delay: 75ms;
   }
 
-  input {
-    width: 100%;
-    padding: var(--spacing-md) var(--spacing-lg);
-    font-family: Rubik, sans-serif;
-    font-size: 1.5rem;
-    font-weight: 500;
-    color: var(--foreground);
-    outline: none;
-    outline-offset: 2px;
-    background: var(--surface);
-    border: 3px solid var(--foreground);
-    border-radius: var(--radius);
-    transition:
-      background 100ms ease-in-out,
-      color 100ms ease-in-out;
+  &:focus-within::after {
+    transform: translate(0, 0);
+  }
+}
 
-    &::placeholder {
-      color: var(--muted);
-    }
+.input {
+  position: relative;
+  z-index: 1;
+  flex: 1;
+  width: 100%;
+  padding: var(--spacing-md) var(--spacing-lg);
+  font-family: 'Rubik Variable', sans-serif;
+  font-size: 1.5rem;
+  font-weight: 500;
+  color: var(--foreground);
+  outline: none;
+  background: var(--surface);
+  border: 3px solid var(--foreground);
+  border-radius: var(--radius);
+  transition:
+    background 100ms ease-in-out,
+    color 100ms ease-in-out;
 
-    &[aria-invalid='true'] {
-      background: var(--error);
-
-      &::placeholder {
-        color: var(--error-hover);
-      }
-    }
+  &::placeholder {
+    color: var(--muted);
   }
 
-  &:focus-within {
-    div {
-      transform: translate(0, 0);
+  &[aria-invalid='true'] {
+    background: var(--error);
+
+    &::placeholder {
+      color: var(--error-hover);
     }
   }
 }
 
 @media (width >= 480px) {
-  .hero {
-    div {
-      transform: translate(0.75rem, 0.75rem);
-    }
+  .hero::after {
+    transform: translate(0.75rem, 0.75rem);
+  }
 
-    input {
-      font-size: 2rem;
-    }
+  .input {
+    font-size: 2rem;
   }
 }
