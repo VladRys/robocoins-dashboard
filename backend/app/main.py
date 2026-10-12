@@ -26,16 +26,23 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 app = FastAPI(title=cfg.PROJECT_NAME, lifespan=lifespan)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins= cfg.CORS_ORIGINS,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 app.include_router(router)
 
 
+# TODO: mb move redirects to frontend-side.
 @app.get("/registration", include_in_schema=False)
 async def registration_page() -> FileResponse:
     page_path = Path(__file__).resolve().parents[2] / "frontend" / "register.html"
+    return FileResponse(page_path, media_type="text/html")
+
+
+@app.get("/login", include_in_schema=False)
+async def login_page() -> FileResponse:
+    page_path = Path(__file__).resolve().parents[2] / "frontend" / "login.html"
     return FileResponse(page_path, media_type="text/html")
 
 

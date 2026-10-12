@@ -3,7 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from core.enums import StatusEnum
 from core.database import get_db
-from schemas.student import StudentCreateRequest, StudentResponse
+from schemas.student import StudentCreateRequest, StudentResponse, StudentProfileResponse
 from services.student import StudentService, get_student_service
 
 student_router = APIRouter(
@@ -36,13 +36,13 @@ async def create_student(
     )
 
 
-@student_router.get("/{student_id}", response_model=StudentResponse)
+@student_router.get("/{student_id}", response_model=StudentProfileResponse)
 async def get_student_by_id(
     student_id: int,
     service: StudentService = Depends(get_student_service),
-) -> StudentResponse:
+) -> StudentProfileResponse:
     student = await service.get_student_by_id(student_id)
     if student is None:
         raise HTTPException(status_code=404, detail="Student not found")
 
-    return StudentResponse.model_validate(student)
+    return StudentProfileResponse.model_validate(student)

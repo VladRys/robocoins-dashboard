@@ -6,7 +6,11 @@ from sqlalchemy import pool
 from alembic import context
 
 from app.core.database import Base
+from app.models.course import Course
+from app.models.group import Group
+from app.models.session import Session
 from app.models.student import Student
+from app.models.transaction import BalanceTransaction
 from app.core.config import Config as cfg
 
 # this is the Alembic Config object, which provides
