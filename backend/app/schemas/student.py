@@ -21,3 +21,14 @@ class StudentResponse(BaseModel):
 
     # Access code - keyword for auth.
     access_code: str
+
+class StudentProfileResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    status: str = StatusEnum.SUCCESS
+    code: int = 200
+    id: int
+    name: str
+    course_name: str
+    group_id: int
+    avatar: str | None = None
+    balance: int

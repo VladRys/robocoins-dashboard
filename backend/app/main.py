@@ -26,7 +26,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 app = FastAPI(title=cfg.PROJECT_NAME, lifespan=lifespan)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins= cfg.CORS_ORIGINS,
     allow_methods=["*"],
     allow_headers=["*"],
 )

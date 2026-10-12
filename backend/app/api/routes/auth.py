@@ -1,5 +1,5 @@
 from fastapi import Depends, HTTPException, APIRouter, Request, Response
-from schemas.student import StudentResponse
+from schemas.student import StudentProfileResponse, StudentResponse
 from schemas.auth import StudentLogin, StudentLoginResponse, StudentLogoutResponse
 from services.student import StudentService, get_student_service
 from services.session import SessionService, get_session_service
@@ -47,7 +47,7 @@ async def logout(request: Request, response: Response, session_service: SessionS
         message="Logout successful"
     )
 
-@auth_router.get("/me", response_model=StudentResponse)
+@auth_router.get("/me", response_model=StudentProfileResponse)
 async def get_current_student(request: Request, student_service: StudentService = Depends(get_student_service), session_service: SessionService = Depends(get_session_service)):
     token = request.cookies.get("session_token")
 
@@ -70,12 +70,11 @@ async def get_current_student(request: Request, student_service: StudentService 
 
     # Also can be redirected to /auth/login if the session is expired or invalid, but for now, we just return the student data.
     
-    return StudentResponse(
+    return StudentProfileResponse(
         id=student.id,
         name=student.name,
         group_id=student.group_id,
         course_name=student.course_name,
         avatar=student.avatar,
         balance=student.balance,
-        access_code=student.access_code
     )
