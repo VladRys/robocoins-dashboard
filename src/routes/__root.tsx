@@ -2,6 +2,8 @@ import { Outlet, createRootRouteWithContext } from '@tanstack/react-router'
 
 interface User {
   name: string
+  avatar: string
+  balance: number
   role: 'admin' | 'user'
 }
 

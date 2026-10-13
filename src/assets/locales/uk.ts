@@ -19,4 +19,12 @@ export default {
   'step.avatar.title': 'Обери аватар',
   'step.view.title': 'Правильно?',
   'text.group': 'Група',
+  'profile.balance.amount': '{$count :number}',
+  'profile.balance.caption': `
+    .input {$count :number}
+    .match $count
+    one {{робокоїн}}
+    few {{робокоїни}}
+    many {{робокоїнів}}
+    * {{робокоїна}}`,
 }

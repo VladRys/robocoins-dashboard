@@ -1,0 +1,52 @@
+.page {
+  position: relative;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  height: 100%;
+  padding: var(--spacing-xl);
+  overflow: hidden;
+}
+
+.coins {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  font-size: 150vw;
+  color: var(--brand);
+  pointer-events: none;
+  opacity: 0.12;
+  transform: translate(-50%, -55%);
+}
+
+.header {
+  z-index: 1;
+  display: flex;
+  gap: var(--spacing-md);
+  align-items: center;
+}
+
+.avatar {
+  flex-shrink: 0;
+  width: var(--spacing-2xl);
+  height: var(--spacing-2xl);
+}
+
+.balance {
+  z-index: 1;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.amount {
+  font-family: 'Rubik Variable', sans-serif;
+  font-size: clamp(5rem, 26vw, 13rem);
+  font-weight: 900;
+  line-height: 0.9;
+  color: var(--foreground);
+}
