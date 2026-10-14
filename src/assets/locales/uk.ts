@@ -19,6 +19,42 @@ export default {
   'step.avatar.title': 'Обери аватар',
   'step.view.title': 'Правильно?',
   'text.group': 'Група',
+  'group.select.title': 'Обери групу',
+  'group.filter.all': 'Всі ({$count :number})',
+  'group.theme.game-dev': 'GameDev',
+  'group.theme.web': 'Web',
+  'group.theme.embedded': 'Embedded',
+  'group.students-count': `
+    .input {$count :number}
+    .match $count
+    one {{{$count} учень}}
+    few {{{$count} учні}}
+    many {{{$count} учнів}}
+    * {{{$count} учня}}`,
+  'group.back': 'Назад до вибору груп',
+  'student.empty': 'Учнів за вашим запитом не знайдено',
+  'field.student-search.placeholder': 'Пошук учня за іменем...',
+  'action.clear-search.title': 'Очистити пошук',
+  'sort.title': 'Сортування',
+  'sort.students': 'Сортування учнів',
+  'sort.name-asc': "Ім'я: А → Я",
+  'sort.name-desc': "Ім'я: Я → А",
+  'sort.balance-desc': 'Баланс: за спаданням',
+  'sort.balance-asc': 'Баланс: за зростанням',
+  'award.reason.label': 'Оберіть причину',
+  'award.history.title': 'Історія нагород',
+  'award.history.empty': 'Історія нагород порожня',
+  'action.revert.title': 'Скасувати',
+  'reason.activity': 'Активність на уроці',
+  'reason.homework': 'Домашнє завдання',
+  'reason.teamwork': 'Допомога команді',
+  'reason.answer': 'Гарна відповідь',
+  'reason.initiative': 'Ініціатива',
+  'reason.discipline': 'Порушення дисципліни',
+  'reason.mistake': 'Помилкове нарахування',
+  'reason.late': 'Запізнення на урок',
+  'reason.incomplete': 'Невиконання завдання',
+  'reason.other': 'Інше',
   'profile.balance.amount': '{$count :number}',
   'profile.balance.caption': `
     .input {$count :number}

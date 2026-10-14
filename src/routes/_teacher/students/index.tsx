@@ -1,9 +1,8 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, redirect } from '@tanstack/react-router'
 
 export const Route = createFileRoute('/_teacher/students/')({
-  component: RouteComponent,
+  beforeLoad: () => {
+    throw redirect({ to: '/group' })
+  },
+  component: () => null,
 })
-
-function RouteComponent() {
-  return <div>Hello "/(teacher)/dashboard/"!</div>
-}

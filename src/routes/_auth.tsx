@@ -7,7 +7,7 @@ export const Route = createFileRoute('/_auth')({
   component: RouteComponent,
   beforeLoad: ({ context }) => {
     if (context.user?.role === 'student') throw redirect({ to: '/' })
-    if (context.user?.role === 'teacher') throw redirect({ to: '/students' })
+    if (context.user?.role === 'teacher') throw redirect({ to: '/group' })
   },
 })
 

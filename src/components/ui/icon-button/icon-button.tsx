@@ -4,13 +4,22 @@ import { cn } from 'cn'
 import styles from './icon-button.module.css'
 
 export interface IconButtonProps extends ButtonPrimitive.Props {
-  variant: 'contain'
-  size: 'sm' | 'md' | 'lg'
+  variant?: 'contain'
+  size?: 'sm' | 'md' | 'lg'
 }
 
-export function IconButton({ variant, size, children, ...props }: IconButtonProps) {
+export function IconButton({
+  variant = 'contain',
+  size = 'md',
+  className,
+  children,
+  ...props
+}: IconButtonProps) {
   return (
-    <ButtonPrimitive {...props} className={cn(styles.button, styles[variant], styles[size])}>
+    <ButtonPrimitive
+      {...props}
+      className={cn(styles.button, styles[variant], styles[size], className)}
+    >
       {children}
     </ButtonPrimitive>
   )

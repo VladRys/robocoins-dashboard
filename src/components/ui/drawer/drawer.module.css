@@ -1,0 +1,192 @@
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  min-height: 100dvh;
+  background: oklch(0% 0 0deg / 45%);
+  opacity: calc(1 - var(--drawer-swipe-progress, 0));
+  transition: opacity 450ms cubic-bezier(0.32, 0.72, 0, 1);
+
+  &[data-starting-style],
+  &[data-ending-style] {
+    opacity: 0;
+  }
+
+  &[data-ending-style] {
+    pointer-events: none;
+    transition-duration: calc(var(--drawer-swipe-strength, 1) * 400ms);
+  }
+
+  &[data-swiping] {
+    transition-duration: 0ms;
+  }
+}
+
+.viewport {
+  position: fixed;
+  inset: 0;
+  z-index: 101;
+  pointer-events: none;
+
+  &[data-modal='true'] {
+    pointer-events: auto;
+  }
+}
+
+.popup {
+  position: fixed;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  outline: none;
+  background: var(--surface);
+  transform: translate3d(var(--translate-x, 0), var(--translate-y, 0), 0);
+  transition: transform 450ms cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: transform;
+
+  &[data-starting-style],
+  &[data-ending-style] {
+    transform: var(--closed-transform);
+  }
+
+  &[data-ending-style] {
+    transition-duration: calc(var(--drawer-swipe-strength, 1) * 400ms);
+  }
+
+  &[data-swiping] {
+    transition-duration: 0ms;
+  }
+
+  &::after {
+    position: absolute;
+    pointer-events: none;
+    content: '';
+    background: var(--surface);
+  }
+
+  &[data-swipe-direction='down'] {
+    --closed-transform: translate3d(0, 100%, 0);
+    --translate-y: calc(var(--drawer-snap-point-offset, 0px) + var(--drawer-swipe-movement-y, 0px));
+
+    right: 0;
+    bottom: 0;
+    left: 0;
+    max-width: 30rem;
+    max-height: calc(100dvh - 3rem);
+    margin: 0 auto;
+    border-radius: 1.25rem 1.25rem 0 0;
+    box-shadow: 0 -4px 24px oklch(0% 0 0deg / 15%);
+
+    &::after {
+      inset: 100% 0 auto;
+      height: 3rem;
+    }
+  }
+
+  &[data-swipe-direction='up'] {
+    --closed-transform: translate3d(0, -100%, 0);
+    --translate-y: calc(var(--drawer-snap-point-offset, 0px) + var(--drawer-swipe-movement-y, 0px));
+
+    top: 0;
+    right: 0;
+    left: 0;
+    max-width: 30rem;
+    max-height: calc(100dvh - 3rem);
+    margin: 0 auto;
+    border-radius: 0 0 1.25rem 1.25rem;
+    box-shadow: 0 4px 24px oklch(0% 0 0deg / 15%);
+
+    &::after {
+      inset: auto 0 100%;
+      height: 3rem;
+    }
+  }
+
+  &[data-swipe-direction='left'] {
+    --closed-transform: translate3d(-100%, 0, 0);
+    --translate-x: var(--drawer-swipe-movement-x, 0px);
+
+    top: 0;
+    bottom: 0;
+    left: 0;
+    width: min(75%, 24rem);
+    border-radius: 0 1.25rem 1.25rem 0;
+    box-shadow: 4px 0 24px oklch(0% 0 0deg / 15%);
+
+    &::after {
+      inset: 0 100% 0 auto;
+      width: 3rem;
+    }
+  }
+
+  &[data-swipe-direction='right'] {
+    --closed-transform: translate3d(100%, 0, 0);
+    --translate-x: var(--drawer-swipe-movement-x, 0px);
+
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: min(75%, 24rem);
+    border-radius: 1.25rem 0 0 1.25rem;
+    box-shadow: -4px 0 24px oklch(0% 0 0deg / 15%);
+
+    &::after {
+      inset: 0 auto 0 100%;
+      width: 3rem;
+    }
+  }
+}
+
+.swipe-handle {
+  flex-shrink: 0;
+  align-self: center;
+  width: 2.5rem;
+  height: 0.25rem;
+  margin-top: var(--spacing-md);
+  cursor: grab;
+  background: var(--muted);
+  border-radius: var(--rounded-full);
+
+  &:active {
+    cursor: grabbing;
+  }
+}
+
+.content {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--spacing-lg);
+  min-height: 0;
+  padding: var(--spacing-md) var(--spacing-lg) var(--spacing-2xl);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border-radius: inherit;
+}
+
+.header {
+  display: flex;
+  flex-shrink: 0;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
+.footer {
+  display: flex;
+  flex-shrink: 0;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  margin-top: auto;
+}
+
+.title {
+  font-size: 1.0625rem;
+  font-weight: 700;
+  color: var(--foreground);
+}
+
+.description {
+  font-size: 0.875rem;
+  color: var(--muted-foreground);
+  text-wrap: balance;
+}

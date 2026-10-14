@@ -26,7 +26,8 @@ Single-context layout: root `GLOSSARY.md` plus `docs/adr/`. See `docs/agents/dom
 
 1. **Page**: Define page component inline in `index.tsx`. Consumes `model hook` and only renders JSX. Never extract the full page to `-components/`.
 2. **Slices**: `-constants`, `-utils`, `-types`, `-actions`, `-components`, `-hooks`, `-schemas`, `-lib` must be directories with `index.ts`.
-3. **Fractal**: `components` slice can nest however deep and contain other slices too.
+3. **Constants slice**: Split `-constants` into `constants.ts` (shared technical, non-render constants), `enum.ts` (enums, const objects, union types), and `index.ts` (barrel file). Local technical values (delays, debounce timeouts) belong in the component or hook where used. Render-only constants belong in the component file where they are rendered.
+4. **Fractal**: `components` slice can nest however deep and contain other slices too.
 
 ## Page Model Hooks
 
@@ -42,4 +43,4 @@ Component-local hooks may deliberately return a bare object of their state and h
 
 ## Verification
 
-After each change run scoped `vp check ...` (e.g. `vp check ./src/main.tsx`) and `vp exec stylelint ...` (e.g. `vp exec stylelint ./src/assets/styles/global.css`) if `css` is changed.
+After each change run `vpr check:fix`.

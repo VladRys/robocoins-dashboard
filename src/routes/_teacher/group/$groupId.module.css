@@ -1,0 +1,144 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+  width: 100%;
+  max-width: 30rem;
+  min-height: 100vh;
+  padding: var(--spacing-md) var(--spacing-md) 4rem;
+  margin: 0 auto;
+}
+
+.header {
+  display: grid;
+  grid-template-areas:
+    'title back'
+    'schedule back';
+  grid-template-columns: minmax(0, 1fr) auto;
+  column-gap: var(--spacing-sm);
+  align-items: center;
+  width: 100%;
+}
+
+@media (width >= 384px) {
+  .header {
+    grid-template-areas: 'title schedule back';
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  }
+
+  .schedule {
+    text-align: center;
+  }
+}
+
+.title {
+  grid-area: title;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 1.125rem;
+  font-weight: 800;
+  color: var(--foreground);
+  text-align: left;
+  white-space: nowrap;
+}
+
+.schedule {
+  grid-area: schedule;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--muted-foreground);
+  text-align: left;
+  white-space: nowrap;
+}
+
+.back-btn {
+  grid-area: back;
+  justify-self: end;
+}
+
+.student-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+  width: 100%;
+}
+
+.student-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem var(--spacing-md);
+  cursor: pointer;
+  background: var(--surface);
+  border: none;
+  border-radius: var(--rounded-lg);
+  transition:
+    transform 0.15s ease,
+    background-color 0.15s ease;
+}
+
+.student-card:active {
+  background: var(--taupe-100);
+  transform: scale(0.99);
+}
+
+.card-left {
+  display: flex;
+  gap: var(--spacing-sm);
+  align-items: center;
+  min-width: 0;
+}
+
+.avatar {
+  flex-shrink: 0;
+  width: 2.5rem;
+  height: 2.5rem;
+}
+
+.student-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--foreground);
+  white-space: nowrap;
+}
+
+.card-right {
+  display: flex;
+  flex-shrink: 0;
+  gap: var(--spacing-xs);
+  align-items: center;
+}
+
+.balance-badge {
+  display: flex;
+  gap: 0.25rem;
+  align-items: center;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--foreground);
+  background: var(--taupe-100);
+  border-radius: var(--rounded-sm);
+}
+
+.coin-icon {
+  font-size: 1rem;
+  color: var(--brand);
+}
+
+.caret-icon {
+  font-size: 1rem;
+  color: var(--muted-foreground);
+}
+
+.empty {
+  padding: var(--spacing-xl);
+  font-size: 0.8125rem;
+  color: var(--muted-foreground);
+  text-align: center;
+  background: var(--surface);
+  border: 1px dashed var(--muted);
+  border-radius: var(--rounded-lg);
+}

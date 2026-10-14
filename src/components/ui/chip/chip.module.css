@@ -1,0 +1,55 @@
+.chip {
+  display: flex;
+  flex-shrink: 0;
+  gap: var(--spacing-xs);
+  align-items: center;
+  justify-content: center;
+  font-family: inherit;
+  font-weight: 600;
+  color: var(--chip-color, var(--foreground));
+  white-space: nowrap;
+  cursor: pointer;
+  outline: none;
+  background: var(--chip-background, var(--surface));
+  border: none;
+  border-radius: var(--rounded-full);
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease,
+    transform 0.15s ease;
+
+  &:focus-visible {
+    box-shadow: 0 0 0 2px var(--brand);
+  }
+
+  &:active {
+    transform: scale(0.97);
+  }
+
+  &[data-disabled] {
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
+}
+
+.md {
+  height: 2.25rem;
+  padding: 0 var(--spacing-md);
+  font-size: 0.8125rem;
+}
+
+.lg {
+  height: 3.25rem;
+  padding: 0 1.25rem;
+  font-size: 1rem;
+}
+
+.brand[aria-pressed='true'] {
+  color: var(--surface);
+  background: var(--brand);
+}
+
+.error[aria-pressed='true'] {
+  color: var(--surface);
+  background: var(--red-600);
+}

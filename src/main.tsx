@@ -13,10 +13,17 @@ import { queryClient } from '#/lib/query'
 
 import { routeTree } from '../generated/routeTree.gen'
 
+const devTeacherUser = {
+  name: 'Олена Петрівна',
+  avatar: 'star-struck' as const,
+  balance: 1000,
+  role: 'teacher' as const,
+}
+
 const router = createRouter({
   routeTree,
   context: {
-    user: null,
+    user: devTeacherUser,
   },
 })
 
