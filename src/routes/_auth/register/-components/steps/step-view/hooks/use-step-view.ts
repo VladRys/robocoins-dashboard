@@ -3,7 +3,7 @@ import { useNavigate } from '@tanstack/react-router'
 import { useCreateStudentStudentRegisterPost } from '#/api/hooks'
 import { LOCALSTORAGE_DID_REGISTER } from '#/routes/-constants'
 
-import { AVATARS, LOCALSTORAGE_REGISTER_STATE } from '../../../../-constants'
+import { LOCALSTORAGE_REGISTER_STATE } from '../../../../-constants'
 import { CompleteRegisterStateSchema } from '../../../../-schemas'
 import { useRegisterContext } from '../../../register-provider'
 
