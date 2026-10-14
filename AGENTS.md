@@ -41,6 +41,10 @@ Single-context layout: root `GLOSSARY.md` plus `docs/adr/`. See `docs/agents/dom
 
 Component-local hooks may deliberately return a bare object of their state and handlers instead of this shape. A hook that does so is not a model hook, and its return value must not be destructured.
 
+## Need to know
+
+1. A non .tsx file that uses Unocss icons needs `// @unocss-include` at the top.
+
 ## Verification
 
 After each change run `vpr check:fix`.

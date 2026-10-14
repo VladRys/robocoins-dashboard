@@ -1,3 +1,5 @@
+// @unocss-include
+
 import { Group, GroupTheme, Student, StudentAward } from '../types'
 
 export const MOCK_GROUPS: Group[] = [
@@ -15,7 +17,7 @@ export const MOCK_GROUPS: Group[] = [
     theme: GroupTheme.GameDev,
     studentCount: 5,
     schedule: 'Сб, Нд 11:00',
-    icon: 'i-ph:shapes',
+    icon: 'i-ph:copyright',
   },
   {
     id: 'web-middle',
