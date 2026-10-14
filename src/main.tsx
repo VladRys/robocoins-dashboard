@@ -13,11 +13,11 @@ import { queryClient } from '#/lib/query'
 
 import { routeTree } from '../generated/routeTree.gen'
 
-const user = null
-
 const router = createRouter({
   routeTree,
-  context: { user },
+  context: {
+    user: null,
+  },
 })
 
 declare module '@tanstack/react-router' {

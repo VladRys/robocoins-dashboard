@@ -73,6 +73,12 @@
       "skillPath": "skills/engineering/improve-codebase-architecture/SKILL.md",
       "computedHash": "ac2c94885f34ff8492dc12aa4543182f661f32ea1722b8d6b6c2c7045af33ae3"
     },
+    "messageformat-2": {
+      "source": "iivanpopov/kanjou",
+      "sourceType": "github",
+      "skillPath": "skills/messageformat-2/SKILL.md",
+      "computedHash": "387903ca28a78c3dc2ab0d9e9c69d84bcb54206a2ec241fa1d6d3a6919b98689"
+    },
     "pr": {
       "source": "mattpocock/skills",
       "sourceType": "github",
