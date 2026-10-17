@@ -7,7 +7,7 @@ import pytest
 from alembic.migration import MigrationContext
 from alembic.operations import Operations
 from fastapi import Request
-from sqlalchemy import create_engine, text
+from sqlalchemy import create_engine, inspect, text
 from sqlalchemy.engine import URL
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from unittest.mock import AsyncMock
@@ -24,7 +24,7 @@ from api.routes.group import (
 from api.routes.auth import get_current_student
 from api.routes.student import create_student
 from api.routes.student import get_student_by_id
-from api.routes.teacher import register_teacher
+from api.routes.teacher import get_teacher_profile, register_teacher
 from api.routes.users import get_user_by_id, get_users
 from app.core.database import Base
 from models.course import Course
@@ -124,6 +124,8 @@ def test_student_and_teacher_registration_and_group_assignments(tmp_path: Path):
                 )
                 assert teacher_one.role == "teacher"
                 assert teacher_two.role == "teacher"
+                assert teacher_one.user_id == teacher_one.id
+                assert teacher_one.model_dump()["code"] == 200
 
                 course = Course(name="Python")
                 session.add(course)
@@ -215,6 +217,34 @@ def test_student_and_teacher_registration_and_group_assignments(tmp_path: Path):
                 assert assigned_group.teacher_2_id is None
                 assert len(await user_service.get_users()) == 3
 
+                teacher_profile = await get_teacher_profile(
+                    teacher_two.id,
+                    user_service,
+                )
+                assert teacher_profile.id == teacher_profile.user_id == teacher_two.id
+                assert teacher_profile.role == "teacher"
+                assert [
+                    (
+                        group.id,
+                        group.name,
+                        group.course_id,
+                        group.course_name,
+                        group.students_count,
+                    )
+                    for group in teacher_profile.groups
+                ] == [
+                    (
+                        group_response.id,
+                        "Group A",
+                        course.id,
+                        "Python",
+                        1,
+                    )
+                ]
+                assert (
+                    await user_service.get_teacher_profile(teacher_one.id)
+                )[1] == []
+
                 with pytest.raises(ValueError, match="at most two"):
                     await group_service.assign_group_teachers(
                         group_response.id,
@@ -265,6 +295,146 @@ def test_user_migration_creates_accounts_for_existing_students():
             ).scalar_one()
             assert migrated_user == (123456, "Existing Student", "student")
             assert migrated_student == migrated_user.id
+    finally:
+        engine.dispose()
+
+
+def test_teacher_profile_migration_syncs_manual_user_inserts_and_group_assignments():
+    migration_path = (
+        Path(__file__).resolve().parents[1]
+        / "alembic"
+        / "versions"
+        / "b7c3d1e9a204_sync_teacher_profiles_with_user_roles.py"
+    )
+    spec = importlib.util.spec_from_file_location(
+        "sync_teacher_profiles_migration",
+        migration_path,
+    )
+    assert spec is not None and spec.loader is not None
+    migration = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(migration)
+
+    engine = create_engine("sqlite://")
+    try:
+        with engine.connect() as connection:
+            connection.execute(text("PRAGMA foreign_keys=ON"))
+            connection.commit()
+
+        with engine.begin() as connection:
+            connection.execute(
+                text(
+                    "CREATE TABLE users ("
+                    "id INTEGER PRIMARY KEY, "
+                    "name VARCHAR NOT NULL, "
+                    "role VARCHAR(20) NOT NULL)"
+                )
+            )
+            connection.execute(
+                text(
+                    "CREATE TABLE teachers ("
+                    "user_id INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE)"
+                )
+            )
+            connection.execute(
+                text(
+                    "CREATE TABLE groups ("
+                    "id INTEGER PRIMARY KEY, "
+                    "teacher_1_id INTEGER REFERENCES teachers(user_id) ON DELETE SET NULL)"
+                )
+            )
+            connection.execute(
+                text(
+                    "INSERT INTO users (id, name, role) "
+                    "VALUES (1, 'Existing Teacher', 'teacher')"
+                )
+            )
+
+            with Operations.context(MigrationContext.configure(connection)):
+                migration.upgrade()
+
+            assert connection.execute(
+                text("SELECT user_id FROM teachers")
+            ).scalars().all() == [1]
+
+            connection.execute(
+                text(
+                    "INSERT INTO users (id, name, role) "
+                    "VALUES (2, 'Manual Teacher', 'teacher')"
+                )
+            )
+            connection.execute(
+                text("INSERT INTO groups (id, teacher_1_id) VALUES (1, 2)")
+            )
+            assert connection.execute(
+                text(
+                    "SELECT teacher_1_id FROM groups WHERE id = 1"
+                )
+            ).scalar_one() == 2
+
+            connection.execute(
+                text("UPDATE users SET role = 'student' WHERE id = 2")
+            )
+            assert connection.execute(
+                text("SELECT teacher_1_id FROM groups WHERE id = 1")
+            ).scalar_one() is None
+    finally:
+        engine.dispose()
+
+
+def test_access_code_migration_handles_an_existing_column():
+    migration_path = (
+        Path(__file__).resolve().parents[1]
+        / "alembic"
+        / "versions"
+        / "56b9e2b65399_add_access_code_to_students.py"
+    )
+    spec = importlib.util.spec_from_file_location(
+        "add_access_code_migration",
+        migration_path,
+    )
+    assert spec is not None and spec.loader is not None
+    migration = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(migration)
+
+    engine = create_engine("sqlite://")
+    try:
+        with engine.begin() as connection:
+            connection.execute(
+                text(
+                    "CREATE TABLE students ("
+                    "id INTEGER PRIMARY KEY, "
+                    "access_code VARCHAR)"
+                )
+            )
+            connection.execute(
+                text(
+                    "INSERT INTO students (id, access_code) VALUES "
+                    "(1, 'EXIST123'), (2, NULL)"
+                )
+            )
+
+            with Operations.context(MigrationContext.configure(connection)):
+                migration.upgrade()
+
+            access_codes = connection.execute(
+                text("SELECT access_code FROM students ORDER BY id")
+            ).scalars().all()
+            assert access_codes[0] == "EXIST123"
+            assert access_codes[1]
+            assert len(access_codes[1]) == 8
+            assert connection.execute(
+                text("PRAGMA table_info(students)")
+            ).all()[1][3] == 1
+            assert any(
+                constraint["column_names"] == ["access_code"]
+                for constraint in inspect(connection).get_unique_constraints(
+                    "students"
+                )
+            ) or any(
+                index["unique"]
+                and index["column_names"] == ["access_code"]
+                for index in inspect(connection).get_indexes("students")
+            )
     finally:
         engine.dispose()
 

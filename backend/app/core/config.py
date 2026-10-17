@@ -1,7 +1,14 @@
 import os
 from collections.abc import Callable
 from enum import StrEnum
+from pathlib import Path
+
+from dotenv import load_dotenv
+
 from core.enums import ProductMode
+
+load_dotenv(Path(__file__).resolve().parents[2] / ".env")
+
 
 def dev_database_url() -> str:
     return os.getenv("DEV_DATABASE_URL", "sqlite+aiosqlite:///./dev.db")

@@ -2,6 +2,7 @@ from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
+from models.group import Group
 from models.user import User
 from repositories.users import UserRepository
 
@@ -15,6 +16,12 @@ class UserService:
 
     async def get_users(self) -> list[User]:
         return await self.repository.get_users()
+
+    async def get_teacher_profile(
+        self,
+        user_id: int,
+    ) -> tuple[User, list[Group]] | None:
+        return await self.repository.get_teacher_profile(user_id)
 
     async def register_teacher(self, name: str) -> User:
         return await self.repository.create_teacher(name)
