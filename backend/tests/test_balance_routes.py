@@ -46,7 +46,7 @@ def test_balance_changes_are_atomic_and_recorded_in_history(tmp_path: Path):
                 group = Group(name="Group A", course_id=course.id)
                 session.add(group)
                 await session.flush()
-                user = User(name="Alex", role="student")
+                user = User(name="Alex", role="student", access_code="CODE1234")
                 session.add(user)
                 await session.flush()
                 session.add(

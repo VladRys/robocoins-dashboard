@@ -76,7 +76,7 @@ def test_get_groups_by_course_returns_groups_without_lazy_loading(tmp_path: Path
                 group = Group(name="Group A", course_id=course.id)
                 session.add(group)
                 await session.flush()
-                user = User(name="Alex", role="student")
+                user = User(name="Alex", role="student", access_code="CODE1234")
                 session.add(user)
                 await session.flush()
                 session.add(Student(

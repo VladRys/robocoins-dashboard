@@ -6,7 +6,7 @@ from pathlib import Path
 import pytest
 from alembic.migration import MigrationContext
 from alembic.operations import Operations
-from fastapi import Request
+from fastapi import Request, Response
 from sqlalchemy import create_engine, inspect, text
 from sqlalchemy.engine import URL
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
@@ -21,7 +21,7 @@ from api.routes.group import (
     get_group_by_name,
     get_groups_by_course_id,
 )
-from api.routes.auth import get_current_student
+from api.routes.auth import get_current_user, login
 from api.routes.student import create_student
 from api.routes.student import get_student_by_id
 from api.routes.teacher import get_teacher_profile, register_teacher
@@ -32,14 +32,39 @@ from models.student import Student
 from repositories.group import GroupRepository
 from repositories.course import CourseRepository
 from repositories.student import StudentRepository
+from repositories.session import SessionRepository
 from repositories.users import UserRepository
 from schemas.group import GroupCreateRequest
+from schemas.auth import UserLoginRequest
 from schemas.student import StudentCreateRequest
 from schemas.teacher import TeacherRegistrationRequest
 from services.group import GroupService
 from services.course import CourseService
 from services.student import StudentService
+from services.session import SessionService
 from services.users import UserService
+
+
+def _auth_request(path: str, cookie: str | None = None) -> Request:
+    headers = [(b"content-type", b"application/json")]
+    if cookie is not None:
+        headers.append((b"cookie", cookie.encode("ascii")))
+    return Request(
+        {
+            "type": "http",
+            "asgi": {"version": "3.0"},
+            "http_version": "1.1",
+            "method": "POST" if path == "/auth/login" else "GET",
+            "scheme": "http",
+            "path": path,
+            "raw_path": path.encode("ascii"),
+            "query_string": b"",
+            "headers": headers,
+            "server": ("test", 80),
+            "client": ("test", 123),
+            "root_path": "",
+        }
+    )
 
 
 def test_auth_me_returns_user_profile_fields():
@@ -57,7 +82,7 @@ def test_auth_me_returns_user_profile_fields():
         )
 
         class ActiveSession:
-            student_id = student.id
+            user_id = student.user_id
 
             def is_expired(self) -> bool:
                 return False
@@ -66,33 +91,24 @@ def test_auth_me_returns_user_profile_fields():
         session_service.get_session_by_token.return_value = ActiveSession()
         student_service = AsyncMock()
         student_service.get_student_by_id.return_value = student
-        request = Request(
-            {
-                "type": "http",
-                "asgi": {"version": "3.0"},
-                "http_version": "1.1",
-                "method": "GET",
-                "scheme": "http",
-                "path": "/auth/me",
-                "raw_path": b"/auth/me",
-                "query_string": b"",
-                "headers": [(b"cookie", b"session_token=test-token")],
-                "server": ("test", 80),
-                "client": ("test", 123),
-                "root_path": "",
-            }
-        )
-
-        profile = await get_current_student(
-            request,
+        user_service = AsyncMock()
+        user_service.get_user_by_id.return_value = type(
+            "ActiveUser",
+            (),
+            {"id": student.user_id, "role": "student"},
+        )()
+        profile = await get_current_user(
+            _auth_request("/auth/me", "session_token=test-token"),
             student_service=student_service,
             session_service=session_service,
+            user_service=user_service,
         )
 
         assert profile.user_id == profile.id == student.user_id
         assert profile.role == "student"
         assert profile.model_dump(mode="json")["user_id"] == profile.id
         student_service.get_student_by_id.assert_awaited_once_with(student.id)
+        user_service.get_user_by_id.assert_awaited_once_with(student.user_id)
 
     asyncio.run(run_test())
 
@@ -126,6 +142,8 @@ def test_student_and_teacher_registration_and_group_assignments(tmp_path: Path):
                 assert teacher_two.role == "teacher"
                 assert teacher_one.user_id == teacher_one.id
                 assert teacher_one.model_dump()["code"] == 200
+                assert len(teacher_one.access_code) == 8
+                assert teacher_one.access_code != teacher_two.access_code
 
                 course = Course(name="Python")
                 session.add(course)
@@ -244,6 +262,53 @@ def test_student_and_teacher_registration_and_group_assignments(tmp_path: Path):
                 assert (
                     await user_service.get_teacher_profile(teacher_one.id)
                 )[1] == []
+
+                session_service = SessionService(SessionRepository(session))
+                teacher_login = await login(
+                    UserLoginRequest(code=teacher_two.access_code),
+                    Response(),
+                    _auth_request("/auth/login"),
+                    user_service,
+                    student_service,
+                    session_service,
+                )
+                assert teacher_login.user.role == "teacher"
+                teacher_session = await session_service.get_session_by_token(
+                    teacher_login.session_token
+                )
+                assert teacher_session is not None
+                assert teacher_session.user_id == teacher_two.id
+                assert teacher_session.student_id is None
+                teacher_me = await get_current_user(
+                    _auth_request(
+                        "/auth/me",
+                        f"session_token={teacher_login.session_token}",
+                    ),
+                    student_service,
+                    session_service,
+                    user_service,
+                )
+                assert teacher_me.role == "teacher"
+                assert teacher_me.id == teacher_two.id
+                assert [group.id for group in teacher_me.groups] == [
+                    group_response.id
+                ]
+
+                student_login = await login(
+                    UserLoginRequest(code=student_response.access_code),
+                    Response(),
+                    _auth_request("/auth/login"),
+                    user_service,
+                    student_service,
+                    session_service,
+                )
+                assert student_login.user.role == "student"
+                student_session = await session_service.get_session_by_token(
+                    student_login.session_token
+                )
+                assert student_session is not None
+                assert student_session.user_id == student_response.user_id
+                assert student_session.student_id == student_response.id
 
                 with pytest.raises(ValueError, match="at most two"):
                     await group_service.assign_group_teachers(
@@ -434,6 +499,93 @@ def test_access_code_migration_handles_an_existing_column():
                 index["unique"]
                 and index["column_names"] == ["access_code"]
                 for index in inspect(connection).get_indexes("students")
+            )
+    finally:
+        engine.dispose()
+
+
+def test_user_access_code_and_session_migration_preserves_student_sessions():
+    migration_path = (
+        Path(__file__).resolve().parents[1]
+        / "alembic"
+        / "versions"
+        / "c4f8a91d2e70_add_user_access_codes_and_teacher_sessions.py"
+    )
+    spec = importlib.util.spec_from_file_location(
+        "user_access_code_and_session_migration",
+        migration_path,
+    )
+    assert spec is not None and spec.loader is not None
+    migration = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(migration)
+
+    engine = create_engine("sqlite://")
+    try:
+        with engine.begin() as connection:
+            connection.execute(
+                text(
+                    "CREATE TABLE users ("
+                    "id INTEGER PRIMARY KEY, name VARCHAR NOT NULL, "
+                    "role VARCHAR(20) NOT NULL)"
+                )
+            )
+            connection.execute(
+                text(
+                    "CREATE TABLE students ("
+                    "id INTEGER PRIMARY KEY, user_id INTEGER NOT NULL, "
+                    "access_code VARCHAR NOT NULL)"
+                )
+            )
+            connection.execute(
+                text(
+                    "CREATE TABLE sessions ("
+                    "id INTEGER PRIMARY KEY, token_hash VARCHAR NOT NULL, "
+                    "student_id INTEGER NOT NULL, expires_at DATETIME NOT NULL)"
+                )
+            )
+            connection.execute(
+                text(
+                    "INSERT INTO users (id, name, role) VALUES "
+                    "(10, 'Student', 'student'), (20, 'Teacher', 'teacher')"
+                )
+            )
+            connection.execute(
+                text(
+                    "INSERT INTO students (id, user_id, access_code) "
+                    "VALUES (10, 10, 'STUD1234')"
+                )
+            )
+            connection.execute(
+                text(
+                    "INSERT INTO sessions (id, token_hash, student_id, expires_at) "
+                    "VALUES (1, 'hashed-token', 10, '2030-01-01 00:00:00')"
+                )
+            )
+
+            with Operations.context(MigrationContext.configure(connection)):
+                migration.upgrade()
+
+            assert connection.execute(
+                text("SELECT access_code FROM users WHERE id = 10")
+            ).scalar_one() == "STUD1234"
+            teacher_code = connection.execute(
+                text("SELECT access_code FROM users WHERE id = 20")
+            ).scalar_one()
+            assert len(teacher_code) == 8
+            assert teacher_code != "STUD1234"
+            assert connection.execute(
+                text("SELECT user_id FROM sessions WHERE id = 1")
+            ).scalar_one() == 10
+            session_columns = {
+                column["name"]: column
+                for column in inspect(connection).get_columns("sessions")
+            }
+            assert session_columns["user_id"]["nullable"] is False
+            assert session_columns["student_id"]["nullable"] is True
+            assert any(
+                foreign_key["referred_table"] == "users"
+                and foreign_key["constrained_columns"] == ["user_id"]
+                for foreign_key in inspect(connection).get_foreign_keys("sessions")
             )
     finally:
         engine.dispose()

@@ -17,6 +17,9 @@ class UserService:
     async def get_users(self) -> list[User]:
         return await self.repository.get_users()
 
+    async def get_user_by_access_code(self, access_code: str) -> User | None:
+        return await self.repository.get_user_by_access_code(access_code)
+
     async def get_teacher_profile(
         self,
         user_id: int,

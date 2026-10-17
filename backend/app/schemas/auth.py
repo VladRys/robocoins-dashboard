@@ -1,18 +1,29 @@
 from pydantic import BaseModel
 
+from app.core.enums import UserRole
 from core.enums import StatusEnum
-class StudentLogin(BaseModel):
-    # mb that good idea to left here name instead of access_code only :/
+
+
+class UserLoginRequest(BaseModel):
     code: str
 
 
-class StudentLoginResponse(BaseModel):
+class LoginUser(BaseModel):
+    id: int
+    user_id: int
+    name: str
+    role: UserRole
+
+
+class UserLoginResponse(BaseModel):
     message: str
     session_token: str
+    user: LoginUser
     status: str = StatusEnum.SUCCESS
     code: int = 200
 
-class StudentLogoutResponse(BaseModel):
+
+class UserLogoutResponse(BaseModel):
     message: str
     status: str = StatusEnum.SUCCESS
     code: int = 200

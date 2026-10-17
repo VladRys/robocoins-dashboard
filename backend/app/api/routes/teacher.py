@@ -4,7 +4,7 @@ from schemas.teacher import (
     TeacherGroupProfile,
     TeacherProfileResponse,
     TeacherRegistrationRequest,
-    TeacherResponse,
+    TeacherRegistrationResponse,
 )
 from services.users import UserService, get_user_service
 
@@ -15,19 +15,20 @@ teacher_router = APIRouter(
 )
 
 
-@teacher_router.post("/register", response_model=TeacherResponse)
+@teacher_router.post("/register", response_model=TeacherRegistrationResponse)
 async def register_teacher(
     request: TeacherRegistrationRequest,
     service: UserService = Depends(get_user_service),
-) -> TeacherResponse:
+) -> TeacherRegistrationResponse:
     teacher = await service.register_teacher(request.name)
     if teacher is None:
         raise HTTPException(status_code=500, detail="Failed to create teacher")
-    return TeacherResponse(
+    return TeacherRegistrationResponse(
         id=teacher.id,
         user_id=teacher.id,
         name=teacher.name,
         role=teacher.role,
+        access_code=teacher.access_code,
     )
 
 

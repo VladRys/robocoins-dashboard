@@ -1,11 +1,12 @@
 
-import random
 import uuid
 
 from fastapi import Depends
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
+from app.core.access_code import generate_access_code
 from models.student import Student
 from models.user import User
 from repositories.student import StudentRepository
@@ -25,19 +26,25 @@ class StudentService:
     @staticmethod
     def generate_access_code() -> str:
         """Generate a random access code. (symbols + digits)"""
-        characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
-        return "".join(random.choice(characters) for _ in range(8))
+        return generate_access_code()
 
     async def generate_unique_access_code(self) -> str:
         """Generate a unique access code."""
         while True:
             new_code = self.generate_access_code()
-            existing_student = await self.get_student_by_access_code(new_code)
-            if not existing_student:
+            existing_user = await self.db.scalar(
+                select(User.id).where(User.access_code == new_code)
+            )
+            if existing_user is None:
                 return new_code
 
     async def create_student(self, student: StudentCreateRequest) -> Student:
-        user = User(name=student.name, role=UserRole.STUDENT.value)
+        access_code = await self.generate_unique_access_code()
+        user = User(
+            name=student.name,
+            role=UserRole.STUDENT.value,
+            access_code=access_code,
+        )
         self.db.add(user)
         await self.db.flush()
         new_student = Student(
@@ -49,7 +56,7 @@ class StudentService:
             course_name=student.course_name,
             group_id=student.group_id,
             hash_access_key=self.generate_hash_access_key(),
-            access_code=await self.generate_unique_access_code(),
+            access_code=access_code,
         )
         return await self.repository.create_student(new_student)
 

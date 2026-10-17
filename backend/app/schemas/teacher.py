@@ -31,6 +31,10 @@ class TeacherProfileResponse(TeacherResponse):
     groups: list[TeacherGroupProfile] = Field(default_factory=list)
 
 
+class TeacherRegistrationResponse(TeacherResponse):
+    access_code: str
+
+
 class TeacherAssignmentRequest(BaseModel):
     teacher_ids: list[int] = Field(default_factory=list, max_length=2)
 

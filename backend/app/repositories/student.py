@@ -2,6 +2,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, update
 
 from models.student import Student
+from models.user import User
 
 class StudentRepository:
     def __init__(self, session: AsyncSession):
@@ -36,7 +37,9 @@ class StudentRepository:
     async def get_student_by_access_code(self, access_code: str) -> Student | None:
         """Fetch a student by their access code."""
         result = await self.session.execute(
-            select(Student).where(Student.access_code == access_code)
+            select(Student)
+            .join(User, User.id == Student.user_id)
+            .where(User.access_code == access_code)
         )
         return result.scalar_one_or_none()
     
