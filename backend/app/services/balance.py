@@ -1,7 +1,7 @@
-from core.database import get_db
+from app.core.database import get_db
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.transaction import BalanceTransaction
+from models.transaction import BalanceTransaction
 from repositories.student import StudentRepository
 from repositories.transaction import TransactionRepository
 from schemas.balance import BalanceChangeRequest

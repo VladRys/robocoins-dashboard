@@ -25,6 +25,11 @@ async def get_courses(
                     course_id=group.course_id,
                     students=[student.id for student in group.students],
                     students_count=len(group.students),
+                    teacher_ids=[
+                        teacher_id
+                        for teacher_id in (group.teacher_1_id, group.teacher_2_id)
+                        if teacher_id is not None
+                    ],
                 )
                 for group in course.groups
             ],

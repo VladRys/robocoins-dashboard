@@ -18,6 +18,9 @@ from app.core.database import Base
 from models.course import Course
 from models.group import Group
 from models.student import Student
+from models.teacher import Teacher
+from models.transaction import BalanceTransaction
+from models.user import User
 from repositories.student import StudentRepository
 from repositories.transaction import TransactionRepository
 from schemas.balance import BalanceChangeRequest
@@ -43,9 +46,13 @@ def test_balance_changes_are_atomic_and_recorded_in_history(tmp_path: Path):
                 group = Group(name="Group A", course_id=course.id)
                 session.add(group)
                 await session.flush()
+                user = User(name="Alex", role="student")
+                session.add(user)
+                await session.flush()
                 session.add(
                     Student(
-                        id=123456,
+                        id=user.id,
+                        user_id=user.id,
                         name="Alex",
                         group_id=group.id,
                         course_name=course.name,
@@ -62,7 +69,7 @@ def test_balance_changes_are_atomic_and_recorded_in_history(tmp_path: Path):
                     TransactionRepository(session),
                 )
                 empty_history = await get_student_transaction_history(
-                    123456,
+                    user.id,
                     limit=50,
                     offset=0,
                     service=service,
@@ -72,7 +79,7 @@ def test_balance_changes_are_atomic_and_recorded_in_history(tmp_path: Path):
                 assert empty_history.code == 200
 
                 deposit = await change_student_balance(
-                    123456,
+                    user.id,
                     BalanceChangeRequest(
                         operation="deposit",
                         amount=10,
@@ -81,7 +88,7 @@ def test_balance_changes_are_atomic_and_recorded_in_history(tmp_path: Path):
                     service,
                 )
                 deduction = await change_student_balance(
-                    123456,
+                    user.id,
                     BalanceChangeRequest(operation="deduct", amount=4),
                     service,
                 )
@@ -91,10 +98,10 @@ def test_balance_changes_are_atomic_and_recorded_in_history(tmp_path: Path):
                 assert deposit.transaction.amount == 10
                 assert deduction.balance == 6
                 assert deduction.transaction.operation == "deduct"
-                assert (await get_student_balance_by_id(123456, service)).balance == 6
+                assert (await get_student_balance_by_id(user.id, service)).balance == 6
 
                 history = await get_student_transaction_history(
-                    123456,
+                    user.id,
                     limit=50,
                     offset=0,
                     service=service,
@@ -108,18 +115,18 @@ def test_balance_changes_are_atomic_and_recorded_in_history(tmp_path: Path):
 
                 with pytest.raises(HTTPException) as error:
                     await change_student_balance(
-                        123456,
+                        user.id,
                         BalanceChangeRequest(operation="deduct", amount=7),
                         service,
                     )
                 assert error.value.status_code == 409
 
                 saved_student = await StudentRepository(session).get_student_by_id(
-                    123456
+                    user.id
                 )
                 saved_transactions = await TransactionRepository(
                     session
-                ).get_by_student_id(123456, limit=50)
+                ).get_by_student_id(user.id, limit=50)
                 assert saved_student is not None
                 assert saved_student.balance == 6
                 assert len(saved_transactions) == 2

@@ -85,8 +85,18 @@ Built with:
 
 | Role        | Description                        |
 | ----------- | ---------------------------------- |
-| `TEACHER` | Manage students, coins and rewards |
-| `STUDENT` | Earn coins and purchase rewards    |
+| `teacher` | Manage students, coins and rewards |
+| `student` | Earn coins and purchase rewards    |
+
+Every account is stored in `users` with one of these roles. Student registration
+at `POST /student/register` creates both the user and the existing student
+profile; `POST /teacher/register` creates a teacher account. Teachers can be
+assigned when creating a group with `teacher_ids`, or later with
+`PUT /group/id/{group_id}/teachers`. A group accepts up to two distinct teacher
+IDs. Use `GET /users` and `GET /users/{user_id}` to read user accounts.
+Student profile `id` and `user_id` are the same account ID.
+
+Student authentication continues to use the existing access-code session flow.
 
 ---
 
@@ -162,6 +172,9 @@ python -m venv .venv
 source .venv/bin/activate
 
 pip install -r requirements.txt
+
+# For an existing database already managed by Alembic:
+alembic upgrade head
 
 cd app
 uvicorn main:app --reload

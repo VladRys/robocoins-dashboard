@@ -1,8 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from core.enums import StatusEnum
-from core.database import get_db
 from schemas.student import StudentCreateRequest, StudentResponse, StudentProfileResponse
 from services.student import StudentService, get_student_service
 
@@ -14,7 +12,6 @@ student_router = APIRouter(
 @student_router.post("/register", response_model=StudentResponse)
 async def create_student(
     student: StudentCreateRequest,
-    db: AsyncSession = Depends(get_db),
     service: StudentService = Depends(get_student_service),
 ) -> StudentResponse:
     new_student = await service.create_student(student)
@@ -24,6 +21,7 @@ async def create_student(
 
     return StudentResponse(
         id=new_student.id,
+        user_id=new_student.user_id,
         name=new_student.name,
         group_id=new_student.group_id,
         course_name=new_student.course_name,

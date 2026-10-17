@@ -5,10 +5,12 @@ import uuid
 from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from core.database import get_db
+from app.core.database import get_db
 from models.student import Student
+from models.user import User
 from repositories.student import StudentRepository
 from schemas.student import StudentCreateRequest
+from app.core.enums import UserRole
 
 
 class StudentService:
@@ -26,10 +28,6 @@ class StudentService:
         characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
         return "".join(random.choice(characters) for _ in range(8))
 
-    async def _generate_random_id(self) -> int:
-        """Generate a random student ID."""
-        return random.randint(100000, 999999)
-
     async def generate_unique_access_code(self) -> str:
         """Generate a unique access code."""
         while True:
@@ -38,18 +36,13 @@ class StudentService:
             if not existing_student:
                 return new_code
 
-    async def generate_unique_student_id(self) -> int:
-        """Generate a unique student ID."""
-        while True:
-            new_id = await self._generate_random_id()
-            existing_student = await self.get_student_by_id(new_id)
-            if not existing_student:
-                return new_id
-
     async def create_student(self, student: StudentCreateRequest) -> Student:
-        student_id = await self.generate_unique_student_id()
+        user = User(name=student.name, role=UserRole.STUDENT.value)
+        self.db.add(user)
+        await self.db.flush()
         new_student = Student(
-            id=student_id,
+            id=user.id,
+            user_id=user.id,
             name=student.name,
             avatar=student.avatar,
             balance=0,

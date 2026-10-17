@@ -2,7 +2,7 @@ import hashlib
 import secrets
 from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
-from core.database import get_db
+from app.core.database import get_db
 from models.session import Session
 from repositories.session import SessionRepository
 

@@ -1,5 +1,5 @@
 from fastapi import Depends, HTTPException, APIRouter, Request, Response
-from schemas.student import StudentProfileResponse, StudentResponse
+from schemas.student import StudentProfileResponse
 from schemas.auth import StudentLogin, StudentLoginResponse, StudentLogoutResponse
 from services.student import StudentService, get_student_service
 from services.session import SessionService, get_session_service
@@ -72,6 +72,7 @@ async def get_current_student(request: Request, student_service: StudentService 
     
     return StudentProfileResponse(
         id=student.id,
+        user_id=student.user_id,
         name=student.name,
         group_id=student.group_id,
         course_name=student.course_name,

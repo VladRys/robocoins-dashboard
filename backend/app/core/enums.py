@@ -7,3 +7,8 @@ class StatusEnum(str, Enum):
 class ProductMode(StrEnum):
     DEV = "DEV"
     PROD = "PROD"
+
+
+class UserRole(StrEnum):
+    STUDENT = "student"
+    TEACHER = "teacher"

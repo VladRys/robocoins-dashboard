@@ -1,5 +1,6 @@
 from pydantic import BaseModel, ConfigDict
 from core.enums import StatusEnum
+from app.core.enums import UserRole
 
 class StudentCreateRequest(BaseModel):
     name: str
@@ -12,6 +13,8 @@ class StudentResponse(BaseModel):
     status: str = StatusEnum.SUCCESS
     code: int = 200
     id: int
+    user_id: int
+    role: UserRole = UserRole.STUDENT
     name: str
     course_name: str
     group_id: int
@@ -27,6 +30,8 @@ class StudentProfileResponse(BaseModel):
     status: str = StatusEnum.SUCCESS
     code: int = 200
     id: int
+    user_id: int
+    role: UserRole = UserRole.STUDENT
     name: str
     course_name: str
     group_id: int

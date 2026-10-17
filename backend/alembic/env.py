@@ -10,7 +10,9 @@ from app.models.course import Course
 from app.models.group import Group
 from app.models.session import Session
 from app.models.student import Student
+from app.models.teacher import Teacher
 from app.models.transaction import BalanceTransaction
+from app.models.user import User
 from app.core.config import Config as cfg
 
 # this is the Alembic Config object, which provides

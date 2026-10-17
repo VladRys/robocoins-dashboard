@@ -9,12 +9,15 @@ from fastapi.responses import FileResponse
 import uvicorn
 
 APP_DIR = Path(__file__).resolve().parent
+BACKEND_DIR = APP_DIR.parent
 if str(APP_DIR) not in sys.path:
     sys.path.insert(0, str(APP_DIR))
+if str(BACKEND_DIR) not in sys.path:
+    sys.path.insert(0, str(BACKEND_DIR))
 
 from api.router import router
 from core.config import Config as cfg
-from core.database import create_db_and_tables
+from app.core.database import create_db_and_tables
 
 
 @asynccontextmanager
