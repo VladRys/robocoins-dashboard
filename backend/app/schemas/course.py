@@ -1,7 +1,7 @@
 from core.enums import StatusEnum
 from pydantic import BaseModel, ConfigDict, Field
 from app.core.enums import CourseCategory
-from .group import GroupResponse
+from .group import CourseGroupResponse
 
 class CourseCreateRequest(BaseModel):
     name: str = Field(..., description="Name of the course")
@@ -15,5 +15,5 @@ class CourseResponse(BaseModel):
     id: int
     name: str
     category: CourseCategory
-    groups: list[GroupResponse] = Field(default_factory=list, description="Groups associated with the course")
+    groups: list[CourseGroupResponse] = Field(default_factory=list, description="Groups associated with the course")
     groups_count: int = 0

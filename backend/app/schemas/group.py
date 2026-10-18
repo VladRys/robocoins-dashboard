@@ -36,3 +36,17 @@ class GroupResponse(BaseModel):
         default_factory=list,
         description="User IDs of the group's teachers",
     )
+    
+class CourseGroupResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    status: str = StatusEnum.SUCCESS
+    code: int = 200
+    id: int
+    name: str
+    course_id: int
+    students_count: int = 0
+    teacher_ids: list[int] = Field(
+        default_factory=list,
+        description="User IDs of the group's teachers",
+    )
