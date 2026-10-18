@@ -14,7 +14,7 @@ class StudentRepository:
         """Fetch a student by their ID."""
         result = await self.session.execute(
             select(Student)
-            .options(selectinload(Student.groups))
+            .options(selectinload(Student.groups).selectinload(Group.course))
             .where(Student.id == student_id)
         )
         return result.scalar_one_or_none()

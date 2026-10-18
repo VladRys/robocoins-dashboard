@@ -9,7 +9,6 @@ from app.core.database import Base
 
 if TYPE_CHECKING:
     from app.models.group import Group
-    from app.models.student import Student
 
 
 class Course(Base):
@@ -20,7 +19,3 @@ class Course(Base):
     name: Mapped[str] = mapped_column(String, nullable=False)
 
     groups: Mapped[list["Group"]] = relationship(back_populates="course")
-    students: Mapped[list["Student"]] = relationship(
-        back_populates="course",
-        viewonly=True,
-    )

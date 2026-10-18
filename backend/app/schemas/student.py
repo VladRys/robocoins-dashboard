@@ -5,7 +5,6 @@ from app.core.enums import UserRole
 class StudentCreateRequest(BaseModel):
     name: str
     avatar: str
-    course_name: str
     group_ids: list[int] = Field(min_length=1)
 
     @field_validator("group_ids")
@@ -23,7 +22,7 @@ class StudentResponse(BaseModel):
     user_id: int
     role: UserRole = UserRole.STUDENT
     name: str
-    course_name: str
+    course_names: list[str]
     group_ids: list[int]
     avatar: str | None = None
     balance: int
@@ -40,7 +39,7 @@ class StudentProfileResponse(BaseModel):
     user_id: int
     role: UserRole = UserRole.STUDENT
     name: str
-    course_name: str
+    course_names: list[str]
     group_ids: list[int]
     avatar: str | None = None
     balance: int
@@ -55,7 +54,9 @@ class StudentProfileResponse(BaseModel):
             "user_id": value.user_id,
             "name": value.name,
             "group_ids": [group.id for group in value.groups],
-            "course_name": value.course_name,
+            "course_names": list(dict.fromkeys(
+                group.course.name for group in value.groups
+            )),
             "avatar": value.avatar,
             "balance": value.balance,
         }

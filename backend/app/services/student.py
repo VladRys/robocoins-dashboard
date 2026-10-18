@@ -3,6 +3,7 @@ import uuid
 
 from fastapi import Depends
 from sqlalchemy import select
+from sqlalchemy.orm import selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
@@ -49,7 +50,9 @@ class StudentService:
         self.db.add(user)
         await self.db.flush()
         groups = list((await self.db.scalars(
-            select(Group).where(Group.id.in_(student.group_ids))
+            select(Group)
+            .options(selectinload(Group.course))
+            .where(Group.id.in_(student.group_ids))
         )).all())
         if len(groups) != len(student.group_ids):
             raise ValueError("One or more groups were not found")
@@ -59,7 +62,6 @@ class StudentService:
             name=student.name,
             avatar=student.avatar,
             balance=0,
-            course_name=student.course_name,
             groups=groups,
             hash_access_key=self.generate_hash_access_key(),
             access_code=access_code,

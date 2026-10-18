@@ -27,7 +27,7 @@ async def create_student(
         user_id=new_student.user_id,
         name=new_student.name,
         group_ids=[group.id for group in new_student.groups],
-        course_name=new_student.course_name,
+        course_names=list(dict.fromkeys(group.course.name for group in new_student.groups)),
         avatar=new_student.avatar,
         balance=new_student.balance,
         hash_access_key=new_student.hash_access_key,

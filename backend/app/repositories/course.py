@@ -32,6 +32,7 @@ class CourseRepository:
                 selectinload(Course.groups)
                 .selectinload(Group.students)
                 .selectinload(Student.groups)
+                .selectinload(Group.course)
             )
         )
         return result.scalars().all()

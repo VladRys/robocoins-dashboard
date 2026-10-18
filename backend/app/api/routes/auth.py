@@ -110,7 +110,7 @@ async def get_current_user(
             user_id=student.user_id,
             name=student.name,
             group_ids=[group.id for group in student.groups],
-            course_name=student.course_name,
+            course_names=list(dict.fromkeys(group.course.name for group in student.groups)),
             avatar=student.avatar,
             balance=student.balance,
         )

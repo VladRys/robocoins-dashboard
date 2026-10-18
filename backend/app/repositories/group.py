@@ -15,7 +15,11 @@ class GroupRepository:
         """Fetch a group by its ID."""
         result = await self.session.execute(
             select(Group)
-            .options(selectinload(Group.students).selectinload(Student.groups))
+            .options(
+                selectinload(Group.students)
+                .selectinload(Student.groups)
+                .selectinload(Group.course)
+            )
             .where(Group.id == group_id)
         )
         return result.scalar_one_or_none()
@@ -60,7 +64,11 @@ class GroupRepository:
         """Fetch all groups associated with a specific course ID."""
         result = await self.session.execute(
             select(Group)
-            .options(selectinload(Group.students).selectinload(Student.groups))
+            .options(
+                selectinload(Group.students)
+                .selectinload(Student.groups)
+                .selectinload(Group.course)
+            )
             .where(Group.course_id == course_id)
         )
         return result.scalars().all()
@@ -69,7 +77,11 @@ class GroupRepository:
         """Fetch a group by its name."""
         result = await self.session.execute(
             select(Group)
-            .options(selectinload(Group.students).selectinload(Student.groups))
+            .options(
+                selectinload(Group.students)
+                .selectinload(Student.groups)
+                .selectinload(Group.course)
+            )
             .where(Group.name == name)
         )
         return result.scalar_one_or_none()
