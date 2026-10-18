@@ -109,7 +109,7 @@ async def get_current_user(
             id=student.id,
             user_id=student.user_id,
             name=student.name,
-            group_id=student.group_id,
+            group_ids=[group.id for group in student.groups],
             course_name=student.course_name,
             avatar=student.avatar,
             balance=student.balance,

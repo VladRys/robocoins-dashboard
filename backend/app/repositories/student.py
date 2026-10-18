@@ -1,7 +1,9 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, update
+from sqlalchemy.orm import selectinload
 
 from models.student import Student
+from models.group import Group
 from models.user import User
 
 class StudentRepository:
@@ -10,7 +12,12 @@ class StudentRepository:
 
     async def get_student_by_id(self, student_id: int) -> Student | None:
         """Fetch a student by their ID."""
-        return await self.session.get(Student, student_id)
+        result = await self.session.execute(
+            select(Student)
+            .options(selectinload(Student.groups))
+            .where(Student.id == student_id)
+        )
+        return result.scalar_one_or_none()
 
     async def change_balance(self, student_id: int, amount: int) -> int | None:
         """Atomically change a balance, rejecting changes that would make it negative."""
@@ -50,12 +57,15 @@ class StudentRepository:
         await self.session.refresh(student)
         return student
     
-    async def assign_student_to_group(self, student_id: int, group_id: int) -> Student | None:
-        """Assign a student to a group."""
+    async def assign_student_to_groups(self, student_id: int, group_ids: list[int]) -> Student | None:
+        """Replace a student's group assignments."""
         student = await self.get_student_by_id(student_id)
-        if student:
-            student.group_id = group_id
-            await self.session.commit()
-            await self.session.refresh(student)
-            return student
-        return None
+        if student is None:
+            return None
+        result = await self.session.execute(select(Group).where(Group.id.in_(group_ids)))
+        groups = list(result.scalars().all())
+        if len(groups) != len(set(group_ids)):
+            raise ValueError("One or more groups were not found")
+        student.groups = groups
+        await self.session.commit()
+        return await self.get_student_by_id(student_id)

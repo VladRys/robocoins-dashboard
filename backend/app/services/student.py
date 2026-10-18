@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_db
 from app.core.access_code import generate_access_code
 from models.student import Student
+from models.group import Group
 from models.user import User
 from repositories.student import StudentRepository
 from schemas.student import StudentCreateRequest
@@ -47,6 +48,11 @@ class StudentService:
         )
         self.db.add(user)
         await self.db.flush()
+        groups = list((await self.db.scalars(
+            select(Group).where(Group.id.in_(student.group_ids))
+        )).all())
+        if len(groups) != len(student.group_ids):
+            raise ValueError("One or more groups were not found")
         new_student = Student(
             id=user.id,
             user_id=user.id,
@@ -54,7 +60,7 @@ class StudentService:
             avatar=student.avatar,
             balance=0,
             course_name=student.course_name,
-            group_id=student.group_id,
+            groups=groups,
             hash_access_key=self.generate_hash_access_key(),
             access_code=access_code,
         )

@@ -3,6 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from models.group import Group
+from models.student import Student
 from models.teacher import Teacher
 from schemas.group import GroupCreateRequest
 
@@ -14,7 +15,7 @@ class GroupRepository:
         """Fetch a group by its ID."""
         result = await self.session.execute(
             select(Group)
-            .options(selectinload(Group.students))
+            .options(selectinload(Group.students).selectinload(Student.groups))
             .where(Group.id == group_id)
         )
         return result.scalar_one_or_none()
@@ -59,7 +60,7 @@ class GroupRepository:
         """Fetch all groups associated with a specific course ID."""
         result = await self.session.execute(
             select(Group)
-            .options(selectinload(Group.students))
+            .options(selectinload(Group.students).selectinload(Student.groups))
             .where(Group.course_id == course_id)
         )
         return result.scalars().all()
@@ -68,7 +69,7 @@ class GroupRepository:
         """Fetch a group by its name."""
         result = await self.session.execute(
             select(Group)
-            .options(selectinload(Group.students))
+            .options(selectinload(Group.students).selectinload(Student.groups))
             .where(Group.name == name)
         )
         return result.scalar_one_or_none()

@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends
 
 from schemas.course import CourseResponse
 from schemas.group import GroupResponse
+from schemas.student import StudentProfileResponse
 from services.course import CourseService, get_course_service
 
 course_router = APIRouter(
@@ -23,7 +24,7 @@ async def get_courses(
                     id=group.id,
                     name=group.name,
                     course_id=group.course_id,
-                    students=[student.id for student in group.students],
+                    students=[StudentProfileResponse.model_validate(student) for student in group.students],
                     students_count=len(group.students),
                     teacher_ids=[
                         teacher_id

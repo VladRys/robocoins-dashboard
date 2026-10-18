@@ -1,5 +1,6 @@
 from models.course import Course
 from models.group import Group
+from models.student import Student
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -28,7 +29,9 @@ class CourseRepository:
         """Fetch all courses."""
         result = await self.session.execute(
             select(Course).options(
-                selectinload(Course.groups).selectinload(Group.students)
+                selectinload(Course.groups)
+                .selectinload(Group.students)
+                .selectinload(Student.groups)
             )
         )
         return result.scalars().all()

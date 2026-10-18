@@ -14,7 +14,10 @@ async def create_student(
     student: StudentCreateRequest,
     service: StudentService = Depends(get_student_service),
 ) -> StudentResponse:
-    new_student = await service.create_student(student)
+    try:
+        new_student = await service.create_student(student)
+    except ValueError as error:
+        raise HTTPException(status_code=404, detail=str(error)) from error
 
     if new_student is None:
         raise HTTPException(status_code=500, detail="Failed to create student")
@@ -23,7 +26,7 @@ async def create_student(
         id=new_student.id,
         user_id=new_student.user_id,
         name=new_student.name,
-        group_id=new_student.group_id,
+        group_ids=[group.id for group in new_student.groups],
         course_name=new_student.course_name,
         avatar=new_student.avatar,
         balance=new_student.balance,

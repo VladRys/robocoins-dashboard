@@ -36,8 +36,10 @@ class Student(Base):
         foreign_keys=[user_id],
     )
 
-    group_id: Mapped[int] = mapped_column(ForeignKey("groups.id"), nullable=False)
-    group: Mapped["Group"] = relationship(back_populates="students")
+    groups: Mapped[list["Group"]] = relationship(
+        secondary="student_groups",
+        back_populates="students",
+    )
     transactions: Mapped[list["BalanceTransaction"]] = relationship(
         back_populates="student",
         cascade="all, delete-orphan",

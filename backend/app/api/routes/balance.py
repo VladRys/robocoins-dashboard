@@ -21,6 +21,7 @@ from services.balance import (
 coins_router = APIRouter(prefix="/student", tags=["balance"])
 
 #TODO: Added any auth and permission checks for each endpoint, if needed.
+# TODO: Do server-side validation for some type of actions, add just single endpoint with reason and action type (reward, punish)
 
 @coins_router.get("/{student_id}/balance", response_model=BalanceResponse)
 async def get_student_balance_by_id(
