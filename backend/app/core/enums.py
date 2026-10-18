@@ -12,3 +12,12 @@ class ProductMode(StrEnum):
 class UserRole(StrEnum):
     STUDENT = "student"
     TEACHER = "teacher"
+
+
+class CourseCategory(StrEnum):
+    EMBEDDED = "embedded"
+    GAME_DEV = "game dev"
+    WEB = "web"
+    PRIMARY = "primary"
+    PYTHON = "python"
+    NO_CATEGORY = "no category"
