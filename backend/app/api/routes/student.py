@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 
 from api.dependencies import get_authenticated_teacher, get_authenticated_user
 from core.enums import StatusEnum
+from app.core.enums import HttpErrorMessage
 from models.user import User
 from schemas.student import StudentCreateRequest, StudentResponse, StudentProfileResponse
 from services.student import StudentService, get_student_service
@@ -23,7 +24,7 @@ async def create_student(
         raise HTTPException(status_code=404, detail=str(error)) from error
 
     if new_student is None:
-        raise HTTPException(status_code=500, detail="Failed to create student")
+        raise HTTPException(status_code=500, detail=HttpErrorMessage.FAILED_TO_CREATE_STUDENT)
 
     return StudentResponse(
         id=new_student.id,
@@ -48,6 +49,6 @@ async def get_student_by_id(
 ) -> StudentProfileResponse:
     student = await service.get_student_by_id(student_id)
     if student is None:
-        raise HTTPException(status_code=404, detail="Student not found")
+        raise HTTPException(status_code=404, detail=HttpErrorMessage.STUDENT_NOT_FOUND)
 
     return StudentProfileResponse.model_validate(student)

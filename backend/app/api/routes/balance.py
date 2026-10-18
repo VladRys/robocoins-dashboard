@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 
 from api.dependencies import get_authenticated_teacher, get_authenticated_user
+from app.core.enums import HttpErrorMessage
 from models.user import User
 from schemas.balance import (
     BalanceChangeRequest,
@@ -29,7 +30,7 @@ async def get_student_balance_by_id(
     try:
         balance = await service.get_balance(student_id)
     except StudentNotFoundError:
-        raise HTTPException(status_code=404, detail="Student not found") from None
+        raise HTTPException(status_code=404, detail=HttpErrorMessage.STUDENT_NOT_FOUND) from None
     return BalanceResponse(balance=balance)
 
 
@@ -46,7 +47,7 @@ async def change_student_balance(
     try:
         balance, transaction = await service.change_balance(student_id, change)
     except StudentNotFoundError:
-        raise HTTPException(status_code=404, detail="Student not found") from None
+        raise HTTPException(status_code=404, detail=HttpErrorMessage.STUDENT_NOT_FOUND) from None
     return BalanceChangeResponse(
         balance=balance,
         transaction=BalanceTransactionResponse.model_validate(transaction),
@@ -67,7 +68,7 @@ async def get_student_transaction_history(
     try:
         transactions = await service.get_history(student_id, limit, offset)
     except StudentNotFoundError:
-        raise HTTPException(status_code=404, detail="Student not found") from None
+        raise HTTPException(status_code=404, detail=HttpErrorMessage.STUDENT_NOT_FOUND) from None
     return BalanceHistoryResponse(
         transactions=[
             BalanceTransactionResponse.model_validate(transaction)

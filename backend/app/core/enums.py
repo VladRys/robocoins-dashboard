@@ -1,5 +1,25 @@
 from enum import Enum, StrEnum
 
+
+class HttpErrorMessage(str, Enum):
+    NOT_AUTHENTICATED = "Not authenticated"
+    INVALID_SESSION_TOKEN = "Invalid session token"
+    INVALID_SESSION = "Invalid session"
+    SESSION_EXPIRED = "Session expired"
+    USER_NOT_FOUND = "User not found"
+    WRONG_ACCESS_CODE = "Wrong access code"
+    STUDENT_PROFILE_NOT_FOUND = "Student profile not found"
+    STUDENT_NOT_FOUND = "Student not found"
+    TEACHER_NOT_FOUND = "Teacher not found"
+    TEACHER_PROFILE_NOT_FOUND = "Teacher profile not found"
+    GROUP_NOT_FOUND = "Group not found"
+    FAILED_TO_CREATE_TEACHER = "Failed to create teacher"
+    FAILED_TO_CREATE_GROUP = "Failed to create group"
+    FAILED_TO_CREATE_STUDENT = "Failed to create student"
+    UNSUPPORTED_USER_ROLE = "Unsupported user role"
+    ONLY_TEACHERS_CAN_MODIFY = "Only teachers can modify this resource"
+
+
 class StatusEnum(str, Enum):
     SUCCESS = "success"
     ERROR = "error"

@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 
 from api.dependencies import get_authenticated_user
+from app.core.enums import HttpErrorMessage
 from schemas.user import UserResponse
 from services.users import UserService, get_user_service
 
@@ -28,5 +29,5 @@ async def get_user_by_id(
 ) -> UserResponse:
     user = await service.get_user_by_id(user_id)
     if user is None:
-        raise HTTPException(status_code=404, detail="User not found")
+        raise HTTPException(status_code=404, detail=HttpErrorMessage.USER_NOT_FOUND)
     return UserResponse.model_validate(user)

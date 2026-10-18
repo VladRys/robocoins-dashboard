@@ -1,5 +1,6 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import Depends, Request, HTTPException
+from app.core.enums import HttpErrorMessage
 
 from app.services.student import StudentService, get_student_service
 from models.session import Session
@@ -24,7 +25,7 @@ class AuthService:
         if not token:
             raise HTTPException(
                 status_code=401,
-                detail="Not authenticated",
+                detail=HttpErrorMessage.NOT_AUTHENTICATED,
             )
 
         session = self.session_service.get_session_by_token(self.db_session, token)
@@ -32,13 +33,13 @@ class AuthService:
         if not session:
             raise HTTPException(
                 status_code=401,
-                detail="Invalid session",
+                detail=HttpErrorMessage.INVALID_SESSION,
             )
 
         if session.expires_at < datetime.now(timezone.utc):
             raise HTTPException(
                 status_code=401,
-                detail="Session expired",
+                detail=HttpErrorMessage.SESSION_EXPIRED,
             )
 
         return session.student

@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 
 from api.dependencies import get_authenticated_teacher, get_authenticated_user
+from app.core.enums import HttpErrorMessage
 from models.group import Group
 from schemas.group import GroupCreateRequest, GroupResponse
 from schemas.student import StudentProfileResponse
@@ -40,7 +41,7 @@ async def create_group(
         raise HTTPException(status_code=404, detail=str(error)) from error
 
     if new_group is None:
-        raise HTTPException(status_code=500, detail="Failed to create group")
+        raise HTTPException(status_code=500, detail=HttpErrorMessage.FAILED_TO_CREATE_GROUP)
 
     return _group_response(new_group)
 
@@ -54,7 +55,7 @@ async def get_group_by_id(
     group = await service.get_group_by_id(group_id)
 
     if group is None:
-        raise HTTPException(status_code=404, detail="Group not found")
+        raise HTTPException(status_code=404, detail=HttpErrorMessage.GROUP_NOT_FOUND)
 
     return _group_response(group)
 
@@ -68,7 +69,7 @@ async def get_group_by_name(
     group = await service.get_group_by_name(name)
 
     if group is None:
-        raise HTTPException(status_code=404, detail="Group not found")
+        raise HTTPException(status_code=404, detail=HttpErrorMessage.GROUP_NOT_FOUND)
 
     return _group_response(group)
 
@@ -100,6 +101,6 @@ async def assign_group_teachers(
         raise HTTPException(status_code=404, detail=str(error)) from error
 
     if group is None:
-        raise HTTPException(status_code=404, detail="Group not found")
+        raise HTTPException(status_code=404, detail=HttpErrorMessage.GROUP_NOT_FOUND)
     
     return _group_response(group)

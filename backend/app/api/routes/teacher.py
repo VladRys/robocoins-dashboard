@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 
 from api.dependencies import get_authenticated_user
+from app.core.enums import HttpErrorMessage
 from schemas.teacher import (
     TeacherGroupProfile,
     TeacherProfileResponse,
@@ -23,7 +24,7 @@ async def register_teacher(
 ) -> TeacherRegistrationResponse:
     teacher = await service.register_teacher(request.name)
     if teacher is None:
-        raise HTTPException(status_code=500, detail="Failed to create teacher")
+        raise HTTPException(status_code=500, detail=HttpErrorMessage.FAILED_TO_CREATE_TEACHER)
     return TeacherRegistrationResponse(
         id=teacher.id,
         user_id=teacher.id,
@@ -41,7 +42,7 @@ async def get_teacher_profile(
 ) -> TeacherProfileResponse:
     profile = await service.get_teacher_profile(teacher_id)
     if profile is None:
-        raise HTTPException(status_code=404, detail="Teacher not found")
+        raise HTTPException(status_code=404, detail=HttpErrorMessage.TEACHER_NOT_FOUND)
 
     teacher, groups = profile
     return TeacherProfileResponse(

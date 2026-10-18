@@ -1,5 +1,5 @@
 from fastapi import Depends, HTTPException, APIRouter, Request, Response
-from app.core.enums import UserRole
+from app.core.enums import HttpErrorMessage, UserRole
 from schemas.student import StudentProfileResponse
 from schemas.teacher import TeacherGroupProfile, TeacherProfileResponse
 from schemas.auth import (
@@ -28,13 +28,13 @@ async def login(
 ) -> UserLoginResponse:
     user = await user_service.get_user_by_access_code(login_request.code)
     if user is None:
-        raise HTTPException(status_code=404, detail="Wrong access code")
+        raise HTTPException(status_code=404, detail=HttpErrorMessage.WRONG_ACCESS_CODE)
 
     student_id = user.id if user.role == UserRole.STUDENT.value else None
     if student_id is not None:
         student = await student_service.get_student_by_id(student_id)
         if student is None:
-            raise HTTPException(status_code=404, detail="Student profile not found")
+            raise HTTPException(status_code=404, detail=HttpErrorMessage.STUDENT_PROFILE_NOT_FOUND)
 
     session_token = await session_service.create_session(user.id, student_id)
 
@@ -63,7 +63,7 @@ async def logout(request: Request, response: Response, session_service: SessionS
     token = request.cookies.get("session_token")
 
     if not token:
-        raise HTTPException(status_code=401, detail="Not authenticated")
+        raise HTTPException(status_code=401, detail=HttpErrorMessage.NOT_AUTHENTICATED)
 
     await session_service.delete_session(token)
     response.delete_cookie("session_token")
@@ -85,25 +85,25 @@ async def get_current_user(
     token = request.cookies.get("session_token")
 
     if not token:
-        raise HTTPException(status_code=401, detail="Not authenticated")
+        raise HTTPException(status_code=401, detail=HttpErrorMessage.NOT_AUTHENTICATED)
 
     session = await session_service.get_session_by_token(token)
 
     if not session:
-        raise HTTPException(status_code=401, detail="Invalid session token")
+        raise HTTPException(status_code=401, detail=HttpErrorMessage.INVALID_SESSION_TOKEN)
 
     if session.is_expired():
         await session_service.delete_session(token)
-        raise HTTPException(status_code=401, detail="Session expired")
+        raise HTTPException(status_code=401, detail=HttpErrorMessage.SESSION_EXPIRED)
     
     user = await user_service.get_user_by_id(session.user_id)
     if user is None:
-        raise HTTPException(status_code=404, detail="User not found")
+        raise HTTPException(status_code=404, detail=HttpErrorMessage.USER_NOT_FOUND)
 
     if user.role == UserRole.STUDENT.value:
         student = await student_service.get_student_by_id(user.id)
         if student is None:
-            raise HTTPException(status_code=404, detail="Student not found")
+            raise HTTPException(status_code=404, detail=HttpErrorMessage.STUDENT_NOT_FOUND)
 
         return StudentProfileResponse(
             id=student.id,
@@ -118,7 +118,7 @@ async def get_current_user(
     if user.role == UserRole.TEACHER.value:
         profile = await user_service.get_teacher_profile(user.id)
         if profile is None:
-            raise HTTPException(status_code=404, detail="Teacher profile not found")
+            raise HTTPException(status_code=404, detail=HttpErrorMessage.TEACHER_PROFILE_NOT_FOUND)
         teacher, groups = profile
         return TeacherProfileResponse(
             id=teacher.id,
@@ -137,4 +137,4 @@ async def get_current_user(
             ],
         )
 
-    raise HTTPException(status_code=403, detail="Unsupported user role")
+    raise HTTPException(status_code=403, detail=HttpErrorMessage.UNSUPPORTED_USER_ROLE)

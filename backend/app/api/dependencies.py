@@ -1,6 +1,6 @@
 from fastapi import Depends, HTTPException, Request
 
-from app.core.enums import UserRole
+from app.core.enums import HttpErrorMessage, UserRole
 from models.user import User
 from services.session import SessionService, get_session_service
 from services.users import UserService, get_user_service
@@ -13,18 +13,18 @@ async def get_authenticated_user(
 ) -> User:
     token = request.cookies.get("session_token")
     if not token:
-        raise HTTPException(status_code=401, detail="Not authenticated")
+        raise HTTPException(status_code=401, detail=HttpErrorMessage.NOT_AUTHENTICATED)
 
     session = await session_service.get_session_by_token(token)
     if session is None:
-        raise HTTPException(status_code=401, detail="Invalid session token")
+        raise HTTPException(status_code=401, detail=HttpErrorMessage.INVALID_SESSION_TOKEN)
     if session.is_expired():
         await session_service.delete_session(token)
-        raise HTTPException(status_code=401, detail="Session expired")
+        raise HTTPException(status_code=401, detail=HttpErrorMessage.SESSION_EXPIRED)
 
     user = await user_service.get_user_by_id(session.user_id)
     if user is None:
-        raise HTTPException(status_code=401, detail="User not found")
+        raise HTTPException(status_code=401, detail=HttpErrorMessage.USER_NOT_FOUND)
     return user
 
 
@@ -32,5 +32,5 @@ async def get_authenticated_teacher(
     user: User = Depends(get_authenticated_user),
 ) -> User:
     if user.role != UserRole.TEACHER.value:
-        raise HTTPException(status_code=403, detail="Only teachers can modify this resource")
+        raise HTTPException(status_code=403, detail=HttpErrorMessage.ONLY_TEACHERS_CAN_MODIFY)
     return user
