@@ -1,8 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from core.enums import StatusEnum
-from core.database import get_db
 from schemas.student import StudentCreateRequest, StudentResponse, StudentProfileResponse
 from services.student import StudentService, get_student_service
 
@@ -14,19 +12,22 @@ student_router = APIRouter(
 @student_router.post("/register", response_model=StudentResponse)
 async def create_student(
     student: StudentCreateRequest,
-    db: AsyncSession = Depends(get_db),
     service: StudentService = Depends(get_student_service),
 ) -> StudentResponse:
-    new_student = await service.create_student(student)
+    try:
+        new_student = await service.create_student(student)
+    except ValueError as error:
+        raise HTTPException(status_code=404, detail=str(error)) from error
 
     if new_student is None:
         raise HTTPException(status_code=500, detail="Failed to create student")
 
     return StudentResponse(
         id=new_student.id,
+        user_id=new_student.user_id,
         name=new_student.name,
-        group_id=new_student.group_id,
-        course_name=new_student.course_name,
+        group_ids=[group.id for group in new_student.groups],
+        course_names=list(dict.fromkeys(group.course.name for group in new_student.groups)),
         avatar=new_student.avatar,
         balance=new_student.balance,
         hash_access_key=new_student.hash_access_key,

@@ -1,3 +1,5 @@
+import sys
+from pathlib import Path
 from logging.config import fileConfig
 
 from sqlalchemy import engine_from_config, make_url
@@ -5,12 +7,18 @@ from sqlalchemy import pool
 
 from alembic import context
 
+BACKEND_DIR = Path(__file__).resolve().parents[1]
+APP_DIR = BACKEND_DIR / "app"
+sys.path[:0] = [str(APP_DIR), str(BACKEND_DIR)]
+
 from app.core.database import Base
 from app.models.course import Course
 from app.models.group import Group
 from app.models.session import Session
 from app.models.student import Student
+from app.models.teacher import Teacher
 from app.models.transaction import BalanceTransaction
+from app.models.user import User
 from app.core.config import Config as cfg
 
 # this is the Alembic Config object, which provides

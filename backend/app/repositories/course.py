@@ -1,9 +1,13 @@
 from models.course import Course
 from models.group import Group
+from models.student import Student
+from app.core.enums import CourseCategory
 
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
+from schemas.course import CourseCreateRequest
 
 
 class CourseRepository:
@@ -17,10 +21,15 @@ class CourseRepository:
         )
         return result.scalar_one_or_none()
     
-    async def create_course(self, course: Course):
+    async def create_course(self, course_data: CourseCreateRequest) -> Course:
         """Create a new course record."""
+        course = Course(name=course_data.name, category=course_data.category)
         self.session.add(course)
-        await self.session.commit()
+        try:
+            await self.session.commit()
+        except IntegrityError:
+            await self.session.rollback()
+            raise ValueError("A course with this name already exists") from None
         await self.session.refresh(course)
         return course
     
@@ -28,8 +37,24 @@ class CourseRepository:
         """Fetch all courses."""
         result = await self.session.execute(
             select(Course).options(
-                selectinload(Course.groups).selectinload(Group.students)
+                selectinload(Course.groups)
+                .selectinload(Group.students)
+                .selectinload(Student.groups)
+                .selectinload(Group.course)
             )
+        )
+        return result.scalars().all()
+
+    async def get_courses_by_category(self, category: CourseCategory):
+        result = await self.session.execute(
+            select(Course)
+            .options(
+                selectinload(Course.groups)
+                .selectinload(Group.students)
+                .selectinload(Student.groups)
+                .selectinload(Group.course)
+            )
+            .where(Course.category == category)
         )
         return result.scalars().all()
     

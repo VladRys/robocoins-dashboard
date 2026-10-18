@@ -7,8 +7,17 @@ class SessionRepository:
     def __init__(self, db_session: AsyncSession):
         self.db_session = db_session
 
-    async def create_session(self, student_id: int, token_hash: str) -> Session:
-        new_session = Session(student_id=student_id, token_hash=token_hash)
+    async def create_session(
+        self,
+        user_id: int,
+        token_hash: str,
+        student_id: int | None = None,
+    ) -> Session:
+        new_session = Session(
+            user_id=user_id,
+            student_id=student_id,
+            token_hash=token_hash,
+        )
         self.db_session.add(new_session)
         await self.db_session.commit()
         await self.db_session.refresh(new_session)
@@ -28,4 +37,3 @@ class SessionRepository:
         if session:
             await self.db_session.delete(session)
             await self.db_session.commit()
-

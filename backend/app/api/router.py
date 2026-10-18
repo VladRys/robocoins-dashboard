@@ -4,12 +4,16 @@ from api.routes.balance import coins_router
 from api.routes.course import course_router
 from api.routes.group import group_router
 from api.routes.student import student_router
+from api.routes.teacher import teacher_router
+from api.routes.users import users_router
 from api.routes.auth import auth_router
 
 router = APIRouter()
 router.include_router(course_router)
 router.include_router(group_router)
 router.include_router(student_router)
+router.include_router(teacher_router)
+router.include_router(users_router)
 router.include_router(coins_router)
 router.include_router(auth_router)
 

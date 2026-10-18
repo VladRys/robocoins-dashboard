@@ -2,7 +2,7 @@ import hashlib
 import secrets
 from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
-from core.database import get_db
+from app.core.database import get_db
 from models.session import Session
 from repositories.session import SessionRepository
 
@@ -17,10 +17,14 @@ class SessionService:
     def _hash_session_token(session_token: str) -> str:
         return hashlib.sha256(session_token.encode("utf-8")).hexdigest()
 
-    async def create_session(self, student_id: int) -> str:
+    async def create_session(
+        self,
+        user_id: int,
+        student_id: int | None = None,
+    ) -> str:
         session_token = await self._generate_session_token()
         token_hash = self._hash_session_token(session_token)
-        await self.repository.create_session(student_id, token_hash)
+        await self.repository.create_session(user_id, token_hash, student_id)
         return session_token
 
     async def get_session_by_token(self, session_token: str) -> Session | None:

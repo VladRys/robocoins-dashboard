@@ -1,8 +1,15 @@
 from fastapi import Depends, HTTPException, APIRouter, Request, Response
-from schemas.student import StudentProfileResponse, StudentResponse
-from schemas.auth import StudentLogin, StudentLoginResponse, StudentLogoutResponse
+from app.core.enums import UserRole
+from schemas.student import StudentProfileResponse
+from schemas.teacher import TeacherGroupProfile, TeacherProfileResponse
+from schemas.auth import (
+    UserLogoutResponse,
+    UserLoginRequest,
+    UserLoginResponse,
+)
 from services.student import StudentService, get_student_service
 from services.session import SessionService, get_session_service
+from services.users import UserService, get_user_service
 
 
 auth_router = APIRouter(
@@ -10,14 +17,26 @@ auth_router = APIRouter(
     tags=["auth"],
 )
 
-@auth_router.post("/login", response_model=StudentLoginResponse)
-async def login(login_request: StudentLogin, response: Response, request: Request, student_service: StudentService = Depends(get_student_service), session_service: SessionService = Depends(get_session_service)):
-    student = await student_service.get_student_by_access_code(login_request.code)
-
-    if not student:
+@auth_router.post("/login", response_model=UserLoginResponse)
+async def login(
+    login_request: UserLoginRequest,
+    response: Response,
+    request: Request,
+    user_service: UserService = Depends(get_user_service),
+    student_service: StudentService = Depends(get_student_service),
+    session_service: SessionService = Depends(get_session_service),
+) -> UserLoginResponse:
+    user = await user_service.get_user_by_access_code(login_request.code)
+    if user is None:
         raise HTTPException(status_code=404, detail="Wrong access code")
 
-    session_token = await session_service.create_session(student.id)
+    student_id = user.id if user.role == UserRole.STUDENT.value else None
+    if student_id is not None:
+        student = await student_service.get_student_by_id(student_id)
+        if student is None:
+            raise HTTPException(status_code=404, detail="Student profile not found")
+
+    session_token = await session_service.create_session(user.id, student_id)
 
     response.set_cookie(
         key="session_token",
@@ -28,12 +47,18 @@ async def login(login_request: StudentLogin, response: Response, request: Reques
         max_age = 60 * 60 * 24 * 7  # 1 week
         )
 
-    return StudentLoginResponse(
+    return UserLoginResponse(
         message="Login successful",
         session_token=session_token,
-        )
+        user={
+            "id": user.id,
+            "user_id": user.id,
+            "name": user.name,
+            "role": user.role,
+        },
+    )
 
-@auth_router.post("/logout", response_model=StudentLogoutResponse)
+@auth_router.post("/logout", response_model=UserLogoutResponse)
 async def logout(request: Request, response: Response, session_service: SessionService = Depends(get_session_service)):
     token = request.cookies.get("session_token")
 
@@ -43,12 +68,20 @@ async def logout(request: Request, response: Response, session_service: SessionS
     await session_service.delete_session(token)
     response.delete_cookie("session_token")
 
-    return StudentLogoutResponse(
+    return UserLogoutResponse(
         message="Logout successful"
     )
 
-@auth_router.get("/me", response_model=StudentProfileResponse)
-async def get_current_student(request: Request, student_service: StudentService = Depends(get_student_service), session_service: SessionService = Depends(get_session_service)):
+@auth_router.get(
+    "/me",
+    response_model=StudentProfileResponse | TeacherProfileResponse,
+)
+async def get_current_user(
+    request: Request,
+    student_service: StudentService = Depends(get_student_service),
+    session_service: SessionService = Depends(get_session_service),
+    user_service: UserService = Depends(get_user_service),
+) -> StudentProfileResponse | TeacherProfileResponse:
     token = request.cookies.get("session_token")
 
     if not token:
@@ -63,18 +96,45 @@ async def get_current_student(request: Request, student_service: StudentService 
         await session_service.delete_session(token)
         raise HTTPException(status_code=401, detail="Session expired")
     
-    student = await student_service.get_student_by_id(session.student_id)
+    user = await user_service.get_user_by_id(session.user_id)
+    if user is None:
+        raise HTTPException(status_code=404, detail="User not found")
 
-    if not student:
-        raise HTTPException(status_code=404, detail="Student not found")
+    if user.role == UserRole.STUDENT.value:
+        student = await student_service.get_student_by_id(user.id)
+        if student is None:
+            raise HTTPException(status_code=404, detail="Student not found")
 
-    # Also can be redirected to /auth/login if the session is expired or invalid, but for now, we just return the student data.
-    
-    return StudentProfileResponse(
-        id=student.id,
-        name=student.name,
-        group_id=student.group_id,
-        course_name=student.course_name,
-        avatar=student.avatar,
-        balance=student.balance,
-    )
+        return StudentProfileResponse(
+            id=student.id,
+            user_id=student.user_id,
+            name=student.name,
+            group_ids=[group.id for group in student.groups],
+            course_names=list(dict.fromkeys(group.course.name for group in student.groups)),
+            avatar=student.avatar,
+            balance=student.balance,
+        )
+
+    if user.role == UserRole.TEACHER.value:
+        profile = await user_service.get_teacher_profile(user.id)
+        if profile is None:
+            raise HTTPException(status_code=404, detail="Teacher profile not found")
+        teacher, groups = profile
+        return TeacherProfileResponse(
+            id=teacher.id,
+            user_id=teacher.id,
+            name=teacher.name,
+            role=UserRole.TEACHER,
+            groups=[
+                TeacherGroupProfile(
+                    id=group.id,
+                    name=group.name,
+                    course_id=group.course_id,
+                    course_name=group.course.name,
+                    students_count=len(group.students),
+                )
+                for group in groups
+            ],
+        )
+
+    raise HTTPException(status_code=403, detail="Unsupported user role")

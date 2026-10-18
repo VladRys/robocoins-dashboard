@@ -1,7 +1,10 @@
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, update
+from sqlalchemy import case, select, update
+from sqlalchemy.orm import selectinload
 
 from models.student import Student
+from models.group import Group
+from models.user import User
 
 class StudentRepository:
     def __init__(self, session: AsyncSession):
@@ -9,17 +12,24 @@ class StudentRepository:
 
     async def get_student_by_id(self, student_id: int) -> Student | None:
         """Fetch a student by their ID."""
-        return await self.session.get(Student, student_id)
+        result = await self.session.execute(
+            select(Student)
+            .options(selectinload(Student.groups).selectinload(Group.course))
+            .where(Student.id == student_id)
+        )
+        return result.scalar_one_or_none()
 
     async def change_balance(self, student_id: int, amount: int) -> int | None:
-        """Atomically change a balance, rejecting changes that would make it negative."""
+        """Atomically change a balance without allowing it to fall below zero."""
         result = await self.session.execute(
             update(Student)
-            .where(
-                Student.id == student_id,
-                Student.balance + amount >= 0,
+            .where(Student.id == student_id)
+            .values(
+                balance=case(
+                    (Student.balance + amount < 0, 0),
+                    else_=Student.balance + amount,
+                )
             )
-            .values(balance=Student.balance + amount)
             .returning(Student.balance)
         )
         return result.scalar_one_or_none()
@@ -36,7 +46,9 @@ class StudentRepository:
     async def get_student_by_access_code(self, access_code: str) -> Student | None:
         """Fetch a student by their access code."""
         result = await self.session.execute(
-            select(Student).where(Student.access_code == access_code)
+            select(Student)
+            .join(User, User.id == Student.user_id)
+            .where(User.access_code == access_code)
         )
         return result.scalar_one_or_none()
     
@@ -47,12 +59,15 @@ class StudentRepository:
         await self.session.refresh(student)
         return student
     
-    async def assign_student_to_group(self, student_id: int, group_id: int) -> Student | None:
-        """Assign a student to a group."""
+    async def assign_student_to_groups(self, student_id: int, group_ids: list[int]) -> Student | None:
+        """Replace a student's group assignments."""
         student = await self.get_student_by_id(student_id)
-        if student:
-            student.group_id = group_id
-            await self.session.commit()
-            await self.session.refresh(student)
-            return student
-        return None
+        if student is None:
+            return None
+        result = await self.session.execute(select(Group).where(Group.id.in_(group_ids)))
+        groups = list(result.scalars().all())
+        if len(groups) != len(set(group_ids)):
+            raise ValueError("One or more groups were not found")
+        student.groups = groups
+        await self.session.commit()
+        return await self.get_student_by_id(student_id)

@@ -1,14 +1,19 @@
 
-import random
 import uuid
 
 from fastapi import Depends
+from sqlalchemy import select
+from sqlalchemy.orm import selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from core.database import get_db
+from app.core.database import get_db
+from app.core.access_code import generate_access_code
 from models.student import Student
+from models.group import Group
+from models.user import User
 from repositories.student import StudentRepository
 from schemas.student import StudentCreateRequest
+from app.core.enums import UserRole
 
 
 class StudentService:
@@ -23,40 +28,43 @@ class StudentService:
     @staticmethod
     def generate_access_code() -> str:
         """Generate a random access code. (symbols + digits)"""
-        characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
-        return "".join(random.choice(characters) for _ in range(8))
-
-    async def _generate_random_id(self) -> int:
-        """Generate a random student ID."""
-        return random.randint(100000, 999999)
+        return generate_access_code()
 
     async def generate_unique_access_code(self) -> str:
         """Generate a unique access code."""
         while True:
             new_code = self.generate_access_code()
-            existing_student = await self.get_student_by_access_code(new_code)
-            if not existing_student:
+            existing_user = await self.db.scalar(
+                select(User.id).where(User.access_code == new_code)
+            )
+            if existing_user is None:
                 return new_code
 
-    async def generate_unique_student_id(self) -> int:
-        """Generate a unique student ID."""
-        while True:
-            new_id = await self._generate_random_id()
-            existing_student = await self.get_student_by_id(new_id)
-            if not existing_student:
-                return new_id
-
     async def create_student(self, student: StudentCreateRequest) -> Student:
-        student_id = await self.generate_unique_student_id()
+        access_code = await self.generate_unique_access_code()
+        user = User(
+            name=student.name,
+            role=UserRole.STUDENT.value,
+            access_code=access_code,
+        )
+        self.db.add(user)
+        await self.db.flush()
+        groups = list((await self.db.scalars(
+            select(Group)
+            .options(selectinload(Group.course))
+            .where(Group.id.in_(student.group_ids))
+        )).all())
+        if len(groups) != len(student.group_ids):
+            raise ValueError("One or more groups were not found")
         new_student = Student(
-            id=student_id,
+            id=user.id,
+            user_id=user.id,
             name=student.name,
             avatar=student.avatar,
             balance=0,
-            course_name=student.course_name,
-            group_id=student.group_id,
+            groups=groups,
             hash_access_key=self.generate_hash_access_key(),
-            access_code=await self.generate_unique_access_code(),
+            access_code=access_code,
         )
         return await self.repository.create_student(new_student)
 

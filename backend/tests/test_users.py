@@ -1,0 +1,691 @@
+import asyncio
+import importlib.util
+import sys
+from pathlib import Path
+
+import pytest
+from alembic.migration import MigrationContext
+from alembic.operations import Operations
+from fastapi import Request, Response
+from sqlalchemy import create_engine, inspect, text
+from sqlalchemy.engine import URL
+from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
+from unittest.mock import AsyncMock
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "app"))
+
+from api.routes.course import get_courses
+from api.routes.group import (
+    create_group,
+    get_group_by_id,
+    get_group_by_name,
+    get_groups_by_course_id,
+)
+from api.routes.auth import get_current_user, login
+from api.routes.student import create_student
+from api.routes.student import get_student_by_id
+from api.routes.teacher import get_teacher_profile, register_teacher
+from api.routes.users import get_user_by_id, get_users
+from app.core.database import Base
+from models.course import Course
+from models.student import Student
+from repositories.group import GroupRepository
+from repositories.course import CourseRepository
+from repositories.student import StudentRepository
+from repositories.session import SessionRepository
+from repositories.users import UserRepository
+from schemas.group import GroupCreateRequest
+from schemas.auth import UserLoginRequest
+from schemas.student import StudentCreateRequest
+from schemas.teacher import TeacherRegistrationRequest
+from services.group import GroupService
+from services.course import CourseService
+from services.student import StudentService
+from services.session import SessionService
+from services.users import UserService
+
+
+def _auth_request(path: str, cookie: str | None = None) -> Request:
+    headers = [(b"content-type", b"application/json")]
+    if cookie is not None:
+        headers.append((b"cookie", cookie.encode("ascii")))
+    return Request(
+        {
+            "type": "http",
+            "asgi": {"version": "3.0"},
+            "http_version": "1.1",
+            "method": "POST" if path == "/auth/login" else "GET",
+            "scheme": "http",
+            "path": path,
+            "raw_path": path.encode("ascii"),
+            "query_string": b"",
+            "headers": headers,
+            "server": ("test", 80),
+            "client": ("test", 123),
+            "root_path": "",
+        }
+    )
+
+
+def test_auth_me_returns_user_profile_fields():
+    async def run_test():
+        student = Student(
+            id=123456,
+            user_id=123456,
+            name="Student One",
+            group_id=1,
+            course_name="Python",
+            avatar="🤖",
+            balance=10,
+            hash_access_key="hash",
+            access_code="CODE1234",
+        )
+
+        class ActiveSession:
+            user_id = student.user_id
+
+            def is_expired(self) -> bool:
+                return False
+
+        session_service = AsyncMock()
+        session_service.get_session_by_token.return_value = ActiveSession()
+        student_service = AsyncMock()
+        student_service.get_student_by_id.return_value = student
+        user_service = AsyncMock()
+        user_service.get_user_by_id.return_value = type(
+            "ActiveUser",
+            (),
+            {"id": student.user_id, "role": "student"},
+        )()
+        profile = await get_current_user(
+            _auth_request("/auth/me", "session_token=test-token"),
+            student_service=student_service,
+            session_service=session_service,
+            user_service=user_service,
+        )
+
+        assert profile.user_id == profile.id == student.user_id
+        assert profile.role == "student"
+        assert profile.model_dump(mode="json")["user_id"] == profile.id
+        student_service.get_student_by_id.assert_awaited_once_with(student.id)
+        user_service.get_user_by_id.assert_awaited_once_with(student.user_id)
+
+    asyncio.run(run_test())
+
+
+def test_student_and_teacher_registration_and_group_assignments(tmp_path: Path):
+    async def run_test():
+        engine = create_async_engine(
+            URL.create(
+                "sqlite+aiosqlite",
+                database=str(tmp_path / "users.db"),
+            ),
+            pool_pre_ping=True,
+        )
+        session_factory = async_sessionmaker(engine, expire_on_commit=False)
+
+        try:
+            async with engine.begin() as connection:
+                await connection.run_sync(Base.metadata.create_all)
+
+            async with session_factory() as session:
+                user_service = UserService(UserRepository(session))
+                teacher_one = await register_teacher(
+                    TeacherRegistrationRequest(name="Teacher One"),
+                    user_service,
+                )
+                teacher_two = await register_teacher(
+                    TeacherRegistrationRequest(name="Teacher Two"),
+                    user_service,
+                )
+                assert teacher_one.role == "teacher"
+                assert teacher_two.role == "teacher"
+                assert teacher_one.user_id == teacher_one.id
+                assert teacher_one.model_dump()["code"] == 200
+                assert len(teacher_one.access_code) == 8
+                assert teacher_one.access_code != teacher_two.access_code
+
+                course = Course(name="Python")
+                session.add(course)
+                await session.flush()
+                group_service = GroupService(
+                    session,
+                    GroupRepository(session),
+                )
+                group_response = await create_group(
+                    GroupCreateRequest(
+                        name="Group A",
+                        course_id=course.id,
+                        teacher_ids=[teacher_one.id, teacher_two.id],
+                    ),
+                    service=group_service,
+                )
+                assert group_response.teacher_ids == [
+                    teacher_one.id,
+                    teacher_two.id,
+                ]
+                group_by_id = await get_group_by_id(
+                    group_response.id,
+                    service=group_service,
+                )
+                group_by_name = await get_group_by_name(
+                    "Group A",
+                    service=group_service,
+                )
+                groups_by_course = await get_groups_by_course_id(
+                    course.id,
+                    service=group_service,
+                )
+                course_list = await get_courses(
+                    service=CourseService(CourseRepository(session))
+                )
+                for group_profile in (
+                    group_by_id,
+                    group_by_name,
+                    groups_by_course[0],
+                    course_list[0].groups[0],
+                ):
+                    assert group_profile.teacher_ids == [
+                        teacher_one.id,
+                        teacher_two.id,
+                    ]
+
+                student_service = StudentService(
+                    session,
+                    StudentRepository(session),
+                )
+                student_response = await create_student(
+                    StudentCreateRequest(
+                        name="Student One",
+                        avatar="🤖",
+                        course_name=course.name,
+                        group_id=group_response.id,
+                    ),
+                    service=student_service,
+                )
+                assert student_response.role == "student"
+                assert student_response.id == student_response.user_id
+                student_profile = await get_student_by_id(
+                    student_response.id,
+                    service=student_service,
+                )
+                assert student_profile.user_id == student_profile.id
+                assert student_profile.role == "student"
+                student = await StudentRepository(session).get_student_by_id(
+                    student_response.id
+                )
+                assert student is not None
+                student_user = await user_service.get_user_by_id(student.id)
+                assert student_user is not None
+                assert student_user.role == "student"
+                assert student_user.name == student.name
+                assert student.user_id == student.id
+                assert (await get_user_by_id(student.id, user_service)).role == "student"
+                assert {user.role for user in await get_users(user_service)} == {
+                    "student",
+                    "teacher",
+                }
+
+                assigned_group = await group_service.assign_group_teachers(
+                    group_response.id,
+                    [teacher_two.id],
+                )
+                assert assigned_group is not None
+                assert assigned_group.teacher_1_id == teacher_two.id
+                assert assigned_group.teacher_2_id is None
+                assert len(await user_service.get_users()) == 3
+
+                teacher_profile = await get_teacher_profile(
+                    teacher_two.id,
+                    user_service,
+                )
+                assert teacher_profile.id == teacher_profile.user_id == teacher_two.id
+                assert teacher_profile.role == "teacher"
+                assert [
+                    (
+                        group.id,
+                        group.name,
+                        group.course_id,
+                        group.course_name,
+                        group.students_count,
+                    )
+                    for group in teacher_profile.groups
+                ] == [
+                    (
+                        group_response.id,
+                        "Group A",
+                        course.id,
+                        "Python",
+                        1,
+                    )
+                ]
+                assert (
+                    await user_service.get_teacher_profile(teacher_one.id)
+                )[1] == []
+
+                session_service = SessionService(SessionRepository(session))
+                teacher_login = await login(
+                    UserLoginRequest(code=teacher_two.access_code),
+                    Response(),
+                    _auth_request("/auth/login"),
+                    user_service,
+                    student_service,
+                    session_service,
+                )
+                assert teacher_login.user.role == "teacher"
+                teacher_session = await session_service.get_session_by_token(
+                    teacher_login.session_token
+                )
+                assert teacher_session is not None
+                assert teacher_session.user_id == teacher_two.id
+                assert teacher_session.student_id is None
+                teacher_me = await get_current_user(
+                    _auth_request(
+                        "/auth/me",
+                        f"session_token={teacher_login.session_token}",
+                    ),
+                    student_service,
+                    session_service,
+                    user_service,
+                )
+                assert teacher_me.role == "teacher"
+                assert teacher_me.id == teacher_two.id
+                assert [group.id for group in teacher_me.groups] == [
+                    group_response.id
+                ]
+
+                student_login = await login(
+                    UserLoginRequest(code=student_response.access_code),
+                    Response(),
+                    _auth_request("/auth/login"),
+                    user_service,
+                    student_service,
+                    session_service,
+                )
+                assert student_login.user.role == "student"
+                student_session = await session_service.get_session_by_token(
+                    student_login.session_token
+                )
+                assert student_session is not None
+                assert student_session.user_id == student_response.user_id
+                assert student_session.student_id == student_response.id
+
+                with pytest.raises(ValueError, match="at most two"):
+                    await group_service.assign_group_teachers(
+                        group_response.id,
+                        [teacher_one.id, teacher_two.id, 999],
+                    )
+        finally:
+            await engine.dispose()
+    asyncio.run(run_test())
+
+
+def test_user_migration_creates_accounts_for_existing_students():
+    migration_path = (
+        Path(__file__).resolve().parents[1]
+        / "alembic"
+        / "versions"
+        / "6c2a1e9f4b70_add_users_teachers_and_group_assignments.py"
+    )
+    spec = importlib.util.spec_from_file_location(
+        "add_user_roles_migration",
+        migration_path,
+    )
+    assert spec is not None and spec.loader is not None
+    migration = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(migration)
+
+    engine = create_engine("sqlite://")
+    try:
+        with engine.begin() as connection:
+            connection.execute(
+                text("CREATE TABLE students (id INTEGER PRIMARY KEY, name VARCHAR NOT NULL)")
+            )
+            connection.execute(text("CREATE TABLE groups (id INTEGER PRIMARY KEY)"))
+            connection.execute(
+                text(
+                    "INSERT INTO students (id, name) VALUES "
+                    "(123456, 'Existing Student')"
+                )
+            )
+
+            with Operations.context(MigrationContext.configure(connection)):
+                migration.upgrade()
+
+            migrated_user = connection.execute(
+                text("SELECT id, name, role FROM users")
+            ).one()
+            migrated_student = connection.execute(
+                text("SELECT user_id FROM students WHERE id = 123456")
+            ).scalar_one()
+            assert migrated_user == (123456, "Existing Student", "student")
+            assert migrated_student == migrated_user.id
+    finally:
+        engine.dispose()
+
+
+def test_teacher_profile_migration_syncs_manual_user_inserts_and_group_assignments():
+    migration_path = (
+        Path(__file__).resolve().parents[1]
+        / "alembic"
+        / "versions"
+        / "b7c3d1e9a204_sync_teacher_profiles_with_user_roles.py"
+    )
+    spec = importlib.util.spec_from_file_location(
+        "sync_teacher_profiles_migration",
+        migration_path,
+    )
+    assert spec is not None and spec.loader is not None
+    migration = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(migration)
+
+    engine = create_engine("sqlite://")
+    try:
+        with engine.connect() as connection:
+            connection.execute(text("PRAGMA foreign_keys=ON"))
+            connection.commit()
+
+        with engine.begin() as connection:
+            connection.execute(
+                text(
+                    "CREATE TABLE users ("
+                    "id INTEGER PRIMARY KEY, "
+                    "name VARCHAR NOT NULL, "
+                    "role VARCHAR(20) NOT NULL)"
+                )
+            )
+            connection.execute(
+                text(
+                    "CREATE TABLE teachers ("
+                    "user_id INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE)"
+                )
+            )
+            connection.execute(
+                text(
+                    "CREATE TABLE groups ("
+                    "id INTEGER PRIMARY KEY, "
+                    "teacher_1_id INTEGER REFERENCES teachers(user_id) ON DELETE SET NULL)"
+                )
+            )
+            connection.execute(
+                text(
+                    "INSERT INTO users (id, name, role) "
+                    "VALUES (1, 'Existing Teacher', 'teacher')"
+                )
+            )
+
+            with Operations.context(MigrationContext.configure(connection)):
+                migration.upgrade()
+
+            assert connection.execute(
+                text("SELECT user_id FROM teachers")
+            ).scalars().all() == [1]
+
+            connection.execute(
+                text(
+                    "INSERT INTO users (id, name, role) "
+                    "VALUES (2, 'Manual Teacher', 'teacher')"
+                )
+            )
+            connection.execute(
+                text("INSERT INTO groups (id, teacher_1_id) VALUES (1, 2)")
+            )
+            assert connection.execute(
+                text(
+                    "SELECT teacher_1_id FROM groups WHERE id = 1"
+                )
+            ).scalar_one() == 2
+
+            connection.execute(
+                text("UPDATE users SET role = 'student' WHERE id = 2")
+            )
+            assert connection.execute(
+                text("SELECT teacher_1_id FROM groups WHERE id = 1")
+            ).scalar_one() is None
+    finally:
+        engine.dispose()
+
+
+def test_access_code_migration_handles_an_existing_column():
+    migration_path = (
+        Path(__file__).resolve().parents[1]
+        / "alembic"
+        / "versions"
+        / "56b9e2b65399_add_access_code_to_students.py"
+    )
+    spec = importlib.util.spec_from_file_location(
+        "add_access_code_migration",
+        migration_path,
+    )
+    assert spec is not None and spec.loader is not None
+    migration = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(migration)
+
+    engine = create_engine("sqlite://")
+    try:
+        with engine.begin() as connection:
+            connection.execute(
+                text(
+                    "CREATE TABLE students ("
+                    "id INTEGER PRIMARY KEY, "
+                    "access_code VARCHAR)"
+                )
+            )
+            connection.execute(
+                text(
+                    "INSERT INTO students (id, access_code) VALUES "
+                    "(1, 'EXIST123'), (2, NULL)"
+                )
+            )
+
+            with Operations.context(MigrationContext.configure(connection)):
+                migration.upgrade()
+
+            access_codes = connection.execute(
+                text("SELECT access_code FROM students ORDER BY id")
+            ).scalars().all()
+            assert access_codes[0] == "EXIST123"
+            assert access_codes[1]
+            assert len(access_codes[1]) == 8
+            assert connection.execute(
+                text("PRAGMA table_info(students)")
+            ).all()[1][3] == 1
+            assert any(
+                constraint["column_names"] == ["access_code"]
+                for constraint in inspect(connection).get_unique_constraints(
+                    "students"
+                )
+            ) or any(
+                index["unique"]
+                and index["column_names"] == ["access_code"]
+                for index in inspect(connection).get_indexes("students")
+            )
+    finally:
+        engine.dispose()
+
+
+def test_user_access_code_and_session_migration_preserves_student_sessions():
+    migration_path = (
+        Path(__file__).resolve().parents[1]
+        / "alembic"
+        / "versions"
+        / "c4f8a91d2e70_add_user_access_codes_and_teacher_sessions.py"
+    )
+    spec = importlib.util.spec_from_file_location(
+        "user_access_code_and_session_migration",
+        migration_path,
+    )
+    assert spec is not None and spec.loader is not None
+    migration = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(migration)
+
+    engine = create_engine("sqlite://")
+    try:
+        with engine.begin() as connection:
+            connection.execute(
+                text(
+                    "CREATE TABLE users ("
+                    "id INTEGER PRIMARY KEY, name VARCHAR NOT NULL, "
+                    "role VARCHAR(20) NOT NULL)"
+                )
+            )
+            connection.execute(
+                text(
+                    "CREATE TABLE students ("
+                    "id INTEGER PRIMARY KEY, user_id INTEGER NOT NULL, "
+                    "access_code VARCHAR NOT NULL)"
+                )
+            )
+            connection.execute(
+                text(
+                    "CREATE TABLE sessions ("
+                    "id INTEGER PRIMARY KEY, token_hash VARCHAR NOT NULL, "
+                    "student_id INTEGER NOT NULL, expires_at DATETIME NOT NULL)"
+                )
+            )
+            connection.execute(
+                text(
+                    "INSERT INTO users (id, name, role) VALUES "
+                    "(10, 'Student', 'student'), (20, 'Teacher', 'teacher')"
+                )
+            )
+            connection.execute(
+                text(
+                    "INSERT INTO students (id, user_id, access_code) "
+                    "VALUES (10, 10, 'STUD1234')"
+                )
+            )
+            connection.execute(
+                text(
+                    "INSERT INTO sessions (id, token_hash, student_id, expires_at) "
+                    "VALUES (1, 'hashed-token', 10, '2030-01-01 00:00:00')"
+                )
+            )
+
+            with Operations.context(MigrationContext.configure(connection)):
+                migration.upgrade()
+
+            assert connection.execute(
+                text("SELECT access_code FROM users WHERE id = 10")
+            ).scalar_one() == "STUD1234"
+            teacher_code = connection.execute(
+                text("SELECT access_code FROM users WHERE id = 20")
+            ).scalar_one()
+            assert len(teacher_code) == 8
+            assert teacher_code != "STUD1234"
+            assert connection.execute(
+                text("SELECT user_id FROM sessions WHERE id = 1")
+            ).scalar_one() == 10
+            session_columns = {
+                column["name"]: column
+                for column in inspect(connection).get_columns("sessions")
+            }
+            assert session_columns["user_id"]["nullable"] is False
+            assert session_columns["student_id"]["nullable"] is True
+            assert any(
+                foreign_key["referred_table"] == "users"
+                and foreign_key["constrained_columns"] == ["user_id"]
+                for foreign_key in inspect(connection).get_foreign_keys("sessions")
+            )
+    finally:
+        engine.dispose()
+
+
+def test_student_id_migration_preserves_related_records_and_handles_collisions():
+    migration_path = (
+        Path(__file__).resolve().parents[1]
+        / "alembic"
+        / "versions"
+        / "8f3c2a7d1e60_use_user_ids_for_student_profiles.py"
+    )
+    spec = importlib.util.spec_from_file_location(
+        "use_user_ids_for_student_profiles",
+        migration_path,
+    )
+    assert spec is not None and spec.loader is not None
+    migration = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(migration)
+
+    engine = create_engine("sqlite://")
+    try:
+        with engine.begin() as connection:
+            connection.execute(
+                text(
+                    "CREATE TABLE users ("
+                    "id INTEGER PRIMARY KEY, "
+                    "name VARCHAR NOT NULL, "
+                    "role VARCHAR(20) NOT NULL)"
+                )
+            )
+            connection.execute(
+                text(
+                    "CREATE TABLE students ("
+                    "id INTEGER PRIMARY KEY, "
+                    "user_id INTEGER NOT NULL UNIQUE, "
+                    "name VARCHAR NOT NULL, "
+                    "CONSTRAINT fk_students_user_id_users "
+                    "FOREIGN KEY(user_id) REFERENCES users(id))"
+                )
+            )
+            connection.execute(
+                text(
+                    "CREATE TABLE sessions ("
+                    "id INTEGER PRIMARY KEY, "
+                    "student_id INTEGER NOT NULL, "
+                    "CONSTRAINT fk_sessions_student_id_students "
+                    "FOREIGN KEY(student_id) REFERENCES students(id))"
+                )
+            )
+            connection.execute(
+                text(
+                    "CREATE TABLE balance_transactions ("
+                    "id INTEGER PRIMARY KEY, "
+                    "student_id INTEGER NOT NULL, "
+                    "FOREIGN KEY(student_id) REFERENCES students(id))"
+                )
+            )
+            connection.execute(
+                text(
+                    "INSERT INTO users (id, name, role) VALUES "
+                    "(2, 'User 2', 'student'), "
+                    "(100, 'User 100', 'student'), "
+                    "(300, 'User 300', 'student')"
+                )
+            )
+            connection.execute(
+                text(
+                    "INSERT INTO students (id, user_id, name) VALUES "
+                    "(2, 100, 'Student 100'), "
+                    "(100, 300, 'Student 300'), "
+                    "(300, 2, 'Student 2')"
+                )
+            )
+            connection.execute(
+                text(
+                    "INSERT INTO sessions (id, student_id) VALUES "
+                    "(1, 2), (2, 100), (3, 300)"
+                )
+            )
+            connection.execute(
+                text(
+                    "INSERT INTO balance_transactions (id, student_id) VALUES "
+                    "(1, 2), (2, 100), (3, 300)"
+                )
+            )
+
+            with Operations.context(MigrationContext.configure(connection)):
+                migration.upgrade()
+
+            students = connection.execute(
+                text("SELECT id, user_id FROM students ORDER BY id")
+            ).all()
+            assert students == [(2, 2), (100, 100), (300, 300)]
+            assert connection.execute(
+                text("SELECT student_id FROM sessions ORDER BY id")
+            ).scalars().all() == [100, 300, 2]
+            assert connection.execute(
+                text("SELECT student_id FROM balance_transactions ORDER BY id")
+            ).scalars().all() == [100, 300, 2]
+            assert connection.execute(text("PRAGMA foreign_key_check")).all() == []
+    finally:
+        engine.dispose()

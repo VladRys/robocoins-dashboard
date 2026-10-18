@@ -13,6 +13,9 @@ from app.core.database import Base
 from models.course import Course
 from models.group import Group
 from models.student import Student
+from models.teacher import Teacher
+from models.transaction import BalanceTransaction
+from models.user import User
 from repositories.course import CourseRepository
 from repositories.group import GroupRepository
 from services.course import CourseService
@@ -47,7 +50,7 @@ def test_get_courses_returns_course_and_group_mapping(tmp_path: Path):
 
             assert len(response) == 1
             assert response[0].name == "Python"
-            assert response[0].groups == [1, 2]
+            assert [group.id for group in response[0].groups] == [1, 2]
         finally:
             await engine.dispose()
 
@@ -73,8 +76,12 @@ def test_get_groups_by_course_returns_groups_without_lazy_loading(tmp_path: Path
                 group = Group(name="Group A", course_id=course.id)
                 session.add(group)
                 await session.flush()
+                user = User(name="Alex", role="student", access_code="CODE1234")
+                session.add(user)
+                await session.flush()
                 session.add(Student(
-                    id=123456,
+                    id=user.id,
+                    user_id=user.id,
                     name="Alex",
                     group_id=group.id,
                     course_name=course.name,
@@ -92,8 +99,9 @@ def test_get_groups_by_course_returns_groups_without_lazy_loading(tmp_path: Path
 
             assert len(response) == 1
             assert response[0].name == "Group A"
-            assert response[0].students == [123456]
+            assert len(response[0].students) == 1
             assert response[0].students_count == 1
+            assert response[0].students == [user.id]
         finally:
             await engine.dispose()
 

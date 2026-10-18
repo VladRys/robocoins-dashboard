@@ -16,12 +16,13 @@ def test_create_session_persists_hash_and_returns_raw_token():
         session_token = "raw-session-token"
         service._generate_session_token = AsyncMock(return_value=session_token)
 
-        result = await service.create_session(student_id=123456)
+        result = await service.create_session(user_id=123456, student_id=123456)
 
         assert result == session_token
         repository.create_session.assert_awaited_once_with(
             123456,
             hashlib.sha256(session_token.encode("utf-8")).hexdigest(),
+            123456,
         )
 
     asyncio.run(run_test())
