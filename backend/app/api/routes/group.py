@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 
+from api.dependencies import get_authenticated_teacher, get_authenticated_user
 from models.group import Group
 from schemas.group import GroupCreateRequest, GroupResponse
 from schemas.student import StudentProfileResponse
@@ -31,6 +32,7 @@ def _group_response(group: Group) -> GroupResponse:
 async def create_group(
     group: GroupCreateRequest,
     service: GroupService = Depends(get_group_service),
+    _user = Depends(get_authenticated_teacher),
 ) -> GroupResponse:
     try:
         new_group = await service.create_group(group)
@@ -47,6 +49,7 @@ async def create_group(
 async def get_group_by_id(
     group_id: int,
     service: GroupService = Depends(get_group_service),
+    _user = Depends(get_authenticated_user),
 ) -> GroupResponse:
     group = await service.get_group_by_id(group_id)
 
@@ -60,6 +63,7 @@ async def get_group_by_id(
 async def get_group_by_name(
     name: str,
     service: GroupService = Depends(get_group_service),
+    _user = Depends(get_authenticated_user),
 ) -> GroupResponse:
     group = await service.get_group_by_name(name)
 
@@ -73,6 +77,7 @@ async def get_group_by_name(
 async def get_groups_by_course_id(
     course_id: int,
     service: GroupService = Depends(get_group_service),
+    _user = Depends(get_authenticated_user),
 ) -> list[GroupResponse]:
     groups = await service.get_groups_by_course_id(course_id)
 
@@ -87,6 +92,7 @@ async def assign_group_teachers(
     group_id: int,
     request: TeacherAssignmentRequest,
     service: GroupService = Depends(get_group_service),
+    _user = Depends(get_authenticated_teacher),
 ) -> GroupResponse:
     try:
         group = await service.assign_group_teachers(group_id, request.teacher_ids)

@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 
+from api.dependencies import get_authenticated_user
 from schemas.teacher import (
     TeacherGroupProfile,
     TeacherProfileResponse,
@@ -36,6 +37,7 @@ async def register_teacher(
 async def get_teacher_profile(
     teacher_id: int,
     service: UserService = Depends(get_user_service),
+    _user = Depends(get_authenticated_user),
 ) -> TeacherProfileResponse:
     profile = await service.get_teacher_profile(teacher_id)
     if profile is None:

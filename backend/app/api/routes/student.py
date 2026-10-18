@@ -1,6 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException
 
+from api.dependencies import get_authenticated_teacher, get_authenticated_user
 from core.enums import StatusEnum
+from models.user import User
 from schemas.student import StudentCreateRequest, StudentResponse, StudentProfileResponse
 from services.student import StudentService, get_student_service
 
@@ -13,6 +15,7 @@ student_router = APIRouter(
 async def create_student(
     student: StudentCreateRequest,
     service: StudentService = Depends(get_student_service),
+    _user: User = Depends(get_authenticated_teacher),
 ) -> StudentResponse:
     try:
         new_student = await service.create_student(student)
@@ -41,6 +44,7 @@ async def create_student(
 async def get_student_by_id(
     student_id: int,
     service: StudentService = Depends(get_student_service),
+    _user: User = Depends(get_authenticated_user),
 ) -> StudentProfileResponse:
     student = await service.get_student_by_id(student_id)
     if student is None:

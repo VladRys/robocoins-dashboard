@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 
+from api.dependencies import get_authenticated_user
 from schemas.user import UserResponse
 from services.users import UserService, get_user_service
 
@@ -13,6 +14,7 @@ users_router = APIRouter(
 @users_router.get("", response_model=list[UserResponse])
 async def get_users(
     service: UserService = Depends(get_user_service),
+    _user = Depends(get_authenticated_user),
 ) -> list[UserResponse]:
     users = await service.get_users()
     return [UserResponse.model_validate(user) for user in users]
@@ -22,6 +24,7 @@ async def get_users(
 async def get_user_by_id(
     user_id: int,
     service: UserService = Depends(get_user_service),
+    _user = Depends(get_authenticated_user),
 ) -> UserResponse:
     user = await service.get_user_by_id(user_id)
     if user is None:

@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 
+from api.dependencies import get_authenticated_teacher, get_authenticated_user
 from app.core.enums import CourseCategory
 from schemas.course import CourseCreateRequest, CourseResponse
 from schemas.group import GroupResponse
@@ -44,6 +45,7 @@ def _course_response(course) -> CourseResponse:
 async def create_course(
     course_data: CourseCreateRequest,
     service: CourseService = Depends(get_course_service),
+    _user = Depends(get_authenticated_teacher),
 ) -> CourseResponse:
     try:
         course = await service.create_course(course_data)
@@ -60,6 +62,7 @@ async def create_course(
 @course_router.get("", response_model=list[CourseResponse])
 async def get_courses(
     service: CourseService = Depends(get_course_service),
+    _user = Depends(get_authenticated_user),
 ) -> list[CourseResponse]:
     courses = await service.get_all_courses()
     return [_course_response(course) for course in courses]
@@ -69,6 +72,7 @@ async def get_courses(
 async def get_courses_by_category(
     category: CourseCategory,
     service: CourseService = Depends(get_course_service),
+    _user = Depends(get_authenticated_user),
 ) -> list[CourseResponse]:
     courses = await service.get_courses_by_category(category)
     return [_course_response(course) for course in courses]
