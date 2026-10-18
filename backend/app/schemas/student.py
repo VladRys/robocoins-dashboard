@@ -47,7 +47,11 @@ class StudentProfileResponse(BaseModel):
     @model_validator(mode="before")
     @classmethod
     def read_group_ids(cls, value):
-        if isinstance(value, dict) or hasattr(value, "group_ids"):
+        if (
+            isinstance(value, dict)
+            or hasattr(value, "group_ids")
+            or not hasattr(value, "balance")
+        ):
             return value
         return {
             "id": value.id,

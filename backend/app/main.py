@@ -67,5 +67,11 @@ async def teacher_test_page() -> FileResponse:
     return FileResponse(page_path, media_type="text/html")
 
 
+@app.get("/balance-test", include_in_schema=False)
+async def balance_test_page() -> FileResponse:
+    page_path = Path(__file__).resolve().parents[2] / "frontend" / "balance-test.html"
+    return FileResponse(page_path, media_type="text/html")
+
+
 if __name__ == "__main__":
     uvicorn.run(app, port=8000)
