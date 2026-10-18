@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 
 from models.group import Group
 from schemas.group import GroupCreateRequest, GroupResponse
+from schemas.student import StudentProfileResponse
 from schemas.teacher import TeacherAssignmentRequest
 from services.group import GroupService, get_group_service
 
@@ -16,7 +17,7 @@ def _group_response(group: Group) -> GroupResponse:
         id=group.id,
         name=group.name,
         course_id=group.course_id,
-        students=[student.id for student in group.students],
+        students=[StudentProfileResponse.model_validate(student) for student in group.students],
         students_count=len(group.students),
         teacher_ids=[
             teacher_id

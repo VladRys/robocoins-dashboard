@@ -34,6 +34,6 @@ class StudentProfileResponse(BaseModel):
     role: UserRole = UserRole.STUDENT
     name: str
     course_name: str
-    group_id: int
+    group_id: int # Add multi-group students support.
     avatar: str | None = None
     balance: int
