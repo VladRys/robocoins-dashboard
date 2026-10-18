@@ -2,7 +2,8 @@ from datetime import datetime
 from typing import Literal
 
 from core.enums import StatusEnum
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict
+from app.core.enums import BalanceChangeReasons
 
 
 class BalanceResponse(BaseModel):
@@ -12,9 +13,7 @@ class BalanceResponse(BaseModel):
 
 
 class BalanceChangeRequest(BaseModel):
-    operation: Literal["deposit", "deduct"]
-    amount: int = Field(gt=0)
-    reason: str | None = None
+    reason: BalanceChangeReasons
 
 
 class BalanceTransactionResponse(BaseModel):

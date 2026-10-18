@@ -1,5 +1,5 @@
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, update
+from sqlalchemy import case, select, update
 from sqlalchemy.orm import selectinload
 
 from models.student import Student
@@ -20,14 +20,16 @@ class StudentRepository:
         return result.scalar_one_or_none()
 
     async def change_balance(self, student_id: int, amount: int) -> int | None:
-        """Atomically change a balance, rejecting changes that would make it negative."""
+        """Atomically change a balance without allowing it to fall below zero."""
         result = await self.session.execute(
             update(Student)
-            .where(
-                Student.id == student_id,
-                Student.balance + amount >= 0,
+            .where(Student.id == student_id)
+            .values(
+                balance=case(
+                    (Student.balance + amount < 0, 0),
+                    else_=Student.balance + amount,
+                )
             )
-            .values(balance=Student.balance + amount)
             .returning(Student.balance)
         )
         return result.scalar_one_or_none()

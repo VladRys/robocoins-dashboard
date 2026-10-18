@@ -11,7 +11,6 @@ from schemas.balance import (
 )
 from services.balance import (
     BalanceService,
-    InsufficientBalanceError,
     StudentNotFoundError,
     get_balance_service,
 )
@@ -79,11 +78,6 @@ async def change_student_balance(
         balance, transaction = await service.change_balance(student_id, change)
     except StudentNotFoundError:
         raise HTTPException(status_code=404, detail="Student not found") from None
-    except InsufficientBalanceError:
-        raise HTTPException(
-            status_code=409,
-            detail="Insufficient balance for this deduction",
-        ) from None
     return BalanceChangeResponse(
         balance=balance,
         transaction=BalanceTransactionResponse.model_validate(transaction),
