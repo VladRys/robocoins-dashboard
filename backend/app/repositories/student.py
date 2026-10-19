@@ -56,8 +56,13 @@ class StudentRepository:
         """Create a new student record."""
         self.session.add(student)
         await self.session.commit()
-        await self.session.refresh(student)
-        return student
+        # Reload relationships explicitly before the API builds its response.
+        # Accessing unloaded relationships here can trigger async lazy loading
+        # outside SQLAlchemy's greenlet context.
+        created_student = await self.get_student_by_id(student.id)
+        if created_student is None:
+            raise RuntimeError("Student was not available after being created")
+        return created_student
     
     async def assign_student_to_groups(self, student_id: int, group_ids: list[int]) -> Student | None:
         """Replace a student's group assignments."""

@@ -1,7 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException
 
 from api.dependencies import get_authenticated_teacher, get_authenticated_user
-from app.core.enums import CourseCategory
+from api.errors import validation_error_message
+from app.core.enums import CourseCategory, HttpErrorMessage
 from schemas.course import CourseCreateRequest, CourseResponse
 from schemas.group import GroupResponse
 from schemas.student import StudentProfileResponse
@@ -45,12 +46,18 @@ def _course_response(course) -> CourseResponse:
 async def create_course(
     course_data: CourseCreateRequest,
     service: CourseService = Depends(get_course_service),
-    _user = Depends(get_authenticated_teacher),
+    _user = Depends(get_authenticated_teacher), # TODO: mb change teacher to admin in future
 ) -> CourseResponse:
     try:
         course = await service.create_course(course_data)
     except ValueError as error:
-        raise HTTPException(status_code=409, detail=str(error)) from error
+        raise HTTPException(
+            status_code=409,
+            detail=validation_error_message(
+                error,
+                HttpErrorMessage.COURSE_CREATION_FAILED,
+            ),
+        ) from error
     return CourseResponse(
         id=course.id,
         name=course.name,
@@ -62,7 +69,6 @@ async def create_course(
 @course_router.get("", response_model=list[CourseResponse])
 async def get_courses(
     service: CourseService = Depends(get_course_service),
-    _user = Depends(get_authenticated_user),
 ) -> list[CourseResponse]:
     courses = await service.get_all_courses()
     return [_course_response(course) for course in courses]
@@ -72,7 +78,6 @@ async def get_courses(
 async def get_courses_by_category(
     category: CourseCategory,
     service: CourseService = Depends(get_course_service),
-    _user = Depends(get_authenticated_user),
 ) -> list[CourseResponse]:
     courses = await service.get_courses_by_category(category)
     return [_course_response(course) for course in courses]

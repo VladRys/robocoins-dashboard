@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 
 from api.dependencies import get_authenticated_teacher, get_authenticated_user
+from api.errors import validation_error_message
 from app.core.enums import HttpErrorMessage
 from models.group import Group
 from schemas.group import GroupCreateRequest, GroupResponse
@@ -38,7 +39,13 @@ async def create_group(
     try:
         new_group = await service.create_group(group)
     except ValueError as error:
-        raise HTTPException(status_code=404, detail=str(error)) from error
+        raise HTTPException(
+            status_code=404,
+            detail=validation_error_message(
+                error,
+                HttpErrorMessage.INVALID_TEACHER_ASSIGNMENT,
+            ),
+        ) from error
 
     if new_group is None:
         raise HTTPException(status_code=500, detail=HttpErrorMessage.FAILED_TO_CREATE_GROUP)
@@ -78,7 +85,6 @@ async def get_group_by_name(
 async def get_groups_by_course_id(
     course_id: int,
     service: GroupService = Depends(get_group_service),
-    _user = Depends(get_authenticated_user),
 ) -> list[GroupResponse]:
     groups = await service.get_groups_by_course_id(course_id)
 
@@ -93,12 +99,18 @@ async def assign_group_teachers(
     group_id: int,
     request: TeacherAssignmentRequest,
     service: GroupService = Depends(get_group_service),
-    _user = Depends(get_authenticated_teacher),
-) -> GroupResponse:
+    _user = Depends(get_authenticated_teacher), #TODO: mb change that to admin in future
+) -> GroupResponse: 
     try:
         group = await service.assign_group_teachers(group_id, request.teacher_ids)
     except ValueError as error:
-        raise HTTPException(status_code=404, detail=str(error)) from error
+        raise HTTPException(
+            status_code=404,
+            detail=validation_error_message(
+                error,
+                HttpErrorMessage.INVALID_TEACHER_ASSIGNMENT,
+            ),
+        ) from error
 
     if group is None:
         raise HTTPException(status_code=404, detail=HttpErrorMessage.GROUP_NOT_FOUND)

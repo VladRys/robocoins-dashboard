@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 
 from api.dependencies import get_authenticated_teacher, get_authenticated_user
+from api.errors import validation_error_message
 from core.enums import StatusEnum
 from app.core.enums import HttpErrorMessage
 from models.user import User
@@ -16,12 +17,17 @@ student_router = APIRouter(
 async def create_student(
     student: StudentCreateRequest,
     service: StudentService = Depends(get_student_service),
-    _user: User = Depends(get_authenticated_teacher),
 ) -> StudentResponse:
     try:
         new_student = await service.create_student(student)
     except ValueError as error:
-        raise HTTPException(status_code=404, detail=str(error)) from error
+        raise HTTPException(
+            status_code=404,
+            detail=validation_error_message(
+                error,
+                HttpErrorMessage.GROUPS_NOT_FOUND,
+            ),
+        ) from error
 
     if new_student is None:
         raise HTTPException(status_code=500, detail=HttpErrorMessage.FAILED_TO_CREATE_STUDENT)

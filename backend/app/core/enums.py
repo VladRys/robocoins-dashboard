@@ -18,6 +18,13 @@ class HttpErrorMessage(str, Enum):
     FAILED_TO_CREATE_STUDENT = "Failed to create student"
     UNSUPPORTED_USER_ROLE = "Unsupported user role"
     ONLY_TEACHERS_CAN_MODIFY = "Only teachers can modify this resource"
+    GROUPS_NOT_FOUND = "One or more groups were not found"
+    GROUP_HAS_TOO_MANY_TEACHERS = "A group can have at most two teachers"
+    DUPLICATE_TEACHER_IDS = "Teacher IDs must be unique"
+    TEACHERS_NOT_FOUND = "One or more teachers were not found"
+    INVALID_TEACHER_ASSIGNMENT = "Invalid teacher assignment"
+    COURSE_ALREADY_EXISTS = "A course with this name already exists"
+    COURSE_CREATION_FAILED = "Course creation failed"
 
 
 class StatusEnum(str, Enum):
