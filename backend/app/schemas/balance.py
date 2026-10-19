@@ -3,7 +3,7 @@ from typing import Literal
 
 from core.enums import StatusEnum
 from pydantic import BaseModel, ConfigDict
-from app.core.enums import BalanceChangeReasons
+from app.core.enums import BalanceChangeReasons, BalanceChangeType
 
 
 class BalanceResponse(BaseModel):
@@ -39,7 +39,13 @@ class BalanceHistoryResponse(BaseModel):
     code: int = 200
     status: str = StatusEnum.SUCCESS
 
+
+class BalanceChangeReasonItem(BaseModel):
+    reason: BalanceChangeReasons
+    type: BalanceChangeType
+
+
 class BalanceChangeReasonsResponse(BaseModel):
     code: int = 200
-    status: str = StatusEnum.SUCCESS 
-    reasons: list[BalanceChangeReasons]
+    status: str = StatusEnum.SUCCESS
+    reasons: list[BalanceChangeReasonItem]

@@ -49,6 +49,11 @@ class CourseCategory(StrEnum):
     PYTHON = "python"
     NO_CATEGORY = "no category"
 
+class BalanceChangeType(StrEnum):
+    PUNISH = "punish"
+    REWARD = "reward"
+
+
 class BalanceChangeReasons(StrEnum):
     THEORY = "theory"
     PRACTICE_COMPLETED = "practice_completed"
@@ -56,6 +61,17 @@ class BalanceChangeReasons(StrEnum):
     DISCIPLINE_BREAKDOWN = "discipline_breakdown"
     MIDDLE_LEVEL_VIOLATION = "middle_level_violation"
     SERIOUS_VIOLATION = "serious_violation"
+
+    @property
+    def type(self) -> BalanceChangeType:
+        return {
+            BalanceChangeReasons.THEORY: BalanceChangeType.REWARD,
+            BalanceChangeReasons.PRACTICE_COMPLETED: BalanceChangeType.REWARD,
+            BalanceChangeReasons.ADDITIONAL_TASK_COMPLETED: BalanceChangeType.REWARD,
+            BalanceChangeReasons.DISCIPLINE_BREAKDOWN: BalanceChangeType.PUNISH,
+            BalanceChangeReasons.MIDDLE_LEVEL_VIOLATION: BalanceChangeType.PUNISH,
+            BalanceChangeReasons.SERIOUS_VIOLATION: BalanceChangeType.PUNISH,
+        }[self]
 
     @property
     def balance_delta(self) -> int:

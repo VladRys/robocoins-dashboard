@@ -252,7 +252,7 @@ $('finish').onclick=async()=>{
   btn.disabled=true;btn.textContent='Створюємо…';
   try{
     if(!selectedCourse||!selectedGroup)throw new Error('Спочатку виберіть курс та групу.');
-    const payload={name,avatar:avatars[ai][0],course_name:selectedCourse.name,group_id:selectedGroup.id};
+    const payload={name,avatar:avatars[ai][0],group_ids:[selectedGroup.id]};
     const r=await fetch(`${api}/student/register`,{
       method:'POST',
       headers:{'Content-Type':'application/json'},

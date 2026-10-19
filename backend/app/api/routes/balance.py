@@ -20,8 +20,6 @@ from services.balance import (
 coins_router = APIRouter(prefix="/student", tags=["balance"])
 coins_ext_router = APIRouter(prefix="/ext/balance", tags=["balance"])
 
-# TODO: Do server-side validation for some type of actions, add just single endpoint with reason and action type (reward, punish)
-
 
 @coins_router.get("/{student_id}/balance", response_model=BalanceResponse)
 async def get_student_balance_by_id(
@@ -60,7 +58,7 @@ async def get_balance_change_reasons(
     _user: User = Depends(get_authenticated_user),
 ) -> BalanceChangeReasonsResponse:
     return BalanceChangeReasonsResponse(
-        reasons=list(BalanceChangeReasons),
+        reasons=[{"reason": reason, "type": reason.type} for reason in BalanceChangeReasons],
     )
 
 @coins_router.get(
