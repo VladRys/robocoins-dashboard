@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 from core.config import Config as cfg
-from api.routes.balance import coins_router
+from api.routes.balance import coins_router, coins_ext_router
 from api.routes.course import course_router
 from api.routes.group import group_router
 from api.routes.student import student_router
@@ -15,6 +15,7 @@ router.include_router(student_router)
 router.include_router(teacher_router)
 router.include_router(users_router)
 router.include_router(coins_router)
+router.include_router(coins_ext_router)
 router.include_router(auth_router)
 
 @router.get("/")

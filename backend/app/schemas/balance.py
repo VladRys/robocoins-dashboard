@@ -38,3 +38,8 @@ class BalanceHistoryResponse(BaseModel):
     transactions: list[BalanceTransactionResponse]
     code: int = 200
     status: str = StatusEnum.SUCCESS
+
+class BalanceChangeReasonsResponse(BaseModel):
+    code: int = 200
+    status: str = StatusEnum.SUCCESS 
+    reasons: list[BalanceChangeReasons]

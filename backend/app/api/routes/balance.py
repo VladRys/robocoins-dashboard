@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 
 from api.dependencies import get_authenticated_teacher, get_authenticated_user
-from app.core.enums import HttpErrorMessage
+from app.core.enums import HttpErrorMessage, BalanceChangeReasons
 from models.user import User
 from schemas.balance import (
     BalanceChangeRequest,
@@ -9,6 +9,7 @@ from schemas.balance import (
     BalanceHistoryResponse,
     BalanceResponse,
     BalanceTransactionResponse,
+    BalanceChangeReasonsResponse
 )
 from services.balance import (
     BalanceService,
@@ -17,6 +18,7 @@ from services.balance import (
 )
 
 coins_router = APIRouter(prefix="/student", tags=["balance"])
+coins_ext_router = APIRouter(prefix="/ext/balance", tags=["balance"])
 
 # TODO: Do server-side validation for some type of actions, add just single endpoint with reason and action type (reward, punish)
 
@@ -53,6 +55,13 @@ async def change_student_balance(
         transaction=BalanceTransactionResponse.model_validate(transaction),
     )
 
+@coins_ext_router.get("/balanceChangeReasons")
+async def get_balance_change_reasons(
+    _user: User = Depends(get_authenticated_user),
+) -> BalanceChangeReasonsResponse:
+    return BalanceChangeReasonsResponse(
+        reasons=list(BalanceChangeReasons),
+    )
 
 @coins_router.get(
     "/{student_id}/transactions",
