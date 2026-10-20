@@ -13,6 +13,17 @@ class TransactionRepository:
         await self.session.flush()
         return transaction
 
+    async def get_by_id_for_update(
+        self,
+        transaction_id: int,
+    ) -> BalanceTransaction | None:
+        result = await self.session.execute(
+            select(BalanceTransaction)
+            .where(BalanceTransaction.id == transaction_id)
+            .with_for_update()
+        )
+        return result.scalar_one_or_none()
+
     async def get_by_student_id(
         self, student_id: int, limit: int, offset: int = 0
     ) -> list[BalanceTransaction]:

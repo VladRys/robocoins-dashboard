@@ -32,7 +32,10 @@
     .identity { padding: 12px; border: 1px solid var(--line); border-radius: 10px; background: #f9fbfe; overflow-wrap: anywhere; }
     .identity:empty { display: none; }
     .history { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
-    .history li { display: grid; grid-template-columns: auto 1fr auto; gap: 12px; align-items: center; padding: 12px; border: 1px solid var(--line); border-radius: 10px; }
+    .history li { display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto; gap: 12px; align-items: center; padding: 12px; border: 1px solid var(--line); border-radius: 10px; }
+    .history li.cancelled { opacity: .6; }
+    .history li.cancelled .amount { text-decoration: line-through; }
+    .history .cancel { width: auto; min-height: 36px; margin: 0; padding: 6px 10px; }
     .amount { font-weight: 800; white-space: nowrap; }
     .deposit { color: var(--green); }
     .deduct { color: var(--red); }
@@ -40,7 +43,7 @@
     .empty { padding: 18px; border: 1px dashed #ccd5e2; border-radius: 10px; color: var(--muted); text-align: center; }
     .heading { display: flex; justify-content: space-between; gap: 12px; align-items: center; margin-bottom: 12px; }
     .heading h2 { margin: 0; }
-    @media (max-width: 650px) { body { padding: 20px 12px; } .grid { grid-template-columns: 1fr; } .wide { grid-column: auto; } .panel { padding: 18px; } .row { grid-template-columns: 1fr; } .row button { width: 100%; } .history li { grid-template-columns: 1fr auto; } .history .reason { grid-column: 1 / -1; grid-row: 2; } }
+    @media (max-width: 650px) { body { padding: 20px 12px; } .grid { grid-template-columns: 1fr; } .wide { grid-column: auto; } .panel { padding: 18px; } .row { grid-template-columns: 1fr; } .row button { width: 100%; } .history li { grid-template-columns: 1fr auto; } .history .reason, .history .cancel { grid-column: 1 / -1; } .history .reason { grid-row: 2; } }
   </style>
 </head>
 <body>
@@ -223,6 +226,7 @@
       };
       for (const transaction of history.transactions) {
         const item = document.createElement('li');
+        item.classList.toggle('cancelled', Boolean(transaction.cancelled_at));
         const amount = document.createElement('span');
         amount.className = `amount ${transaction.operation}`;
         amount.textContent = `${transaction.operation === 'deposit' ? '+' : '−'}${transaction.amount} 🪙`;
@@ -231,14 +235,44 @@
         const reasons = Array.isArray(transaction.reason)
           ? transaction.reason
           : (transaction.reason ? transaction.reason.split(', ') : []);
-        reason.textContent = reasons.length
+        const reasonText = reasons.length
           ? reasons.map(value => reasonLabels[value] || value).join(', ')
           : (transaction.operation === 'deposit' ? 'Пополнение' : 'Списание');
+        reason.textContent = transaction.cancelled_at
+          ? `Отменена · ${reasonText}`
+          : reasonText;
         const date = document.createElement('time');
         date.className = 'muted';
         date.dateTime = transaction.created_at;
         date.textContent = new Date(transaction.created_at).toLocaleString('ru-RU');
         item.append(amount, reason, date);
+        if (currentUser.role === 'teacher' && !transaction.cancelled_at) {
+          const cancelButton = document.createElement('button');
+          cancelButton.type = 'button';
+          cancelButton.className = 'secondary cancel';
+          cancelButton.textContent = 'Отменить';
+          cancelButton.setAttribute('aria-label', `Отменить транзакцию ${transaction.id}`);
+          cancelButton.addEventListener('click', async () => {
+            if (!window.confirm(`Отменить транзакцию #${transaction.id}?`)) return;
+            cancelButton.disabled = true;
+            try {
+              const result = await request(
+                `/student/transactions/${transaction.id}/cancel`,
+                { method: 'POST' }
+              );
+              setStatus(
+                'balance-status',
+                `Транзакция #${transaction.id} отменена. Баланс: ${result.balance} 🪙`,
+                'success'
+              );
+              await loadHistory();
+            } catch (error) {
+              cancelButton.disabled = false;
+              setStatus('balance-status', error.message, 'error');
+            }
+          });
+          item.append(cancelButton);
+        }
         $('history').append(item);
       }
       setStatus('balance-status', `Текущий баланс: ${balance.balance} 🪙`, 'success');

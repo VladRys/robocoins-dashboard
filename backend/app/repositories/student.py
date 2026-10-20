@@ -34,6 +34,22 @@ class StudentRepository:
         )
         return result.scalar_one_or_none()
 
+    async def reverse_balance_transaction(
+        self,
+        student_id: int,
+        operation: str,
+        amount: int,
+    ) -> int | None:
+        """Reverse a ledger operation, refusing to overdraw a prior deposit."""
+        delta = -amount if operation == "deposit" else amount
+        statement = update(Student).where(Student.id == student_id)
+        if delta < 0:
+            statement = statement.where(Student.balance >= amount)
+        result = await self.session.execute(
+            statement.values(balance=Student.balance + delta).returning(Student.balance)
+        )
+        return result.scalar_one_or_none()
+
     async def get_student_by_hash_access_key(
         self, hash_access_key: str
     ) -> Student | None:

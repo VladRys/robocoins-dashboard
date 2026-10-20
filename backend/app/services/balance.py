@@ -1,14 +1,27 @@
-from app.core.database import get_db
+from datetime import datetime, timezone
+
+from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.database import get_db
 from models.transaction import BalanceTransaction
 from repositories.student import StudentRepository
 from repositories.transaction import TransactionRepository
 from schemas.balance import BalanceChangeRequest
 
-from fastapi import Depends 
-
 class StudentNotFoundError(Exception):
+    pass
+
+
+class TransactionNotFoundError(Exception):
+    pass
+
+
+class TransactionAlreadyCancelledError(Exception):
+    pass
+
+
+class InsufficientBalanceToCancelError(Exception):
     pass
 
 
@@ -62,7 +75,34 @@ class BalanceService:
             limit,
             offset,
         )
-        
+
+    async def cancel_transaction(
+        self,
+        transaction_id: int,
+        cancelled_by_user_id: int,
+    ) -> tuple[int, BalanceTransaction]:
+        transaction = await self.transaction_repository.get_by_id_for_update(
+            transaction_id
+        )
+        if transaction is None:
+            raise TransactionNotFoundError
+        if transaction.cancelled_at is not None:
+            raise TransactionAlreadyCancelledError
+
+        balance = await self.student_repository.reverse_balance_transaction(
+            transaction.student_id,
+            transaction.operation,
+            transaction.amount,
+        )
+        if balance is None:
+            raise InsufficientBalanceToCancelError
+
+        transaction.cancelled_at = datetime.now(timezone.utc)
+        transaction.cancelled_by_user_id = cancelled_by_user_id
+        await self.session.commit()
+        return balance, transaction
+
+
 def get_balance_service(session: AsyncSession = Depends(get_db)) -> BalanceService:
     return BalanceService(
         session,

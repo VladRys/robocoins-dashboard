@@ -15,6 +15,9 @@ class HttpErrorMessage(str, Enum):
     GROUP_NOT_FOUND = "Group not found"
     FAILED_TO_CREATE_TEACHER = "Failed to create teacher"
     ONLY_STUDENTS_CAN_VIEW_CREDENTIALS = "Only students can view their credentials"
+    TRANSACTION_NOT_FOUND = "Transaction not found"
+    TRANSACTION_ALREADY_CANCELLED = "Transaction has already been cancelled"
+    INSUFFICIENT_BALANCE_TO_CANCEL_TRANSACTION = "Insufficient balance to cancel this transaction"
     FAILED_TO_CREATE_GROUP = "Failed to create group"
     FAILED_TO_CREATE_STUDENT = "Failed to create student"
     FAILED_TO_CREATE_REWARD = "Failed to create reward"
@@ -72,11 +75,9 @@ class BalanceChangeReasons(StrEnum):
             BalanceChangeReasons.THEORY: BalanceChangeType.REWARD,
             BalanceChangeReasons.PRACTICE_COMPLETED: BalanceChangeType.REWARD,
             BalanceChangeReasons.ADDITIONAL_TASK_COMPLETED: BalanceChangeType.REWARD,
-            BalanceChangeReasons.ACCIDENTAL_PUNISH: BalanceChangeType.REWARD,
             BalanceChangeReasons.DISCIPLINE_BREAKDOWN: BalanceChangeType.PUNISH,
             BalanceChangeReasons.MIDDLE_LEVEL_VIOLATION: BalanceChangeType.PUNISH,
             BalanceChangeReasons.SERIOUS_VIOLATION: BalanceChangeType.PUNISH,
-            BalanceChangeReasons.ACCIDENTAL_REWARD: BalanceChangeType.PUNISH
         }[self]
 
     @property
@@ -85,9 +86,7 @@ class BalanceChangeReasons(StrEnum):
             BalanceChangeReasons.THEORY: 1,
             BalanceChangeReasons.PRACTICE_COMPLETED: 1,
             BalanceChangeReasons.ADDITIONAL_TASK_COMPLETED: 1,
-            BalanceChangeReasons.ACCIDENTAL_PUNISH: 1,
             BalanceChangeReasons.DISCIPLINE_BREAKDOWN: -1,
             BalanceChangeReasons.MIDDLE_LEVEL_VIOLATION: -2,
             BalanceChangeReasons.SERIOUS_VIOLATION: -3,
-            BalanceChangeReasons.ACCIDENTAL_REWARD: -1
         }[self]

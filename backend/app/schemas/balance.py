@@ -40,6 +40,8 @@ class BalanceTransactionResponse(BaseModel):
     operation: Literal["deposit", "deduct"]
     amount: int
     reason: list[str] | None
+    cancelled_at: datetime | None = None
+    cancelled_by_user_id: int | None = None
     created_at: datetime
 
 

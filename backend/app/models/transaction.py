@@ -31,6 +31,14 @@ class BalanceTransaction(Base):
     operation: Mapped[str] = mapped_column(String(20), nullable=False)
     amount: Mapped[int] = mapped_column(Integer, nullable=False)
     reason: Mapped[list[str] | None] = mapped_column(JSON, nullable=True)
+    cancelled_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
+    cancelled_by_user_id: Mapped[int | None] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL"),
+        nullable=True,
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,

@@ -13,7 +13,10 @@ from schemas.balance import (
 )
 from services.balance import (
     BalanceService,
+    InsufficientBalanceToCancelError,
     StudentNotFoundError,
+    TransactionAlreadyCancelledError,
+    TransactionNotFoundError,
     get_balance_service,
 )
 
@@ -48,6 +51,42 @@ async def change_student_balance(
         balance, transaction = await service.change_balance(student_id, change)
     except StudentNotFoundError:
         raise HTTPException(status_code=404, detail=HttpErrorMessage.STUDENT_NOT_FOUND) from None
+    return BalanceChangeResponse(
+        balance=balance,
+        transaction=BalanceTransactionResponse.model_validate(transaction),
+    )
+
+
+@coins_router.post(
+    "/transactions/{transaction_id}/cancel",
+    response_model=BalanceChangeResponse,
+)
+async def cancel_student_transaction(
+    transaction_id: int,
+    service: BalanceService = Depends(get_balance_service),
+    teacher: User = Depends(get_authenticated_teacher),
+) -> BalanceChangeResponse:
+    try:
+        balance, transaction = await service.cancel_transaction(
+            transaction_id,
+            cancelled_by_user_id=teacher.id,
+        )
+    except TransactionNotFoundError:
+        raise HTTPException(
+            status_code=404,
+            detail=HttpErrorMessage.TRANSACTION_NOT_FOUND,
+        ) from None
+    except TransactionAlreadyCancelledError:
+        raise HTTPException(
+            status_code=409,
+            detail=HttpErrorMessage.TRANSACTION_ALREADY_CANCELLED,
+        ) from None
+    except InsufficientBalanceToCancelError:
+        raise HTTPException(
+            status_code=409,
+            detail=HttpErrorMessage.INSUFFICIENT_BALANCE_TO_CANCEL_TRANSACTION,
+        ) from None
+
     return BalanceChangeResponse(
         balance=balance,
         transaction=BalanceTransactionResponse.model_validate(transaction),
