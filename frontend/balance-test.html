@@ -228,8 +228,11 @@
         amount.textContent = `${transaction.operation === 'deposit' ? '+' : '−'}${transaction.amount} 🪙`;
         const reason = document.createElement('span');
         reason.className = 'reason';
-        reason.textContent = transaction.reason
-          ? transaction.reason.split(', ').map(value => reasonLabels[value] || value).join(', ')
+        const reasons = Array.isArray(transaction.reason)
+          ? transaction.reason
+          : (transaction.reason ? transaction.reason.split(', ') : []);
+        reason.textContent = reasons.length
+          ? reasons.map(value => reasonLabels[value] || value).join(', ')
           : (transaction.operation === 'deposit' ? 'Пополнение' : 'Списание');
         const date = document.createElement('time');
         date.className = 'muted';

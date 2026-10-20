@@ -46,7 +46,7 @@ class BalanceService:
             student_id=student_id,
             operation=operation,
             amount=amount,
-            reason=", ".join(reason.value for reason in change.reason),
+            reason=[reason.value for reason in change.reason],
         )
         await self.transaction_repository.create(transaction)
         await self.session.commit()
