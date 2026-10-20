@@ -79,15 +79,18 @@
       <section id="change-panel" class="panel wide" hidden>
         <h2>Изменить баланс</h2>
         <form id="change-form">
-          <label for="reason">Причина изменения баланса</label>
-          <select id="reason" name="reason">
+          <label for="reason">Причины изменения баланса</label>
+          <select id="reason" name="reason" multiple required size="8">
             <option value="theory">Ответ по теории (+1)</option>
             <option value="practice_completed">Выполнена практика (+1)</option>
             <option value="additional_task_completed">Выполнено дополнительное задание (+1)</option>
+            <option value="accidental_punish">Случайно наказал (+1)</option>
             <option value="discipline_breakdown">Нарушение дисциплины (−1)</option>
             <option value="middle_level_violation">Нарушение среднего уровня (−2)</option>
-            <option value="hard_violation">Серьёзное нарушение (−3)</option>
+            <option value="serious_violation">Серьёзное нарушение (−3)</option>
+            <option value="accidental_reward">Случайно наградил (−1)</option>
           </select>
+          <p class="muted" style="margin:9px 0">Выберите одну или несколько причин.</p>
           <button id="change-button" type="submit">Сохранить операцию</button>
         </form>
         <div id="change-status" class="status" role="status" aria-live="polite"></div>
@@ -212,9 +215,11 @@
         theory: 'Ответ по теории',
         practice_completed: 'Выполнена практика',
         additional_task_completed: 'Выполнено дополнительное задание',
+        accidental_punish: 'Случайно наказал',
         discipline_breakdown: 'Нарушение дисциплины',
         middle_level_violation: 'Нарушение среднего уровня',
-        hard_violation: 'Серьёзное нарушение'
+        serious_violation: 'Серьёзное нарушение',
+        accidental_reward: 'Случайно наградил'
       };
       for (const transaction of history.transactions) {
         const item = document.createElement('li');
@@ -223,7 +228,9 @@
         amount.textContent = `${transaction.operation === 'deposit' ? '+' : '−'}${transaction.amount} 🪙`;
         const reason = document.createElement('span');
         reason.className = 'reason';
-        reason.textContent = reasonLabels[transaction.reason] || transaction.reason || (transaction.operation === 'deposit' ? 'Пополнение' : 'Списание');
+        reason.textContent = transaction.reason
+          ? transaction.reason.split(', ').map(value => reasonLabels[value] || value).join(', ')
+          : (transaction.operation === 'deposit' ? 'Пополнение' : 'Списание');
         const date = document.createElement('time');
         date.className = 'muted';
         date.dateTime = transaction.created_at;
@@ -257,7 +264,7 @@
         const result = await request(`/student/${id}/balance/transactions`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ reason: $('reason').value })
+          body: JSON.stringify({ reason: Array.from($('reason').selectedOptions, option => option.value) })
         });
         setStatus('change-status', `Операция выполнена. Новый баланс: ${result.balance} 🪙`, 'success');
         await loadHistory();

@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import Literal
 
 from core.enums import StatusEnum
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 from app.core.enums import BalanceChangeReasons, BalanceChangeType
 
 
@@ -13,7 +13,7 @@ class BalanceResponse(BaseModel):
 
 
 class BalanceChangeRequest(BaseModel):
-    reason: BalanceChangeReasons
+    reason: list[BalanceChangeReasons] = Field(min_length=1)
 
 
 class BalanceTransactionResponse(BaseModel):

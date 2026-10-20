@@ -32,7 +32,7 @@ class BalanceService:
     async def change_balance(
         self, student_id: int, change: BalanceChangeRequest
     ) -> tuple[int, BalanceTransaction]:
-        signed_amount = change.reason.balance_delta
+        signed_amount = sum(reason.balance_delta for reason in change.reason)
         operation = "deposit" if signed_amount > 0 else "deduct"
         amount = abs(signed_amount)
         balance = await self.student_repository.change_balance(
@@ -46,7 +46,7 @@ class BalanceService:
             student_id=student_id,
             operation=operation,
             amount=amount,
-            reason=change.reason.value,
+            reason=", ".join(reason.value for reason in change.reason),
         )
         await self.transaction_repository.create(transaction)
         await self.session.commit()
