@@ -14,6 +14,7 @@ class HttpErrorMessage(str, Enum):
     TEACHER_PROFILE_NOT_FOUND = "Teacher profile not found"
     GROUP_NOT_FOUND = "Group not found"
     FAILED_TO_CREATE_TEACHER = "Failed to create teacher"
+    ONLY_STUDENTS_CAN_VIEW_CREDENTIALS = "Only students can view their credentials"
     FAILED_TO_CREATE_GROUP = "Failed to create group"
     FAILED_TO_CREATE_STUDENT = "Failed to create student"
     UNSUPPORTED_USER_ROLE = "Unsupported user role"

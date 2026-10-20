@@ -3,10 +3,13 @@ from app.core.enums import HttpErrorMessage, UserRole
 from schemas.student import StudentProfileResponse
 from schemas.teacher import TeacherGroupProfile, TeacherProfileResponse
 from schemas.auth import (
+    StudentCredentialsResponse,
     UserLogoutResponse,
     UserLoginRequest,
     UserLoginResponse,
 )
+from api.dependencies import get_authenticated_user
+from models.user import User
 from services.student import StudentService, get_student_service
 from services.session import SessionService, get_session_service
 from services.users import UserService, get_user_service
@@ -16,6 +19,34 @@ auth_router = APIRouter(
     prefix="/auth",
     tags=["auth"],
 )
+
+@auth_router.get("/me/credentials", response_model=StudentCredentialsResponse)
+async def get_student_credentials(
+    response: Response,
+    user: User = Depends(get_authenticated_user),
+    student_service: StudentService = Depends(get_student_service),
+) -> StudentCredentialsResponse:
+    response.headers["Cache-Control"] = "no-store"
+    response.headers["Pragma"] = "no-cache"
+
+    if user.role != UserRole.STUDENT.value:
+        raise HTTPException(
+            status_code=403,
+            detail=HttpErrorMessage.ONLY_STUDENTS_CAN_VIEW_CREDENTIALS,
+        )
+
+    student = await student_service.get_student_by_id(user.id)
+    if student is None:
+        raise HTTPException(
+            status_code=404,
+            detail=HttpErrorMessage.STUDENT_NOT_FOUND,
+        )
+
+    return StudentCredentialsResponse(
+        user_id=student.user_id,
+        name=student.name,
+        access_code=student.access_code,
+    )
 
 @auth_router.post("/login", response_model=UserLoginResponse)
 async def login(

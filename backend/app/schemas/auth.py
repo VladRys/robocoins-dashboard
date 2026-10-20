@@ -27,3 +27,11 @@ class UserLogoutResponse(BaseModel):
     message: str
     status: str = StatusEnum.SUCCESS
     code: int = 200
+
+
+class StudentCredentialsResponse(BaseModel):
+    user_id: int
+    name: str
+    access_code: str
+    status: str = StatusEnum.SUCCESS
+    code: int = 200
