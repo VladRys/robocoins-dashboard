@@ -72,6 +72,23 @@ class GroupRepository:
             .where(Group.course_id == course_id)
         )
         return result.scalars().all()
+
+    async def get_groups_by_teacher_and_course(
+        self,
+        teacher_id: int,
+        course_id: int,
+    ) -> list[Group]:
+        result = await self.session.execute(
+            select(Group)
+            .options(selectinload(Group.students))
+            .where(
+                Group.course_id == course_id,
+                (Group.teacher_1_id == teacher_id)
+                | (Group.teacher_2_id == teacher_id),
+            )
+            .order_by(Group.id)
+        )
+        return list(result.scalars().all())
     
     async def get_group_by_name(self, name: str) -> Group | None:
         """Fetch a group by its name."""

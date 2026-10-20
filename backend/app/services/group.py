@@ -19,6 +19,16 @@ class GroupService:
     
     async def get_groups_by_course_id(self, course_id: int):
         return await self.repository.get_groups_by_course_id(course_id)
+
+    async def get_groups_by_teacher_and_course(
+        self,
+        teacher_id: int,
+        course_id: int,
+    ):
+        return await self.repository.get_groups_by_teacher_and_course(
+            teacher_id,
+            course_id,
+        )
     
     async def get_group_by_name(self, name: str):
         return await self.repository.get_group_by_name(name)

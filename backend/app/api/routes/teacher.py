@@ -1,13 +1,16 @@
 from fastapi import APIRouter, Depends, HTTPException
 
-from api.dependencies import get_authenticated_user
+from api.dependencies import get_authenticated_teacher, get_authenticated_user
 from app.core.enums import HttpErrorMessage
+from models.user import User
+from schemas.group import CourseGroupResponse
 from schemas.teacher import (
     TeacherGroupProfile,
     TeacherProfileResponse,
     TeacherRegistrationRequest,
     TeacherRegistrationResponse,
 )
+from services.group import GroupService, get_group_service
 from services.users import UserService, get_user_service
 
 
@@ -15,6 +18,31 @@ teacher_router = APIRouter(
     prefix="/teacher",
     tags=["teachers"],
 )
+
+@teacher_router.get(
+    "/course/{course_id}/groups",
+    response_model=list[CourseGroupResponse],
+)
+async def get_teacher_groups_by_course(
+    course_id: int,
+    teacher: User = Depends(get_authenticated_teacher),
+    service: GroupService = Depends(get_group_service),
+) -> list[CourseGroupResponse]:
+    groups = await service.get_groups_by_teacher_and_course(teacher.id, course_id)
+    return [
+        CourseGroupResponse(
+            id=group.id,
+            name=group.name,
+            course_id=group.course_id,
+            students_count=len(group.students),
+            teacher_ids=[
+                teacher_id
+                for teacher_id in (group.teacher_1_id, group.teacher_2_id)
+                if teacher_id is not None
+            ],
+        )
+        for group in groups
+    ]
 
 
 @teacher_router.post("/register", response_model=TeacherRegistrationResponse)

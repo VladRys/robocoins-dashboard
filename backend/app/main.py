@@ -67,6 +67,16 @@ async def teacher_test_page() -> FileResponse:
     return FileResponse(page_path, media_type="text/html")
 
 
+@app.get("/teacher-groups-test", include_in_schema=False)
+async def teacher_groups_test_page() -> FileResponse:
+    page_path = (
+        Path(__file__).resolve().parents[2]
+        / "frontend"
+        / "teacher-groups-test.html"
+    )
+    return FileResponse(page_path, media_type="text/html")
+
+
 @app.get("/balance-test", include_in_schema=False)
 async def balance_test_page() -> FileResponse:
     page_path = Path(__file__).resolve().parents[2] / "frontend" / "balance-test.html"

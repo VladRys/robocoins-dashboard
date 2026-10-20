@@ -58,9 +58,11 @@ class BalanceChangeReasons(StrEnum):
     THEORY = "theory"
     PRACTICE_COMPLETED = "practice_completed"
     ADDITIONAL_TASK_COMPLETED = "additional_task_completed"
+    ACCIDENTAL_PUNISH = "accidental_punish"
     DISCIPLINE_BREAKDOWN = "discipline_breakdown"
     MIDDLE_LEVEL_VIOLATION = "middle_level_violation"
     SERIOUS_VIOLATION = "serious_violation"
+    ACCIDENTAL_REWARD = "accidental_reward"
 
     @property
     def type(self) -> BalanceChangeType:
@@ -68,9 +70,11 @@ class BalanceChangeReasons(StrEnum):
             BalanceChangeReasons.THEORY: BalanceChangeType.REWARD,
             BalanceChangeReasons.PRACTICE_COMPLETED: BalanceChangeType.REWARD,
             BalanceChangeReasons.ADDITIONAL_TASK_COMPLETED: BalanceChangeType.REWARD,
+            BalanceChangeReasons.ACCIDENTAL_PUNISH: BalanceChangeType.REWARD,
             BalanceChangeReasons.DISCIPLINE_BREAKDOWN: BalanceChangeType.PUNISH,
             BalanceChangeReasons.MIDDLE_LEVEL_VIOLATION: BalanceChangeType.PUNISH,
             BalanceChangeReasons.SERIOUS_VIOLATION: BalanceChangeType.PUNISH,
+            BalanceChangeReasons.ACCIDENTAL_REWARD: BalanceChangeType.PUNISH
         }[self]
 
     @property
@@ -79,7 +83,9 @@ class BalanceChangeReasons(StrEnum):
             BalanceChangeReasons.THEORY: 1,
             BalanceChangeReasons.PRACTICE_COMPLETED: 1,
             BalanceChangeReasons.ADDITIONAL_TASK_COMPLETED: 1,
+            BalanceChangeReasons.ACCIDENTAL_PUNISH: 1,
             BalanceChangeReasons.DISCIPLINE_BREAKDOWN: -1,
             BalanceChangeReasons.MIDDLE_LEVEL_VIOLATION: -2,
             BalanceChangeReasons.SERIOUS_VIOLATION: -3,
+            BalanceChangeReasons.ACCIDENTAL_REWARD: -1
         }[self]
