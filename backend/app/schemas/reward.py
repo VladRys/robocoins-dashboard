@@ -7,9 +7,11 @@ class RewardResponse(BaseModel):
     name: str
     price: int
 
-    code: int = 200
-    status: str = StatusEnum.SUCCESS
-
 class CreateRewardRequest(BaseModel):
     name: str
     price: int
+
+class RewardCreationResponse(BaseModel):
+    reward: RewardResponse
+    code: int = 200
+    status: str = StatusEnum.SUCCESS

@@ -17,6 +17,7 @@ class HttpErrorMessage(str, Enum):
     ONLY_STUDENTS_CAN_VIEW_CREDENTIALS = "Only students can view their credentials"
     FAILED_TO_CREATE_GROUP = "Failed to create group"
     FAILED_TO_CREATE_STUDENT = "Failed to create student"
+    FAILED_TO_CREATE_REWARD = "Failed to create reward"
     UNSUPPORTED_USER_ROLE = "Unsupported user role"
     ONLY_TEACHERS_CAN_MODIFY = "Only teachers can modify this resource"
     GROUPS_NOT_FOUND = "One or more groups were not found"
