@@ -63,7 +63,6 @@ class BalanceChangeReasons(StrEnum):
     THEORY = "theory"
     PRACTICE_COMPLETED = "practice_completed"
     ADDITIONAL_TASK_COMPLETED = "additional_task_completed"
-    ACCIDENTAL_PUNISH = "accidental_punish"
     DISCIPLINE_BREAKDOWN = "discipline_breakdown"
     MIDDLE_LEVEL_VIOLATION = "middle_level_violation"
     SERIOUS_VIOLATION = "serious_violation"
