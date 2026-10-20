@@ -45,6 +45,31 @@ async def get_teacher_groups_by_course(
     ]
 
 
+@teacher_router.get(
+    "/groups",
+    response_model=list[CourseGroupResponse],
+)
+async def get_teacher_groups(
+    teacher: User = Depends(get_authenticated_teacher),
+    service: GroupService = Depends(get_group_service),
+) -> list[CourseGroupResponse]:
+    groups = await service.get_groups_by_teacher(teacher.id)
+    return [
+        CourseGroupResponse(
+            id=group.id,
+            name=group.name,
+            course_id=group.course_id,
+            students_count=len(group.students),
+            teacher_ids=[
+                teacher_id
+                for teacher_id in (group.teacher_1_id, group.teacher_2_id)
+                if teacher_id is not None
+            ],
+        )
+        for group in groups
+    ]
+
+
 @teacher_router.post("/register", response_model=TeacherRegistrationResponse)
 async def register_teacher(
     request: TeacherRegistrationRequest,
