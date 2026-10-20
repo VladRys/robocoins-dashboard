@@ -5,6 +5,7 @@ from pathlib import Path
 from urllib.parse import urlsplit
 
 from dotenv import load_dotenv
+from sqlalchemy.engine import make_url
 
 from core.enums import ProductMode
 
@@ -12,13 +13,27 @@ load_dotenv(Path(__file__).resolve().parents[2] / ".env")
 
 
 def dev_database_url() -> str:
-    return os.getenv("DEV_DATABASE_URL", "sqlite+aiosqlite:///./dev.db")
+    url = os.getenv("DEV_DATABASE_URL") or os.getenv("DATABASE_URL")
+    if not url:
+        raise ValueError("Set DEV_DATABASE_URL or DATABASE_URL for development")
+    return postgres_async_url(url, "development")
 
 def prod_database_url() -> str:
     url = os.getenv("PROD_DATABASE_URL") or os.getenv("DATABASE_URL")
     if not url:
         raise ValueError("Set PROD_DATABASE_URL or DATABASE_URL when PRODUCT_MODE=PROD")
-    return url
+    return postgres_async_url(url, "production")
+
+
+def postgres_async_url(raw_url: str, mode: str) -> str:
+    url = make_url(raw_url)
+    if url.drivername == "postgres":
+        url = url.set(drivername="postgresql")
+    if url.drivername == "postgresql":
+        url = url.set(drivername="postgresql+psycopg")
+    if url.drivername not in {"postgresql+asyncpg", "postgresql+psycopg"}:
+        raise ValueError(f"{mode.capitalize()} database must use PostgreSQL")
+    return url.render_as_string(hide_password=False)
 
 
 DATABASE_URL_RESOLVERS: dict[ProductMode, Callable[[], str]] = {
