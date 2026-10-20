@@ -67,7 +67,6 @@ class BalanceChangeReasons(StrEnum):
     DISCIPLINE_BREAKDOWN = "discipline_breakdown"
     MIDDLE_LEVEL_VIOLATION = "middle_level_violation"
     SERIOUS_VIOLATION = "serious_violation"
-    ACCIDENTAL_REWARD = "accidental_reward"
 
     @property
     def type(self) -> BalanceChangeType:
