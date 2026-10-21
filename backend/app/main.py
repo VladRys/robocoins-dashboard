@@ -176,5 +176,11 @@ async def balance_test_page() -> FileResponse:
     return FileResponse(page_path, media_type="text/html")
 
 
+@app.get("/reward-test", include_in_schema=False)
+async def reward_test_page() -> FileResponse:
+    page_path = Path(__file__).resolve().parents[2] / "frontend" / "reward-test.html"
+    return FileResponse(page_path, media_type="text/html")
+
+
 if __name__ == "__main__":
     uvicorn.run(app, port=8000, log_config=LOGGING_CONFIG)
