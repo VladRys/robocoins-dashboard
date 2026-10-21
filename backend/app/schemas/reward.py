@@ -8,10 +8,12 @@ class RewardResponse(BaseModel):
     id: int
     name: str
     price: int
+    description: str | None
 
 class CreateRewardRequest(BaseModel):
     name: str
     price: int
+    description: str | None = None
 
 class RewardCreationResponse(BaseModel):
     reward: RewardResponse

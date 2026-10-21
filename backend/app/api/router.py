@@ -7,6 +7,7 @@ from api.routes.student import student_router
 from api.routes.teacher import teacher_router
 from api.routes.users import users_router
 from api.routes.auth import auth_router
+from api.routes.reward import shop_router
 
 router = APIRouter()
 router.include_router(course_router)
@@ -17,6 +18,7 @@ router.include_router(users_router)
 router.include_router(coins_router)
 router.include_router(coins_ext_router)
 router.include_router(auth_router)
+router.include_router(shop_router)
 
 @router.get("/")
 async def root():
