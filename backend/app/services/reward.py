@@ -2,7 +2,6 @@ from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.reward import Reward
 from app.repositories.reward import RewardRepository
-from models.reward import Reward
 from core.database import get_db
 
 
@@ -26,5 +25,5 @@ class RewardService:
     async def get_all_rewards(self) -> list[Reward]:
         return await self.repository.get_all_rewards()
 
-async def get_reward_service(self, db: AsyncSession = Depends(get_db)) -> RewardService:
+async def get_reward_service(db: AsyncSession = Depends(get_db)) -> RewardService:
     return RewardService(RewardRepository(db))

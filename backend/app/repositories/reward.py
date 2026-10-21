@@ -1,8 +1,7 @@
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.util import await_
+from sqlalchemy import select
 
-from app.models import reward
-from models.reward import Reward
+from app.models.reward import Reward
 
 class RewardRepository:
     def __init__(self, session: AsyncSession) -> None:
@@ -20,7 +19,7 @@ class RewardRepository:
     async def remove_reward(self, reward_id: int):
         reward = await self.get_reward_by_id(reward_id)
         if reward:
-            self.session.remove(reward)
+            await self.session.delete(reward)
             await self.session.commit()
 
     async def get_reward_by_id(self, reward_id: int) -> Reward | None:

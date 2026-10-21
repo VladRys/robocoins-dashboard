@@ -1,4 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
+from app.schemas.reward import RewardProgressResponse, RewardResponse
+from app.services.reward import RewardService, get_reward_service
 
 from api.dependencies import get_authenticated_teacher, get_authenticated_user
 from app.core.enums import HttpErrorMessage, BalanceChangeReasons
@@ -35,6 +37,38 @@ async def get_student_balance_by_id(
     except StudentNotFoundError:
         raise HTTPException(status_code=404, detail=HttpErrorMessage.STUDENT_NOT_FOUND) from None
     return BalanceResponse(balance=balance)
+
+
+@coins_router.get("/{student_id}/reward-progress", response_model=RewardProgressResponse)
+async def get_student_reward_progress(
+    student_id: int,
+    service: BalanceService = Depends(get_balance_service),
+    rewards_service: RewardService = Depends(get_reward_service),
+    _user: User = Depends(get_authenticated_user),
+) -> RewardProgressResponse:
+    try:
+        balance = await service.get_balance(student_id)
+    except StudentNotFoundError:
+        raise HTTPException(status_code=404, detail=HttpErrorMessage.STUDENT_NOT_FOUND) from None
+
+    next_reward = next(
+        (reward for reward in await rewards_service.get_all_rewards() if reward.price > balance),
+        None,
+    )
+    if next_reward is None:
+        return RewardProgressResponse(
+            balance=balance,
+            reward=None,
+            coins_remaining=None,
+            progress_percent=None,
+        )
+
+    return RewardProgressResponse(
+        balance=balance,
+        reward=RewardResponse.model_validate(next_reward),
+        coins_remaining=next_reward.price - balance,
+        progress_percent=round(balance / next_reward.price * 100, 2),
+    )
 
 
 @coins_router.post(
