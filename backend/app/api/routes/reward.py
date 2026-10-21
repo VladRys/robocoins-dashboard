@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from app.models.reward import Reward
 from app.schemas.reward import RewardResponse, CreateRewardRequest, RewardCreationResponse
 from app.services.reward import RewardService, get_reward_service
-from app.models.user import User
+from models.user import User
 from api.dependencies import get_authenticated_user
 from core.enums import HttpErrorMessage
 
