@@ -52,7 +52,7 @@ async def get_student_reward_progress(
         raise HTTPException(status_code=404, detail=HttpErrorMessage.STUDENT_NOT_FOUND) from None
 
     next_reward = next(
-        (reward for reward in await rewards_service.get_all_rewards() if reward.price > balance),
+        (reward for reward in await rewards_service.get_rewards_for_student(student_id) if reward.price > balance),
         None,
     )
     if next_reward is None:

@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from app.models.reward import Reward
 from app.schemas.reward import RewardResponse, CreateRewardRequest, RewardCreationResponse
 from app.services.reward import RewardService, get_reward_service
@@ -12,10 +12,11 @@ shop_router = APIRouter(prefix="/shop", tags=["shop"])
 
 @shop_router.get("", response_model=list[RewardResponse])
 async def get_shop_rewards(
+    course_id: int | None = Query(default=None, ge=1),
     rewards_service: RewardService = Depends(get_reward_service),
     _user: User = Depends(get_authenticated_user),
 ) -> list[RewardResponse]:
-    rewards = await rewards_service.get_all_rewards()
+    rewards = await rewards_service.get_all_rewards(course_id)
     return [RewardResponse.model_validate(reward) for reward in rewards]
 
 
@@ -31,13 +32,13 @@ async def get_shop_reward(
     return RewardResponse.model_validate(reward)
 
 @rewards_router.get("", response_model=list[RewardResponse])
-async def get_all_rewards(self, rewards_service: RewardService = Depends(get_reward_service)) -> list[RewardResponse]:
-    rewards = await rewards_service.get_all_rewards()
+async def get_all_rewards(course_id: int | None = Query(default=None, ge=1), rewards_service: RewardService = Depends(get_reward_service)) -> list[RewardResponse]:
+    rewards = await rewards_service.get_all_rewards(course_id)
     return [RewardResponse.model_validate(reward) for reward in rewards]
 
 @rewards_router.post("", response_model = RewardCreationResponse)
-async def create_reward(self, request: CreateRewardRequest, rewards_service: RewardService = Depends(get_reward_service), _user: User = Depends(get_authenticated_user)):
-    new_reward = await rewards_service.create_reward(reward=Reward(name=request.name, price = request.price, description = request.description))
+async def create_reward(request: CreateRewardRequest, rewards_service: RewardService = Depends(get_reward_service), _user: User = Depends(get_authenticated_user)):
+    new_reward = await rewards_service.create_reward(reward=Reward(name=request.name, price=request.price, description=request.description, type=request.type, course_id=request.course_id))
     if new_reward is None:
         raise HTTPException(status_code = 500, detail=HttpErrorMessage.FAILED_TO_CREATE_REWARD)
     

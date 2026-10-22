@@ -54,6 +54,11 @@ class CourseCategory(StrEnum):
     PYTHON = "python"
     NO_CATEGORY = "no category"
 
+
+class RewardType(StrEnum):
+    PRIVILEGE = "privilege"
+    REWARD = "reward"
+
 class BalanceChangeType(StrEnum):
     PUNISH = "punish"
     REWARD = "reward"

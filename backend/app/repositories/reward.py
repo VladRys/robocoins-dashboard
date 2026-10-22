@@ -1,7 +1,8 @@
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import or_, select
 
 from app.models.reward import Reward
+from app.core.enums import RewardType
 
 class RewardRepository:
     def __init__(self, session: AsyncSession) -> None:
@@ -31,7 +32,30 @@ class RewardRepository:
         )
         return result.scalar_one_or_none()
 
-    async def get_all_rewards(self) -> list[Reward]:
-        rewards = await self.session.execute(select(Reward).order_by(Reward.price))
+    async def get_all_rewards(self, course_id: int | None = None) -> list[Reward]:
+        query = select(Reward)
+        if course_id is not None:
+            query = query.where(
+                or_(Reward.type == RewardType.PRIVILEGE, Reward.course_id == course_id)
+            )
+        rewards = await self.session.execute(query.order_by(Reward.price))
+        return list(rewards.scalars().all())
+
+    async def get_rewards_for_student(self, student_id: int) -> list[Reward]:
+        from app.models.group import Group, student_groups
+
+        student_courses = select(Group.course_id).join(
+            student_groups, student_groups.c.group_id == Group.id
+        ).where(student_groups.c.student_id == student_id)
+        rewards = await self.session.execute(
+            select(Reward)
+            .where(
+                or_(
+                    Reward.type == RewardType.PRIVILEGE,
+                    Reward.course_id.in_(student_courses),
+                )
+            )
+            .order_by(Reward.price)
+        )
         return list(rewards.scalars().all())
     
