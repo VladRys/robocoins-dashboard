@@ -42,9 +42,8 @@ class RewardRepository:
         return list(rewards.scalars().all())
 
     async def get_rewards_for_student(self, student_id: int) -> list[Reward]:
-        from app.models.group import Group, student_groups
-
-        from app.models.course import Course
+        from models.course import Course
+        from models.group import Group, student_groups
 
         student_categories = select(Course.category).join(
             Group, Group.course_id == Course.id
