@@ -1,6 +1,6 @@
 from pydantic import BaseModel, ConfigDict, model_validator
 
-from app.core.enums import RewardType, StatusEnum
+from app.core.enums import CourseCategory, RewardType, StatusEnum
 
 class RewardResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
@@ -10,21 +10,19 @@ class RewardResponse(BaseModel):
     price: int
     description: str | None
     type: RewardType
-    course_id: int | None
+    course_category: CourseCategory | None
 
 class CreateRewardRequest(BaseModel):
     name: str
     price: int
     description: str | None = None
     type: RewardType
-    course_id: int | None = None
+    course_category: CourseCategory | None = None
 
     @model_validator(mode="after")
     def validate_type_course(self):
-        if self.type == RewardType.PRIVILEGE and self.course_id is not None:
-            raise ValueError("Privileges are available for all courses and cannot be assigned to one course")
-        if self.type == RewardType.REWARD and self.course_id is None:
-            raise ValueError("A reward must be assigned to a course")
+        if self.type == RewardType.PRIVILEGE and self.course_category is not None:
+            raise ValueError("Privileges are available for all courses and cannot be assigned to one category")
         return self
 
 class RewardCreationResponse(BaseModel):

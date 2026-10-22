@@ -1,16 +1,15 @@
-from sqlalchemy import CheckConstraint, Enum as SqlEnum, ForeignKey, Integer, String
+from sqlalchemy import CheckConstraint, Enum as SqlEnum, Integer, String
 from sqlalchemy.orm import mapped_column, Mapped
 
 from app.core.database import Base
-from app.core.enums import RewardType
+from app.core.enums import CourseCategory, RewardType
 
 class Reward(Base):
     __tablename__ = "rewards"
     __table_args__ = (
         CheckConstraint(
-            "(type = 'privilege' AND course_id IS NULL) OR "
-            "(type = 'reward' AND course_id IS NOT NULL)",
-            name="ck_rewards_type_course",
+            "(type = 'privilege' AND course_category IS NULL) OR type = 'reward'",
+            name="ck_rewards_type_course_category",
         ),
     )
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
@@ -28,8 +27,15 @@ class Reward(Base):
         nullable=False,
         default=RewardType.REWARD,
     )
-    course_id: Mapped[int | None] = mapped_column(
-        ForeignKey("courses.id", ondelete="CASCADE"), nullable=True
+    course_category: Mapped[CourseCategory | None] = mapped_column(
+        SqlEnum(
+            CourseCategory,
+            name="reward_course_category",
+            native_enum=False,
+            create_constraint=True,
+            values_callable=lambda categories: [category.value for category in categories],
+        ),
+        nullable=True,
     )
     # TODO: mb add server-side icon
     # TODO: also add unique rewards depends on course

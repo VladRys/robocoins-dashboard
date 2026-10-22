@@ -28,6 +28,11 @@
     .status:empty { display:none; }
     .status.error { color:#b42318; }
     .hint { margin-bottom:0; font-size:14px; }
+    select,textarea { width:100%; min-height:44px; padding:9px 12px; border:1px solid #ccd5e2; border-radius:10px; font:inherit; background:white; }
+    textarea { min-height:84px; resize:vertical; }
+    .reward-item { margin-top:10px; padding:14px; border:1px solid var(--line); border-radius:12px; }
+    .reward-item p { margin:4px 0; }
+    .reward-meta { font-size:14px; }
     @media(max-width:520px) { body { padding:20px 12px; } .panel { padding:18px; } .row { grid-template-columns:1fr; } }
   </style>
 </head>
@@ -68,12 +73,67 @@
       <p id="status" class="status" role="status" aria-live="polite"></p>
       <p class="hint">Для загрузки нужен вход. У ученика ID подставится автоматически. Для учителя укажите ID ученика.</p>
     </section>
+
+    <section class="panel" aria-labelledby="catalog-title">
+      <h2 id="catalog-title">Каталог наград</h2>
+      <p class="hint">Награды можно привязать к категории курса. Если категорию оставить пустой, награда будет доступна для всех курсов. Привилегии всегда общие.</p>
+      <label for="catalog-category">Показать награды для категории</label>
+      <select id="catalog-category"></select>
+      <button id="refresh-rewards" type="button">Обновить каталог</button>
+      <div id="reward-list" aria-live="polite"></div>
+      <p id="catalog-status" class="status" role="status" aria-live="polite"></p>
+
+      <h2 style="margin-top:24px">Добавить награду</h2>
+      <form id="create-reward-form">
+        <label for="reward-name">Название</label>
+        <input id="reward-name" required maxlength="200">
+        <label for="reward-price">Стоимость, монет</label>
+        <input id="reward-price" type="number" min="0" required>
+        <label for="reward-description">Описание</label>
+        <textarea id="reward-description"></textarea>
+        <label for="reward-type">Тип</label>
+        <select id="reward-type">
+          <option value="reward">Награда</option>
+          <option value="privilege">Привилегия</option>
+        </select>
+        <div id="reward-category-field">
+          <label for="reward-category">Категория курса</label>
+          <select id="reward-category"></select>
+        </div>
+        <button id="create-reward-button">Создать награду</button>
+      </form>
+      <p id="create-status" class="status" role="status" aria-live="polite"></p>
+    </section>
   </main>
   <script>
     const local = ['localhost', '127.0.0.1', '::1'].includes(location.hostname);
     const apiBase = local ? (location.port === '8000' ? '' : `${location.protocol}//${location.hostname}:8000`) : '/api';
     const $ = (id) => document.getElementById(id);
     let currentUser = null;
+    const courseCategories = [
+      ['embedded', 'Встроенные системы'],
+      ['game dev', 'Разработка игр'],
+      ['web', 'Веб-разработка'],
+      ['primary', 'Начальная школа'],
+      ['python', 'Python'],
+      ['no category', 'Без категории'],
+    ];
+
+    function setupCategorySelect(select, allLabel) {
+      select.replaceChildren();
+      const all = document.createElement('option');
+      all.value = '';
+      all.textContent = allLabel;
+      select.append(all);
+      for (const [value, label] of courseCategories) {
+        const option = document.createElement('option');
+        option.value = value;
+        option.textContent = label;
+        select.append(option);
+      }
+    }
+    setupCategorySelect($('catalog-category'), 'Все курсы');
+    setupCategorySelect($('reward-category'), 'Все курсы (без категории)');
 
     function renderDemo() {
       const balance = Math.max(0, Number($('demo-balance').value) || 0);
@@ -96,10 +156,51 @@
       $('status').textContent = message;
       $('status').classList.toggle('error', error);
     }
+    function setCatalogStatus(message, error = false) {
+      $('catalog-status').textContent = message;
+      $('catalog-status').classList.toggle('error', error);
+    }
+    function setCreateStatus(message, error = false) {
+      $('create-status').textContent = message;
+      $('create-status').classList.toggle('error', error);
+    }
+    function categoryLabel(value) {
+      return courseCategories.find(([category]) => category === value)?.[1] || value || 'Все курсы';
+    }
     function setUser(user) {
       currentUser = user;
       $('identity').textContent = user ? `Вошли: ${user.name} · ${user.role === 'teacher' ? 'учитель' : 'ученик'} (ID ${user.id})` : 'Войдите по коду доступа, чтобы загрузить прогресс.';
       if (user?.role === 'student') $('student-id').value = user.id;
+      if (user) loadRewards().catch((error) => setCatalogStatus(error.message, true));
+    }
+    async function loadRewards() {
+      if (!currentUser) throw new Error('Сначала войдите по коду доступа.');
+      const category = $('catalog-category').value;
+      const query = category ? `?course_category=${encodeURIComponent(category)}` : '';
+      setCatalogStatus('Загружаю каталог…');
+      const rewards = await request(`/shop${query}`);
+      const list = $('reward-list');
+      list.replaceChildren();
+      if (!rewards.length) {
+        setCatalogStatus('В этой категории пока нет наград.');
+        return;
+      }
+      for (const reward of rewards) {
+        const item = document.createElement('article');
+        item.className = 'reward-item';
+        const name = document.createElement('strong');
+        name.textContent = reward.name;
+        const description = document.createElement('p');
+        description.textContent = reward.description || 'Без описания';
+        const meta = document.createElement('p');
+        meta.className = 'reward-meta';
+        const typeLabel = reward.type === 'privilege' ? 'Привилегия' : 'Награда';
+        const scope = reward.type === 'privilege' ? 'Все курсы' : categoryLabel(reward.course_category);
+        meta.textContent = `${typeLabel} · ${reward.price} монет · ${scope}`;
+        item.append(name, description, meta);
+        list.append(item);
+      }
+      setCatalogStatus(`Найдено наград: ${rewards.length}.`);
     }
     async function loadProgress() {
       if (!currentUser) throw new Error('Сначала войдите по коду доступа.');
@@ -133,6 +234,35 @@
     });
     $('load-button').addEventListener('click', async () => {
       try { await loadProgress(); } catch (error) { setStatus(error.message, true); }
+    });
+    $('catalog-category').addEventListener('change', () => loadRewards().catch((error) => setCatalogStatus(error.message, true)));
+    $('refresh-rewards').addEventListener('click', () => loadRewards().catch((error) => setCatalogStatus(error.message, true)));
+    $('reward-type').addEventListener('change', () => {
+      const isPrivilege = $('reward-type').value === 'privilege';
+      $('reward-category-field').hidden = isPrivilege;
+      $('reward-category').value = '';
+    });
+    $('create-reward-form').addEventListener('submit', async (event) => {
+      event.preventDefault();
+      if (!currentUser) { setCreateStatus('Сначала войдите по коду доступа.', true); return; }
+      const type = $('reward-type').value;
+      const payload = {
+        name: $('reward-name').value.trim(),
+        price: Number($('reward-price').value),
+        description: $('reward-description').value.trim() || null,
+        type,
+        course_category: type === 'privilege' ? null : ($('reward-category').value || null),
+      };
+      $('create-reward-button').disabled = true;
+      setCreateStatus('Создаю награду…');
+      try {
+        await request('/rewards', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload) });
+        $('create-reward-form').reset();
+        $('reward-category-field').hidden = false;
+        setCreateStatus('Награда создана.');
+        await loadRewards();
+      } catch (error) { setCreateStatus(error.message, true); }
+      finally { $('create-reward-button').disabled = false; }
     });
     request('/auth/me').then(setUser).catch(() => setUser(null));
     renderDemo();

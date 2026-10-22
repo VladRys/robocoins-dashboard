@@ -5,6 +5,7 @@ from app.services.reward import RewardService, get_reward_service
 from models.user import User
 from api.dependencies import get_authenticated_user
 from core.enums import HttpErrorMessage
+from app.core.enums import CourseCategory
 
 rewards_router = APIRouter(prefix="/rewards", tags = ["rewards"])
 shop_router = APIRouter(prefix="/shop", tags=["shop"])
@@ -12,11 +13,11 @@ shop_router = APIRouter(prefix="/shop", tags=["shop"])
 
 @shop_router.get("", response_model=list[RewardResponse])
 async def get_shop_rewards(
-    course_id: int | None = Query(default=None, ge=1),
+    course_category: CourseCategory | None = Query(default=None),
     rewards_service: RewardService = Depends(get_reward_service),
     _user: User = Depends(get_authenticated_user),
 ) -> list[RewardResponse]:
-    rewards = await rewards_service.get_all_rewards(course_id)
+    rewards = await rewards_service.get_all_rewards(course_category)
     return [RewardResponse.model_validate(reward) for reward in rewards]
 
 
@@ -32,13 +33,13 @@ async def get_shop_reward(
     return RewardResponse.model_validate(reward)
 
 @rewards_router.get("", response_model=list[RewardResponse])
-async def get_all_rewards(course_id: int | None = Query(default=None, ge=1), rewards_service: RewardService = Depends(get_reward_service)) -> list[RewardResponse]:
-    rewards = await rewards_service.get_all_rewards(course_id)
+async def get_all_rewards(course_category: CourseCategory | None = Query(default=None), rewards_service: RewardService = Depends(get_reward_service)) -> list[RewardResponse]:
+    rewards = await rewards_service.get_all_rewards(course_category)
     return [RewardResponse.model_validate(reward) for reward in rewards]
 
 @rewards_router.post("", response_model = RewardCreationResponse)
 async def create_reward(request: CreateRewardRequest, rewards_service: RewardService = Depends(get_reward_service), _user: User = Depends(get_authenticated_user)):
-    new_reward = await rewards_service.create_reward(reward=Reward(name=request.name, price=request.price, description=request.description, type=request.type, course_id=request.course_id))
+    new_reward = await rewards_service.create_reward(reward=Reward(name=request.name, price=request.price, description=request.description, type=request.type, course_category=request.course_category))
     if new_reward is None:
         raise HTTPException(status_code = 500, detail=HttpErrorMessage.FAILED_TO_CREATE_REWARD)
     

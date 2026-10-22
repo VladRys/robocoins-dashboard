@@ -2,7 +2,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import or_, select
 
 from app.models.reward import Reward
-from app.core.enums import RewardType
+from app.core.enums import CourseCategory
 
 class RewardRepository:
     def __init__(self, session: AsyncSession) -> None:
@@ -32,11 +32,11 @@ class RewardRepository:
         )
         return result.scalar_one_or_none()
 
-    async def get_all_rewards(self, course_id: int | None = None) -> list[Reward]:
+    async def get_all_rewards(self, course_category: CourseCategory | None = None) -> list[Reward]:
         query = select(Reward)
-        if course_id is not None:
+        if course_category is not None:
             query = query.where(
-                or_(Reward.type == RewardType.PRIVILEGE, Reward.course_id == course_id)
+                or_(Reward.course_category.is_(None), Reward.course_category == course_category)
             )
         rewards = await self.session.execute(query.order_by(Reward.price))
         return list(rewards.scalars().all())
@@ -44,15 +44,19 @@ class RewardRepository:
     async def get_rewards_for_student(self, student_id: int) -> list[Reward]:
         from app.models.group import Group, student_groups
 
-        student_courses = select(Group.course_id).join(
+        from app.models.course import Course
+
+        student_categories = select(Course.category).join(
+            Group, Group.course_id == Course.id
+        ).join(
             student_groups, student_groups.c.group_id == Group.id
         ).where(student_groups.c.student_id == student_id)
         rewards = await self.session.execute(
             select(Reward)
             .where(
                 or_(
-                    Reward.type == RewardType.PRIVILEGE,
-                    Reward.course_id.in_(student_courses),
+                    Reward.course_category.is_(None),
+                    Reward.course_category.in_(student_categories),
                 )
             )
             .order_by(Reward.price)
