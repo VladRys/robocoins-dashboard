@@ -20,10 +20,10 @@ if str(APP_DIR) not in sys.path:
 if str(BACKEND_DIR) not in sys.path:
     sys.path.insert(0, str(BACKEND_DIR))
 
-from core.config import Config as cfg
+from app.core.config import Config as cfg
 from app.core.database import create_db_and_tables
 from app.core.logging_setup import configure_logging
-from api.router import router
+from app.api.router import router
 
 IS_PRODUCTION = cfg.PRODUCT_MODE.value == "PROD"
 LOGGING_CONFIG = configure_logging(production=IS_PRODUCTION)

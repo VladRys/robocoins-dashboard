@@ -1,18 +1,18 @@
 from fastapi import Depends, HTTPException, APIRouter, Request, Response
 from app.core.enums import HttpErrorMessage, UserRole
-from schemas.student import StudentProfileResponse
-from schemas.teacher import TeacherGroupProfile, TeacherProfileResponse
-from schemas.auth import (
+from app.schemas.student import StudentProfileResponse
+from app.schemas.teacher import TeacherGroupProfile, TeacherProfileResponse
+from app.schemas.auth import (
     StudentCredentialsResponse,
     UserLogoutResponse,
     UserLoginRequest,
     UserLoginResponse,
 )
-from api.dependencies import get_authenticated_user
-from models.user import User
-from services.student import StudentService, get_student_service
-from services.session import SessionService, get_session_service
-from services.users import UserService, get_user_service
+from app.api.dependencies import get_authenticated_user
+from app.models.user import User
+from app.services.student import StudentService, get_student_service
+from app.services.session import SessionService, get_session_service
+from app.services.users import UserService, get_user_service
 
 
 auth_router = APIRouter(
@@ -59,7 +59,7 @@ async def login(
 ) -> UserLoginResponse:
     user = await user_service.get_user_by_access_code(login_request.code)
     if user is None:
-        raise HTTPException(status_code=404, detail=HttpErrorMessage.WRONG_ACCESS_CODE)
+        raise HTTPException(status_code=401, detail=HttpErrorMessage.WRONG_ACCESS_CODE)
 
     student_id = user.id if user.role == UserRole.STUDENT.value else None
     if student_id is not None:

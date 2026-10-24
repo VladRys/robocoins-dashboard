@@ -1,5 +1,5 @@
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
-from core.enums import StatusEnum
+from app.core.enums import StatusEnum
 from app.core.enums import UserRole
 
 class StudentCreateRequest(BaseModel):

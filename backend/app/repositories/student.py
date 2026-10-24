@@ -2,9 +2,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import case, select, update
 from sqlalchemy.orm import selectinload
 
-from models.student import Student
-from models.group import Group
-from models.user import User
+from app.models.student import Student
+from app.models.group import Group
+from app.models.user import User
 
 class StudentRepository:
     def __init__(self, session: AsyncSession):

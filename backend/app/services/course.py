@@ -3,9 +3,9 @@ from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
-from repositories.course import CourseRepository
+from app.repositories.course import CourseRepository
 from app.core.enums import CourseCategory
-from schemas.course import CourseCreateRequest
+from app.schemas.course import CourseCreateRequest
 
 
 class CourseService:

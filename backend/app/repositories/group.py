@@ -2,10 +2,10 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from models.group import Group
-from models.student import Student
-from models.teacher import Teacher
-from schemas.group import GroupCreateRequest
+from app.models.group import Group
+from app.models.student import Student
+from app.models.teacher import Teacher
+from app.schemas.group import GroupCreateRequest
 
 class GroupRepository:
     def __init__(self, session: AsyncSession):

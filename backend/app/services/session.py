@@ -3,8 +3,8 @@ import secrets
 from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_db
-from models.session import Session
-from repositories.session import SessionRepository
+from app.models.session import Session
+from app.repositories.session import SessionRepository
 
 class SessionService:
     def __init__(self, repository: SessionRepository):

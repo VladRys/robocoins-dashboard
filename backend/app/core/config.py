@@ -7,7 +7,7 @@ from urllib.parse import urlsplit
 from dotenv import load_dotenv
 from sqlalchemy.engine import make_url
 
-from core.enums import ProductMode
+from app.core.enums import ProductMode
 
 load_dotenv(Path(__file__).resolve().parents[2] / ".env")
 

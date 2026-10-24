@@ -1,13 +1,13 @@
-from models.course import Course
-from models.group import Group
-from models.student import Student
+from app.models.course import Course
+from app.models.group import Group
+from app.models.student import Student
 from app.core.enums import CourseCategory
 
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
-from schemas.course import CourseCreateRequest
+from app.schemas.course import CourseCreateRequest
 
 
 class CourseRepository:

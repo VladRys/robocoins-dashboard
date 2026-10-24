@@ -1,9 +1,9 @@
 from fastapi import Depends, HTTPException, Request
 
 from app.core.enums import HttpErrorMessage, UserRole
-from models.user import User
-from services.session import SessionService, get_session_service
-from services.users import UserService, get_user_service
+from app.models.user import User
+from app.services.session import SessionService, get_session_service
+from app.services.users import UserService, get_user_service
 
 
 async def get_authenticated_user(

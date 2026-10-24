@@ -2,9 +2,9 @@ from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
-from models.group import Group
-from models.user import User
-from repositories.users import UserRepository
+from app.models.group import Group
+from app.models.user import User
+from app.repositories.users import UserRepository
 
 
 class UserService:

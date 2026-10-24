@@ -2,10 +2,10 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from app.schemas.reward import RewardProgressResponse, RewardResponse
 from app.services.reward import RewardService, get_reward_service
 
-from api.dependencies import get_authenticated_teacher, get_authenticated_user
+from app.api.dependencies import get_authenticated_teacher, get_authenticated_user
 from app.core.enums import HttpErrorMessage, BalanceChangeReasons
-from models.user import User
-from schemas.balance import (
+from app.models.user import User
+from app.schemas.balance import (
     BalanceChangeRequest,
     BalanceChangeResponse,
     BalanceHistoryResponse,
@@ -13,7 +13,7 @@ from schemas.balance import (
     BalanceTransactionResponse,
     BalanceChangeReasonsResponse
 )
-from services.balance import (
+from app.services.balance import (
     BalanceService,
     InsufficientBalanceToCancelError,
     StudentNotFoundError,

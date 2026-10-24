@@ -1,6 +1,6 @@
-from core.enums import StatusEnum
+from app.core.enums import StatusEnum
 from pydantic import BaseModel, ConfigDict, Field, field_validator
-from schemas.student import StudentProfileResponse
+from app.schemas.student import StudentProfileResponse
 
 class GroupCreateRequest(BaseModel):
     name: str = Field(..., description="Name of the group")

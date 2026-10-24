@@ -8,11 +8,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.access_code import generate_access_code
-from models.student import Student
-from models.group import Group
-from models.user import User
-from repositories.student import StudentRepository
-from schemas.student import StudentCreateRequest
+from app.models.student import Student
+from app.models.group import Group
+from app.models.user import User
+from app.repositories.student import StudentRepository
+from app.schemas.student import StudentCreateRequest
 from app.core.enums import UserRole
 
 

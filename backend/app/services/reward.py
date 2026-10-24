@@ -3,7 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.reward import Reward
 from app.core.enums import CourseCategory
 from app.repositories.reward import RewardRepository
-from core.database import get_db
+from app.core.database import get_db
 
 
 class RewardService:

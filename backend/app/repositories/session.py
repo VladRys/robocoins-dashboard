@@ -1,6 +1,6 @@
 
 from sqlalchemy.ext.asyncio import AsyncSession
-from models.session import Session
+from app.models.session import Session
 from sqlalchemy.future import select
 
 class SessionRepository:

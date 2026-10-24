@@ -1,7 +1,7 @@
 from pydantic import BaseModel
 
 from app.core.enums import UserRole
-from core.enums import StatusEnum
+from app.core.enums import StatusEnum
 
 
 class UserLoginRequest(BaseModel):

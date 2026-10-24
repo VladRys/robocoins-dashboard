@@ -1,8 +1,8 @@
 from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from repositories.group import GroupRepository
-from schemas.group import GroupCreateRequest
+from app.repositories.group import GroupRepository
+from app.schemas.group import GroupCreateRequest
 from app.core.database import get_db
 
 class GroupService:

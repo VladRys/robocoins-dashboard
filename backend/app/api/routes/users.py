@@ -1,9 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException
 
-from api.dependencies import get_authenticated_user
+from app.api.dependencies import get_authenticated_user
 from app.core.enums import HttpErrorMessage
-from schemas.user import UserResponse
-from services.users import UserService, get_user_service
+from app.schemas.user import UserResponse
+from app.services.users import UserService, get_user_service
 
 
 users_router = APIRouter(

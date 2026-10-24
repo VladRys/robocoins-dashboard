@@ -1,19 +1,19 @@
 from fastapi import APIRouter, Depends, HTTPException
 
-from api.dependencies import get_authenticated_teacher, get_authenticated_user
-from api.errors import validation_error_message
+from app.api.dependencies import get_authenticated_teacher, get_authenticated_user
+from app.api.errors import validation_error_message
 from app.core.enums import HttpErrorMessage
-from models.group import Group
-from schemas.group import GroupCreateRequest, GroupResponse
-from schemas.student import StudentProfileResponse
-from schemas.balance import (
+from app.models.group import Group
+from app.schemas.group import GroupCreateRequest, GroupResponse
+from app.schemas.student import StudentProfileResponse
+from app.schemas.balance import (
     BalanceTransactionResponse,
     GroupPracticeAwardResponse,
     GroupPracticeAwardStudent,
 )
-from services.balance import BalanceService, get_balance_service
-from schemas.teacher import TeacherAssignmentRequest
-from services.group import GroupService, get_group_service
+from app.services.balance import BalanceService, get_balance_service
+from app.schemas.teacher import TeacherAssignmentRequest
+from app.services.group import GroupService, get_group_service
 
 group_router = APIRouter(
     prefix="/group",

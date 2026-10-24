@@ -1,4 +1,4 @@
-from core.enums import StatusEnum
+from app.core.enums import StatusEnum
 from pydantic import BaseModel, ConfigDict, Field
 from app.core.enums import CourseCategory
 from .group import CourseGroupResponse

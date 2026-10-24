@@ -2,9 +2,9 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from app.models.reward import Reward
 from app.schemas.reward import RewardResponse, CreateRewardRequest, RewardCreationResponse
 from app.services.reward import RewardService, get_reward_service
-from models.user import User
-from api.dependencies import get_authenticated_user
-from core.enums import HttpErrorMessage
+from app.models.user import User
+from app.api.dependencies import get_authenticated_user
+from app.core.enums import HttpErrorMessage
 from app.core.enums import CourseCategory
 
 rewards_router = APIRouter(prefix="/rewards", tags = ["rewards"])

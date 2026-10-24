@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Literal
 
-from core.enums import StatusEnum
+from app.core.enums import StatusEnum
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 from app.core.enums import BalanceChangeReasons, BalanceChangeType
 

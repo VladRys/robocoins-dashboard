@@ -2,9 +2,9 @@ from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from models.group import Group
-from models.teacher import Teacher
-from models.user import User
+from app.models.group import Group
+from app.models.teacher import Teacher
+from app.models.user import User
 from app.core.access_code import generate_access_code
 from app.core.enums import UserRole
 

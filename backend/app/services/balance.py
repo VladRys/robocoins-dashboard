@@ -6,10 +6,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_db
 from app.core.enums import BalanceChangeReasons
 from app.models.group import Group
-from models.transaction import BalanceTransaction
-from repositories.student import StudentRepository
-from repositories.transaction import TransactionRepository
-from schemas.balance import BalanceChangeRequest
+from app.models.transaction import BalanceTransaction
+from app.repositories.student import StudentRepository
+from app.repositories.transaction import TransactionRepository
+from app.schemas.balance import BalanceChangeRequest
 
 class StudentNotFoundError(Exception):
     pass
@@ -73,8 +73,8 @@ class BalanceService:
         """Award one practice-completed coin to every current group member."""
         from sqlalchemy import select
 
-        from models.student import Student
-        from models.group import student_groups
+        from app.models.student import Student
+        from app.models.group import student_groups
 
         group = await self.session.get(Group, group_id)
         if group is None:

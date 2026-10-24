@@ -1,13 +1,13 @@
 from fastapi import APIRouter
-from core.config import Config as cfg
-from api.routes.balance import coins_router, coins_ext_router
-from api.routes.course import course_router
-from api.routes.group import group_router
-from api.routes.student import student_router
-from api.routes.teacher import teacher_router
-from api.routes.users import users_router
-from api.routes.auth import auth_router
-from api.routes.reward import shop_router
+from app.core.config import Config as cfg
+from app.api.routes.balance import coins_router, coins_ext_router
+from app.api.routes.course import course_router
+from app.api.routes.group import group_router
+from app.api.routes.student import student_router
+from app.api.routes.teacher import teacher_router
+from app.api.routes.users import users_router
+from app.api.routes.auth import auth_router
+from app.api.routes.reward import shop_router
 
 router = APIRouter()
 router.include_router(course_router)

@@ -1,12 +1,12 @@
 from fastapi import APIRouter, Depends, HTTPException
 
-from api.dependencies import get_authenticated_teacher, get_authenticated_user
-from api.errors import validation_error_message
-from core.enums import StatusEnum
+from app.api.dependencies import get_authenticated_teacher, get_authenticated_user
+from app.api.errors import validation_error_message
+from app.core.enums import StatusEnum
 from app.core.enums import HttpErrorMessage
-from models.user import User
-from schemas.student import StudentCreateRequest, StudentResponse, StudentProfileResponse
-from services.student import StudentService, get_student_service
+from app.models.user import User
+from app.schemas.student import StudentCreateRequest, StudentResponse, StudentProfileResponse
+from app.services.student import StudentService, get_student_service
 
 student_router = APIRouter(
     prefix="/student",
