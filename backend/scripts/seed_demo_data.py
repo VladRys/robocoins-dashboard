@@ -15,9 +15,10 @@ from sqlalchemy.orm import selectinload
 from app.core.access_code import generate_access_code
 from app.core.config import Config
 from app.core.database import SessionLocal, engine
-from app.core.enums import CourseCategory, UserRole
+from app.core.enums import CourseCategory, RewardType, UserRole
 from app.models.course import Course
 from app.models.group import Group
+from app.models.reward import Reward
 from app.models.session import Session  # noqa: F401
 from app.models.student import Student
 from app.models.teacher import Teacher  # noqa: F401
@@ -48,6 +49,25 @@ DEMO_COURSE_CATEGORIES = {
     "Unity 3D": CourseCategory.GAME_DEV,
 }
 
+# Keep these IDs stable so the demo catalog matches the documented sample data.
+DEMO_REWARDS = (
+    (5, "Плата Arduino Nano", 70, "", RewardType.REWARD, CourseCategory.EMBEDDED),
+    (7, "Музикальна пауза", 5, "Можливість обрати музику, яка буде грати під час виконання практики (В межах розумного)", RewardType.PRIVILEGE, None),
+    (8, "Гідро-безліміт", 7, 'Безліміт на вийти "Попити води". Дійсний 2 занняття.', RewardType.PRIVILEGE, None),
+    (9, "Uno-Reverse", 7, "Можливість переадресувати складне питання назад викладачу або передати іншому, лише за його згодою, дійсна 2-3 заняття", RewardType.PRIVILEGE, None),
+    (10, "Унікальний аватар", 15, "Унікальний аватар на платформі", RewardType.PRIVILEGE, None),
+    (14, "Тематичний лего-набір", 25, None, RewardType.REWARD, None),
+    (13, "Червона кнопка", 15, "Таємна червона кнопка... (Аксессуар для клавіатури)", RewardType.REWARD, None),
+    (3, "Набір компонентів", 40, "Набір компонентів які ти зможеш використати у власних проєктах.", RewardType.REWARD, CourseCategory.EMBEDDED),
+    (12, "Трендові Клавіши", 15, "Брелок з трендовими клавішами", RewardType.REWARD, None),
+    (1, "Випадковий стікер", 5, None, RewardType.REWARD, None),
+    (2, "Стікер на вибір", 7, None, RewardType.REWARD, None),
+    (6, "Набір Arduino Starter Kit", 100, "Приз Року!\nЙого отримає учень, якйи назбирає найбільше монет протягорм навчального року.\n\nНабір електроніки та компонентів, з яких ти вжеш зможеш зібрати власний проект. \nПлата: Arduino Uno", RewardType.REWARD, CourseCategory.EMBEDDED),
+    (11, "Набір стикерів 100шт", 20, "Набір стікерів на тематику программування.", RewardType.REWARD, None),
+    (15, "Гра в стимі", 70, "Будь яка гра гіфтом (До 225₴)", RewardType.REWARD, CourseCategory.GAME_DEV),
+    (16, "Гра в стимі", 70, "Будь яка гра гіфтом (До 225₴)", RewardType.REWARD, CourseCategory.WEB),
+)
+
 
 async def unique_access_code(db) -> str:
     while True:
@@ -58,7 +78,7 @@ async def unique_access_code(db) -> str:
 
 async def align_sequence(db, table: str) -> None:
     """Advance a stale serial sequence without rewinding one already in use."""
-    if table not in {"courses", "groups", "users"}:
+    if table not in {"courses", "groups", "users", "rewards"}:
         raise ValueError(f"Unsupported sequence table: {table}")
 
     sequence = await db.scalar(
@@ -91,6 +111,7 @@ async def seed_demo_data() -> tuple[int, int]:
             await align_sequence(db, "courses")
             await align_sequence(db, "groups")
             await align_sequence(db, "users")
+            await seed_demo_rewards(db)
 
             course_names = {course_name for _, course_name, _ in DEMO_GROUPS}
             courses = {
@@ -161,6 +182,29 @@ async def seed_demo_data() -> tuple[int, int]:
 
     await engine.dispose()
     return created_groups, created_students
+
+
+async def seed_demo_rewards(db) -> None:
+    """Insert or update the fixed demo reward catalog by ID."""
+    reward_ids = [reward_id for reward_id, *_ in DEMO_REWARDS]
+    existing = {
+        reward.id: reward
+        for reward in (
+            await db.scalars(select(Reward).where(Reward.id.in_(reward_ids)))
+        ).all()
+    }
+    for reward_id, name, price, description, reward_type, category in DEMO_REWARDS:
+        reward = existing.get(reward_id)
+        if reward is None:
+            reward = Reward(id=reward_id)
+            db.add(reward)
+        reward.name = name
+        reward.price = price
+        reward.description = description
+        reward.type = reward_type
+        reward.course_category = category
+    await db.flush()
+    await align_sequence(db, "rewards")
 
 
 async def main() -> None:

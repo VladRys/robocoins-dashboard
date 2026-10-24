@@ -4,6 +4,8 @@ from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
+from app.core.enums import BalanceChangeReasons
+from app.models.group import Group
 from models.transaction import BalanceTransaction
 from repositories.student import StudentRepository
 from repositories.transaction import TransactionRepository
@@ -64,6 +66,45 @@ class BalanceService:
         await self.transaction_repository.create(transaction)
         await self.session.commit()
         return balance, transaction
+
+    async def award_group_practice_completed(
+        self, group_id: int
+    ) -> tuple[Group, list[tuple[int, BalanceTransaction]]] | None:
+        """Award one practice-completed coin to every current group member."""
+        from sqlalchemy import select
+
+        from models.student import Student
+        from models.group import student_groups
+
+        group = await self.session.get(Group, group_id)
+        if group is None:
+            return None
+
+        student_ids = list(
+            (
+                await self.session.scalars(
+                    select(student_groups.c.student_id)
+                    .where(student_groups.c.group_id == group_id)
+                    .order_by(student_groups.c.student_id)
+                )
+            ).all()
+        )
+        results: list[tuple[int, BalanceTransaction]] = []
+        for student_id in student_ids:
+            balance = await self.student_repository.change_balance(student_id, 1)
+            if balance is None:
+                continue
+            transaction = BalanceTransaction(
+                student_id=student_id,
+                operation="deposit",
+                amount=1,
+                reason=[BalanceChangeReasons.PRACTICE_COMPLETED.value],
+            )
+            await self.transaction_repository.create(transaction)
+            results.append((balance, transaction))
+
+        await self.session.commit()
+        return group, results
 
     async def get_history(
         self, student_id: int, limit: int, offset: int = 0

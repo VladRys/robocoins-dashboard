@@ -6,6 +6,12 @@ from app.core.enums import HttpErrorMessage
 from models.group import Group
 from schemas.group import GroupCreateRequest, GroupResponse
 from schemas.student import StudentProfileResponse
+from schemas.balance import (
+    BalanceTransactionResponse,
+    GroupPracticeAwardResponse,
+    GroupPracticeAwardStudent,
+)
+from services.balance import BalanceService, get_balance_service
 from schemas.teacher import TeacherAssignmentRequest
 from services.group import GroupService, get_group_service
 
@@ -65,6 +71,34 @@ async def get_group_by_id(
         raise HTTPException(status_code=404, detail=HttpErrorMessage.GROUP_NOT_FOUND)
 
     return _group_response(group)
+
+
+@group_router.post(
+    "/id/{group_id}/practice-completed",
+    response_model=GroupPracticeAwardResponse,
+)
+async def award_group_practice_completed(
+    group_id: int,
+    service: BalanceService = Depends(get_balance_service),
+    _user=Depends(get_authenticated_teacher),
+) -> GroupPracticeAwardResponse:
+    result = await service.award_group_practice_completed(group_id)
+    if result is None:
+        raise HTTPException(status_code=404, detail=HttpErrorMessage.GROUP_NOT_FOUND)
+
+    group, awards = result
+    return GroupPracticeAwardResponse(
+        group_id=group.id,
+        affected_students=len(awards),
+        students=[
+            GroupPracticeAwardStudent(
+                student_id=transaction.student_id,
+                balance=balance,
+                transaction=BalanceTransactionResponse.model_validate(transaction),
+            )
+            for balance, transaction in awards
+        ],
+    )
 
 
 @group_router.get("/name/{name}", response_model=GroupResponse)

@@ -58,6 +58,20 @@ class BalanceHistoryResponse(BaseModel):
     status: str = StatusEnum.SUCCESS
 
 
+class GroupPracticeAwardStudent(BaseModel):
+    student_id: int
+    balance: int
+    transaction: BalanceTransactionResponse
+
+
+class GroupPracticeAwardResponse(BaseModel):
+    group_id: int
+    affected_students: int
+    students: list[GroupPracticeAwardStudent]
+    code: int = 200
+    status: str = StatusEnum.SUCCESS
+
+
 class BalanceChangeReasonItem(BaseModel):
     reason: BalanceChangeReasons
     type: BalanceChangeType
