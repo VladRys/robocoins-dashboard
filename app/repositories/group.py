@@ -92,6 +92,22 @@ class GroupRepository:
         await self.session.commit()
         return await self.get_group_by_id(group_id)
 
+    async def remove_group_student(
+        self,
+        group_id: int,
+        student_id: int,
+    ) -> Group | None:
+        group = await self.get_group_by_id(group_id)
+        if group is None:
+            return None
+        student = await self.session.get(Student, student_id)
+        if student is None:
+            raise ValueError("Student was not found")
+        if any(existing.id == student_id for existing in group.students):
+            group.students.remove(student)
+            await self.session.commit()
+        return await self.get_group_by_id(group_id)
+
     async def get_groups_by_course_id(self, course_id: int) -> list[Group]:
         """Fetch all groups associated with a specific course ID."""
         result = await self.session.execute(

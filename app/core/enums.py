@@ -54,6 +54,7 @@ class AuthorizationAction(StrEnum):
     EDIT_STUDENT_AVATAR = "edit_student_avatar"
     EDIT_STUDENT_NICKNAME = "edit_student_nickname"
     ASSIGN_STUDENT_TO_GROUP = "assign_student_to_group"
+    REMOVE_STUDENT_FROM_GROUP = "remove_student_from_group"
 
 
 class CourseCategory(StrEnum):

@@ -90,6 +90,10 @@ class AuthorizationService:
                 RolePolicy(UserRole.ADMIN),
                 TeacherAssignedGroupPolicy(group_service),
             ),
+            AuthorizationAction.REMOVE_STUDENT_FROM_GROUP: AnyPolicy(
+                RolePolicy(UserRole.ADMIN),
+                TeacherAssignedGroupPolicy(group_service),
+            ),
         }
 
     async def is_allowed(

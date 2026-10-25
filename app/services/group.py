@@ -50,6 +50,9 @@ class GroupService:
     async def assign_group_student(self, group_id: int, student_id: int):
         return await self.repository.assign_group_student(group_id, student_id)
 
+    async def remove_group_student(self, group_id: int, student_id: int):
+        return await self.repository.remove_group_student(group_id, student_id)
+
     async def _validate_teacher_ids(self, teacher_ids: list[int]) -> None:
         if len(teacher_ids) > 2:
             raise ValueError("A group can have at most two teachers")

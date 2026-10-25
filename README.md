@@ -1,262 +1,115 @@
-# 🪙 ROBOCOINS
+# RoboCoins Dashboard
 
-> Educational gamification platform with virtual currency, rewards and student management.
+RoboCoins is an educational platform for managing student groups, virtual coins, and rewards. The backend uses FastAPI, SQLAlchemy, and PostgreSQL. The browser pages are in `pages/`.
 
-**ROBOCOINS** is an open-source platform designed to gamify the learning process.
+## Features
 
-Students can earn virtual coins for achievements, spend them on rewards and track their transaction history. Teachers can manage students, issue coins and create rewards.
+- Student and teacher accounts with session-based login
+- A single administrator account, provisioned on the first successful administrator login
+- Courses, groups, and teacher assignments
+- Student profile management, including group membership, nicknames, and avatars
+- Balance transactions, rewards, and transaction history
+- OpenAPI documentation at `/docs`
+- Docker Compose support for the API and PostgreSQL
 
----
+## Roles and access
 
-## ✨ Features
+| Role | Capabilities |
+| --- | --- |
+| `admin` | Manage teachers, courses, groups, and rewards; edit any student's profile; manage group membership |
+| `teacher` | Work with assigned groups and their students, including student profile edits and group membership |
+| `student` | View their own profile and credentials, and use student features |
 
-* 🪙 Virtual currency system
-* 👨‍🎓 Student profiles
-* 🎁 Reward shop
-* 📜 Transaction history
-* 👨‍🏫 Teacher dashboard
-* 🔐 Authentication and roles
-* 📊 Student balances and statistics
-* 📱 Responsive interface
-* 🐳 Docker support
-* 🔌 REST API
+All accounts use `POST /auth/login` with `{"code":"..."}`. Successful login sets an HTTP-only session cookie. Normal teacher and student accounts log in with their access code. The administrator uses the 12-character `ADMIN_PASSWORD`.
 
----
+Set a unique `ADMIN_PASSWORD` per environment. When it is not configured, the server generates a 12-character password at startup and writes it to the application log. The administrator account is created the first time that password successfully logs in. Keep the password and logs private.
 
-<!-- Will be provided in future. 
+The admin testing page is available at `/admin`.
 
-## 🏗️ Architecture
+## API overview
 
-```text
-ROBOCOINS
-│
-├── frontend/        # React + TypeScript
-│
-├── backend/         # FastAPI
-│
-├── migrations/      # Database migrations
-│
-├── docker-compose.yml
-│
-└── README.md
-```
+All requests and responses use JSON unless noted otherwise. Authenticated endpoints use the session cookie established by `/auth/login`.
 
--->
+### Students
 
-<!-- ================================================ -->
+| Method | Endpoint | Access | Description |
+| --- | --- | --- | --- |
+| `POST` | `/student/register` | Public | Create a student and assign initial groups |
+| `GET` | `/student` | Admin | List student profiles |
+| `GET` | `/student/{student_id}` | Authenticated | Read a student profile |
+| `PATCH` | `/student/{student_id}/nickname` | Student themselves, assigned teacher, or admin | Change the student's nickname |
+| `PATCH` | `/student/{student_id}/avatar` | Student themselves, assigned teacher, or admin | Change the student's avatar |
+| `GET` | `/auth/me/credentials` | Student | Read their own access credentials |
 
-<!-- 
-### Backend
+Nickname updates synchronize the student's profile and user account names. The nickname request body is `{"new_nickname":"Alex"}`; the avatar request body is `{"new_avatar":"🤖"}`.
 
-Will be provided in future. 
+### Groups and teachers
 
-```text
-Route
-  ↓
-Schema
-  ↓
-Service
-  ↓
-Repository
-  ↓
-Database
-```
+| Method | Endpoint | Access | Description |
+| --- | --- | --- | --- |
+| `POST` | `/teacher/register` | Admin | Create a teacher account |
+| `POST` | `/group/create` | Admin | Create a group |
+| `PUT` | `/group/id/{group_id}/teachers` | Admin | Set up to two teachers for a group |
+| `PUT` | `/group/id/{group_id}/student` | Assigned teacher or admin | Add one student to the group; body: `{"student_id":123}` |
+| `DELETE` | `/group/id/{group_id}/student/{student_id}` | Assigned teacher or admin | Remove a student from that group |
+| `GET` | `/group/id/{group_id}` | Authenticated | Read a group and its students |
 
-Built with:
+Removing a student only removes that group's membership. It does not delete the student or change their other group memberships.
 
-* Python
-* FastAPI
-* PostgreSQL
-* SQLAlchemy
-* Alembic
+### Balances and rewards
 
--->
+- `GET /student/{student_id}/balance` reads a balance.
+- `POST /student/{student_id}/balance/transactions` records a balance change. Example: `{"operation":"deposit","amount":5,"reason":"Completed a challenge"}`. Use `"deduct"` to subtract coins.
+- `GET /student/{student_id}/transactions?limit=50&offset=0` lists transactions, newest first.
+- `GET /rewards` lists rewards; `POST /rewards` creates one.
 
-<!-- Will be provided in future. 
-### Frontend
+Amounts must be positive and deductions cannot reduce a balance below zero. Review authorization before exposing balance endpoints to untrusted clients.
 
-Built with:
+## Run locally
 
-* React
-* TypeScript 
--->
-
-## 👥 Roles
-
-| Role        | Description                        |
-| ----------- | ---------------------------------- |
-| `teacher` | Manage students, coins and rewards |
-| `student` | Earn coins and purchase rewards    |
-
-Every account is stored in `users` with one of these roles. Student registration
-at `POST /student/register` creates both the user and the existing student
-profile; `POST /teacher/register` creates a teacher account. Teachers can be
-assigned when creating a group with `teacher_ids`, or later with
-`PUT /group/id/{group_id}/teachers`. A group accepts up to two distinct teacher
-IDs. Use `GET /users` and `GET /users/{user_id}` to read user accounts.
-Student profile `id` and `user_id` are the same account ID.
-
-Student authentication continues to use the existing access-code session flow.
-
----
-
-## 🪙 How it works
-
-Students earn coins for achievements, activities and other actions defined by teachers.
-
-```text
-+3  Good behavior
-+2  Completed challenge
-+1  Extra activity
-```
-
-Teachers can create and configure their own rewards, including their names, descriptions and prices.
-
-For example:
-
-```text
-5   Random sticker
-7   Chosen sticker
-15	School Merch, etc. 
-20  Special privilege
-```
-
-Both the **rewards and their prices are fully configurable**, allowing each class or educational program to create its own coin economy.
-
-Every coin operation is stored in the transaction history.
-
-### Balance API
-
-The backend supports these balance endpoints:
-
-* `GET /student/{student_id}/balance` — read the current balance.
-* `POST /student/{student_id}/balance/transactions` — add or deduct coins. Send
-  `{"operation": "deposit", "amount": 5, "reason": "Completed a challenge"}` or
-  use `"deduct"` to subtract coins from the balance.
-* `GET /student/{student_id}/transactions?limit=50&offset=0` — read the
-  student's transaction history, newest first, in a response containing
-  `transactions`, `status`, and `code`. If the student exists but has no
-  transactions yet, `transactions` is an empty array and `code` is `200`.
-
-Amounts must be positive, and a deduction cannot make the balance negative.
-The balance update and transaction record are committed together. These endpoints
-do not yet authenticate callers; authorization should be added before exposing
-them to an untrusted network.
-
----
-
-## 🚀 Getting Started
-
-### Requirements
-
-_The requirements may be modified as the project evolves_
-
-* Python 3.13+
-* Node.js 20+
-* PostgreSQL
-* Docker *(optional)*
-
-Set separate database secrets for each mode: `DEV_DATABASE_URL` for development and `PROD_DATABASE_URL` for production. In `DEV` mode, the application and Alembic require `DEV_DATABASE_URL`; they do not fall back to `DATABASE_URL` or `TEST_DATABASE_URL`.
-
-### Clone
+Requirements: Python 3.13+ and PostgreSQL. Install dependencies from the repository root:
 
 ```bash
-git clone https://github.com/your-username/robocoins.git
-cd robocoins
-```
-
-### Backend
-
-```bash
-cd backend
-
 python -m venv .venv
-source .venv/bin/activate
-
+# Windows PowerShell:
+.venv\Scripts\Activate.ps1
+# macOS/Linux:
+# source .venv/bin/activate
 pip install -r requirements.txt
-
-# For an existing database already managed by Alembic:
-alembic upgrade head
-
-# Configure the administrator password in the deployment environment (not in source control):
-# ADMIN_PASSWORD=<a-long-unique-secret>
-
-cd app
-uvicorn main:app --reload
 ```
 
-Everyone signs in through `POST /auth/login` with JSON `{"code":"..."}`. A 12-character value is checked as the administrator password; normal access codes continue to authenticate teachers and students.
-The first successful login provisions the single administrator account in the database.
-Set `ADMIN_PASSWORD` separately for each environment, exactly 12 characters long. If it is unset, the backend generates a random 12-character password and prints it once at startup.
-Existing deployments must run `alembic upgrade head` to allow the new `admin` role.
+Configure a PostgreSQL URL in `.env` or the process environment. Development mode requires `DEV_DATABASE_URL`; it does not fall back to `DATABASE_URL` or `TEST_DATABASE_URL`.
 
-### Frontend
+```dotenv
+PRODUCT_MODE=DEV
+DEV_DATABASE_URL=postgresql+asyncpg://robocoins:robocoins@localhost:5432/robocoins
+ADMIN_PASSWORD=replace-with-your-12-character-secret
+```
 
-_Will be provided in future._
+Run the API from the repository root:
 
-<!-- ```bash
-cd frontend
+```bash
+uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+```
 
-npm install
-npm run dev
-``` -->
+The API is at `http://localhost:8000`, OpenAPI docs at `http://localhost:8000/docs`, and the admin testing page at `http://localhost:8000/admin`. On startup, the app creates missing tables. For an existing database that is already managed by Alembic, apply pending migrations from the repository root with `alembic upgrade head`.
 
----
+## Docker Compose
 
-## 🐳 Docker
-
-Run the whole project with:
+Docker Compose starts PostgreSQL and the API:
 
 ```bash
 docker compose up --build
 ```
 
----
-
-<!-- Will be provided in future.
-## 🛠️ Roadmap
-
-* [x] Basic project architecture
-* [ ] Authentication
-* [ ] Student management
-* [ ] Coin transactions
-* [ ] Reward system
-* [ ] Teacher dashboard
-* [ ] Student dashboard
-* [ ] Statistics
-* [ ] Mobile optimization
-* [ ] Docker deployment
-* [ ] Public API documentation 
-
--->
-
-## 🤝 Contributing
-
-Contributions are welcome.
-
-1. Fork the repository
-2. Create a branch
+Open `http://localhost:8000/docs` or `http://localhost:8000/admin`. Set `ADMIN_PASSWORD` in the environment or the project `.env` file to configure that deployment's administrator password. It must be exactly 12 characters. If unset, the app generates one and writes it to the API container logs:
 
 ```bash
-git checkout -b feature/my-feature
+docker compose logs app
 ```
 
-3. Commit your changes
+This Compose configuration runs the app in `DEV` mode and is intended for local development. Do not deploy it as-is. Production needs `PRODUCT_MODE=PROD`, `PROD_DATABASE_URL` (or `DATABASE_URL`), and `PROD_CORS_ORIGINS` configured in the deployment environment. The default database credentials in `docker-compose.yml` are for local development. PostgreSQL data is stored in the `postgres_data` volume. To stop the containers while preserving data, run `docker compose down`; to remove the local database volume as well, run `docker compose down --volumes`.
 
-```bash
-git commit -m "feat: add my feature"
-```
+## License
 
-4. Push the branch
-
-```bash
-git push origin feature/my-feature
-```
-
-5. Open a Pull Request
-
----
-
-## 📄 License
-
-This project is open-source. See the `LICENSE` file for details.
+See [LICENSE](LICENSE).

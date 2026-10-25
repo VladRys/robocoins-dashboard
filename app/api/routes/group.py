@@ -189,3 +189,31 @@ async def assign_group_student(
     if group is None:
         raise HTTPException(status_code=404, detail=HttpErrorMessage.GROUP_NOT_FOUND)
     return _group_response(group)
+
+
+@group_router.delete("/id/{group_id}/student/{student_id}", response_model=GroupResponse)
+async def remove_group_student(
+    group_id: int,
+    student_id: int,
+    service: GroupService = Depends(get_group_service),
+    user: User = Depends(get_authenticated_user),
+    authorization: AuthorizationService = Depends(get_authorization_service),
+) -> GroupResponse:
+    if not await authorization.is_allowed(
+        AuthorizationAction.REMOVE_STUDENT_FROM_GROUP,
+        user,
+        group_id,
+    ):
+        raise HTTPException(status_code=403, detail="You cannot remove students from this group")
+
+    try:
+        group = await service.remove_group_student(group_id, student_id)
+    except ValueError as error:
+        raise HTTPException(
+            status_code=404,
+            detail=validation_error_message(error, HttpErrorMessage.STUDENT_NOT_FOUND),
+        ) from error
+
+    if group is None:
+        raise HTTPException(status_code=404, detail=HttpErrorMessage.GROUP_NOT_FOUND)
+    return _group_response(group)

@@ -8,9 +8,31 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-robocoins}
       POSTGRES_DB: ${POSTGRES_DB:-robocoins}
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-robocoins} -d ${POSTGRES_DB:-robocoins}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  app:
+    build:
+      context: .
+      dockerfile: dockerFile
+    container_name: robocoins-app
+    restart: unless-stopped
+    environment:
+      PRODUCT_MODE: DEV
+      DEV_DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-robocoins}:${POSTGRES_PASSWORD:-robocoins}@postgres:5432/${POSTGRES_DB:-robocoins}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
 
 volumes:
   postgres_data:
