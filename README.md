@@ -176,9 +176,17 @@ pip install -r requirements.txt
 # For an existing database already managed by Alembic:
 alembic upgrade head
 
+# Configure the administrator password in the deployment environment (not in source control):
+# ADMIN_PASSWORD=<a-long-unique-secret>
+
 cd app
 uvicorn main:app --reload
 ```
+
+Everyone signs in through `POST /auth/login` with JSON `{"code":"..."}`. A 12-character value is checked as the administrator password; normal access codes continue to authenticate teachers and students.
+The first successful login provisions the single administrator account in the database.
+Set `ADMIN_PASSWORD` separately for each environment, exactly 12 characters long. If it is unset, the backend generates a random 12-character password and prints it once at startup.
+Existing deployments must run `alembic upgrade head` to allow the new `admin` role.
 
 ### Frontend
 

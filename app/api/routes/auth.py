@@ -6,7 +6,6 @@ from app.core.enums import HttpErrorMessage, UserRole
 from app.schemas.student import StudentProfileResponse
 from app.schemas.teacher import TeacherGroupProfile, TeacherProfileResponse
 from app.schemas.auth import (
-    AdminLoginRequest,
     AdminProfileResponse,
     StudentCredentialsResponse,
     UserLogoutResponse,
@@ -62,6 +61,30 @@ async def login(
     student_service: StudentService = Depends(get_student_service),
     session_service: SessionService = Depends(get_session_service),
 ) -> UserLoginResponse:
+    if len(login_request.code) == 12:
+        configured_password = cfg.ADMIN_PASSWORD
+        if not configured_password or not hmac.compare_digest(
+            login_request.code.encode("utf-8"), configured_password.encode("utf-8")
+        ):
+            raise HTTPException(status_code=401, detail="Invalid login credentials")
+
+        user = await user_service.get_or_create_admin_user()
+        session_token = await session_service.create_session(user.id)
+        response.set_cookie(
+            key="session_token",
+            value=session_token,
+            httponly=True,
+            secure=request.url.scheme == "https",
+            samesite="lax",
+            max_age=60 * 60 * 24 * 7,
+        )
+        response.headers["Cache-Control"] = "no-store"
+        return UserLoginResponse(
+            message="Login successful",
+            session_token=session_token,
+            user={"id": user.id, "user_id": user.id, "name": user.name, "role": user.role},
+        )
+
     user = await user_service.get_user_by_access_code(login_request.code)
     if user is None:
         raise HTTPException(status_code=401, detail=HttpErrorMessage.WRONG_ACCESS_CODE)
@@ -94,39 +117,6 @@ async def login(
         },
     )
 
-
-@auth_router.post("/admin/login", response_model=UserLoginResponse)
-async def admin_login(
-    login_request: AdminLoginRequest,
-    response: Response,
-    request: Request,
-    user_service: UserService = Depends(get_user_service),
-    session_service: SessionService = Depends(get_session_service),
-) -> UserLoginResponse:
-    configured_password = cfg.ADMIN_PASSWORD
-    if not configured_password:
-        raise HTTPException(status_code=503, detail="Admin login is not configured")
-    if not hmac.compare_digest(
-        login_request.password.encode("utf-8"), configured_password.encode("utf-8")
-    ):
-        raise HTTPException(status_code=401, detail="Invalid administrator password")
-
-    user = await user_service.get_or_create_admin_user()
-    session_token = await session_service.create_session(user.id)
-    response.set_cookie(
-        key="session_token",
-        value=session_token,
-        httponly=True,
-        secure=request.url.scheme == "https",
-        samesite="lax",
-        max_age=60 * 60 * 24 * 7,
-    )
-    response.headers["Cache-Control"] = "no-store"
-    return UserLoginResponse(
-        message="Login successful",
-        session_token=session_token,
-        user={"id": user.id, "user_id": user.id, "name": user.name, "role": user.role},
-    )
 
 @auth_router.post("/logout", response_model=UserLogoutResponse)
 async def logout(request: Request, response: Response, session_service: SessionService = Depends(get_session_service)):

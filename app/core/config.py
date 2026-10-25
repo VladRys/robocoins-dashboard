@@ -51,6 +51,15 @@ def resolve_database_url(raw_mode: str) -> tuple[ProductMode, str]:
 
     return mode, DATABASE_URL_RESOLVERS[mode]()
 
+
+def resolve_admin_password() -> tuple[str, bool]:
+    configured_password = os.getenv("ADMIN_PASSWORD")
+    if configured_password:
+        if len(configured_password) != 12:
+            raise ValueError("ADMIN_PASSWORD must be exactly 12 characters")
+        return configured_password, False
+    return secrets.token_urlsafe(9), True
+
 def prod_cors_origins() -> list[str]:
     origins: list[str] = []
     for configured_origin in os.getenv("PROD_CORS_ORIGINS", "").split(","):
@@ -100,8 +109,7 @@ CORS_ORIGINS_BY_MODE = {
 
 class Config:
     PROJECT_NAME = "RoboCoins Dashboard"
-    ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD") or secrets.token_urlsafe(9)
-    ADMIN_PASSWORD_WAS_GENERATED = not bool(os.getenv("ADMIN_PASSWORD"))
+    ADMIN_PASSWORD, ADMIN_PASSWORD_WAS_GENERATED = resolve_admin_password()
     PRODUCT_MODE, DATABASE_URL = resolve_database_url(
         os.getenv("PRODUCT_MODE", ProductMode.DEV.value)
     )

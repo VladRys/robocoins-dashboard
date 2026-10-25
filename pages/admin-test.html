@@ -241,7 +241,7 @@
       $('login-form').addEventListener('submit', async event => {
         event.preventDefault(); $('login-button').disabled = true; status('login-status', 'Проверяю пароль…');
         try {
-          await request('/auth/admin/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ password: $('admin-password').value }) });
+          await request('/auth/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code: $('admin-password').value }) });
           $('admin-password').value = '';
           const user = await request('/auth/me'); signedIn(user);
         } catch (error) { status('login-status', error.message, 'error'); }

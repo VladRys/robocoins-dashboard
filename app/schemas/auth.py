@@ -5,11 +5,7 @@ from app.core.enums import StatusEnum
 
 
 class UserLoginRequest(BaseModel):
-    code: str
-
-
-class AdminLoginRequest(BaseModel):
-    password: str = Field(min_length=1, max_length=1024)
+    code: str = Field(min_length=1, max_length=128)
 
 
 class LoginUser(BaseModel):
