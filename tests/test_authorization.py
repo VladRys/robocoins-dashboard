@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from app.api.routes.group import assign_group_student
+from app.api.routes.group import assign_group_student, remove_group_student
 from app.api.routes.student import edit_student_avatar, edit_student_nickname
 from app.core.database import Base
 from app.core.enums import AuthorizationAction, UserRole
@@ -208,6 +208,16 @@ def test_authorization_policies_and_scoped_avatar_and_group_actions(tmp_path: Pa
                     )
                 assert denied_assignment.value.status_code == 403
 
+                with pytest.raises(HTTPException) as denied_removal:
+                    await remove_group_student(
+                        other_group.id,
+                        other_student.id,
+                        service=group_service,
+                        user=teacher,
+                        authorization=authorization,
+                    )
+                assert denied_removal.value.status_code == 403
+
                 assigned_group = await assign_group_student(
                     teacher_group.id,
                     GroupStudentAssignmentRequest(student_id=other_student.id),
@@ -219,6 +229,15 @@ def test_authorization_policies_and_scoped_avatar_and_group_actions(tmp_path: Pa
                     student.id,
                     other_student.id,
                 }
+
+                updated_group = await remove_group_student(
+                    teacher_group.id,
+                    other_student.id,
+                    service=group_service,
+                    user=teacher,
+                    authorization=authorization,
+                )
+                assert {profile.id for profile in updated_group.students} == {student.id}
         finally:
             await engine.dispose()
 
