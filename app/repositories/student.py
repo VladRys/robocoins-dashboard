@@ -1,9 +1,9 @@
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import case, select, update
+from sqlalchemy import case, or_, select, update
 from sqlalchemy.orm import selectinload
 
 from app.models.student import Student
-from app.models.group import Group
+from app.models.group import Group, student_groups
 from app.models.user import User
 
 class StudentRepository:
@@ -18,6 +18,57 @@ class StudentRepository:
             .where(Student.id == student_id)
         )
         return result.scalar_one_or_none()
+
+    async def get_all_students(self) -> list[Student]:
+        result = await self.session.execute(
+            select(Student)
+            .options(selectinload(Student.groups).selectinload(Group.course))
+            .order_by(Student.id)
+        )
+        return list(result.scalars().all())
+
+    async def is_student_in_teacher_group(
+        self,
+        student_id: int,
+        teacher_id: int,
+    ) -> bool:
+        result = await self.session.scalar(
+            select(Student.id)
+            .join(student_groups, student_groups.c.student_id == Student.id)
+            .join(Group, Group.id == student_groups.c.group_id)
+            .where(
+                Student.id == student_id,
+                or_(Group.teacher_1_id == teacher_id, Group.teacher_2_id == teacher_id),
+            )
+            .limit(1)
+        )
+        return result is not None
+
+    async def update_avatar(self, student_id: int, avatar: str) -> Student | None:
+        result = await self.session.execute(
+            update(Student)
+            .where(Student.id == student_id)
+            .values(avatar=avatar)
+            .returning(Student.id)
+        )
+        updated_id = result.scalar_one_or_none()
+        if updated_id is None:
+            return None
+        await self.session.commit()
+        return await self.get_student_by_id(updated_id)
+
+    async def update_nickname(self, student_id: int, nickname: str) -> Student | None:
+        student = await self.session.get(Student, student_id)
+        if student is None:
+            return None
+        user = await self.session.get(User, student.user_id)
+        if user is None:
+            return None
+
+        student.name = nickname
+        user.name = nickname
+        await self.session.commit()
+        return await self.get_student_by_id(student_id)
 
     async def change_balance(self, student_id: int, amount: int) -> int | None:
         """Atomically change a balance without allowing it to fall below zero."""

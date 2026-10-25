@@ -47,6 +47,22 @@ class GroupRepository:
         )
         return set(result.scalars().all())
 
+    async def is_teacher_assigned_to_group(
+        self,
+        group_id: int,
+        teacher_id: int,
+    ) -> bool:
+        result = await self.session.scalar(
+            select(Group.id)
+            .where(
+                Group.id == group_id,
+                (Group.teacher_1_id == teacher_id)
+                | (Group.teacher_2_id == teacher_id),
+            )
+            .limit(1)
+        )
+        return result is not None
+
     async def assign_group_teachers(
         self,
         group_id: int,
@@ -59,6 +75,22 @@ class GroupRepository:
         group.teacher_2_id = teacher_ids[1] if len(teacher_ids) > 1 else None
         await self.session.commit()
         return group
+
+    async def assign_group_student(
+        self,
+        group_id: int,
+        student_id: int,
+    ) -> Group | None:
+        group = await self.get_group_by_id(group_id)
+        if group is None:
+            return None
+        student = await self.session.get(Student, student_id)
+        if student is None:
+            raise ValueError("Student was not found")
+        if all(existing.id != student_id for existing in group.students):
+            group.students.append(student)
+        await self.session.commit()
+        return await self.get_group_by_id(group_id)
 
     async def get_groups_by_course_id(self, course_id: int) -> list[Group]:
         """Fetch all groups associated with a specific course ID."""

@@ -1,7 +1,7 @@
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
-from app.core.enums import StatusEnum
 from app.core.enums import UserRole
+from app.schemas.base import APIResponse
 
 
 class TeacherRegistrationRequest(BaseModel):
@@ -16,11 +16,9 @@ class TeacherGroupProfile(BaseModel):
     students_count: int
 
 
-class TeacherResponse(BaseModel):
+class TeacherResponse(APIResponse):
     model_config = ConfigDict(from_attributes=True)
 
-    status: str = StatusEnum.SUCCESS
-    code: int = 200
     id: int
     user_id: int
     name: str

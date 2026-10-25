@@ -14,9 +14,12 @@ load_dotenv(Path(__file__).resolve().parents[2] / ".env")
 
 
 def dev_database_url() -> str:
-    url = os.getenv("DEV_DATABASE_URL") or os.getenv("DATABASE_URL")
+    url = os.getenv("DEV_DATABASE_URL")
     if not url:
-        raise ValueError("Set DEV_DATABASE_URL or DATABASE_URL for development")
+        raise ValueError(
+            "Set DEV_DATABASE_URL for development; DATABASE_URL and "
+            "TEST_DATABASE_URL are not used in DEV mode"
+        )
     return postgres_async_url(url, "development")
 
 def prod_database_url() -> str:

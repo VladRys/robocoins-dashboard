@@ -1,6 +1,6 @@
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
-from app.core.enums import StatusEnum
 from app.core.enums import UserRole
+from app.schemas.base import APIResponse
 
 class StudentCreateRequest(BaseModel):
     name: str
@@ -14,10 +14,8 @@ class StudentCreateRequest(BaseModel):
             raise ValueError("Group IDs must be unique")
         return group_ids
 
-class StudentResponse(BaseModel):
+class StudentResponse(APIResponse):
     model_config = ConfigDict(from_attributes=True)
-    status: str = StatusEnum.SUCCESS
-    code: int = 200
     id: int
     user_id: int
     role: UserRole = UserRole.STUDENT
@@ -31,10 +29,8 @@ class StudentResponse(BaseModel):
     # Access code - keyword for auth.
     access_code: str
 
-class StudentProfileResponse(BaseModel):
+class StudentProfileResponse(APIResponse):
     model_config = ConfigDict(from_attributes=True)
-    status: str = StatusEnum.SUCCESS
-    code: int = 200
     id: int
     user_id: int
     role: UserRole = UserRole.STUDENT
@@ -64,3 +60,26 @@ class StudentProfileResponse(BaseModel):
             "avatar": value.avatar,
             "balance": value.balance,
         }
+
+class StudentAvatarEditRequest(BaseModel):
+    new_avatar: str = Field(min_length=1, max_length=16)
+
+    @field_validator("new_avatar")
+    @classmethod
+    def avatar_must_not_be_blank(cls, avatar: str) -> str:
+        avatar = avatar.strip()
+        if not avatar:
+            raise ValueError("Avatar must not be blank")
+        return avatar
+
+
+class StudentNicknameEditRequest(BaseModel):
+    new_nickname: str = Field(min_length=1, max_length=200)
+
+    @field_validator("new_nickname")
+    @classmethod
+    def nickname_must_not_be_blank(cls, nickname: str) -> str:
+        nickname = nickname.strip()
+        if not nickname:
+            raise ValueError("Nickname must not be blank")
+        return nickname

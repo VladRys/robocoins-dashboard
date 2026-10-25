@@ -54,6 +54,8 @@
     .item { padding:9px 10px; border-radius:9px; background:#f6f8fc; overflow-wrap:anywhere; font-size:13px; }
     .item small { display:block; color:var(--muted); }
     .empty { color:var(--muted); font-size:13px; }
+    .student-row { width:100%; padding:9px 10px; border:0; border-radius:9px; background:#f6f8fc; color:var(--ink); text-align:left; cursor:pointer; }
+    .student-row:hover { background:#edf2ff; }
     [hidden] { display:none !important; }
     @media(max-width:720px) { .grid,.lists { grid-template-columns:1fr; } .wide { grid-column:auto; } main { width:calc(100% - 26px); margin-top:24px; } .topbar { padding:10px 14px; } .login-card { margin:35px auto; padding:21px; } }
     @media(max-width:430px) { .row { grid-template-columns:1fr; } .row label { grid-column:auto; } .top-actions { gap:7px; } .who { max-width:120px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; } }
@@ -143,6 +145,22 @@
           <div class="panel-head"><h2>Обновление списков</h2><p>Проверка доступности курсов, групп и учителей.</p></div>
           <button id="refresh-button" class="button light" type="button">Обновить данные</button>
           <p id="data-status" class="status" role="status" aria-live="polite"></p>
+        </section>
+
+        <section class="panel wide">
+          <div class="panel-head"><h2>Проверка профиля ученика</h2><p>Изменение ника и аватара ученика через API. Администратор может выбрать любой ID ученика.</p></div>
+          <button id="load-students-button" class="button light" type="button">Загрузить учеников</button>
+          <p id="students-load-status" class="status" role="status" aria-live="polite"></p>
+          <div id="student-picker" class="list" aria-label="Список учеников"></div>
+          <form id="student-profile-form">
+            <label for="profile-student-id">ID ученика</label><input id="profile-student-id" type="number" min="1" step="1" required>
+            <div class="grid">
+              <div><label for="profile-nickname">Новый ник</label><input id="profile-nickname" maxlength="200" placeholder="Например, Алекс" required><button class="button" type="button" id="nickname-button">Сменить ник</button></div>
+              <div><label for="profile-avatar">Новый аватар</label><input id="profile-avatar" maxlength="16" placeholder="Например, 🤖" required><button class="button" type="button" id="avatar-button">Сменить аватар</button></div>
+            </div>
+          </form>
+          <p id="student-profile-status" class="status" role="status" aria-live="polite"></p>
+          <pre id="student-profile-result" class="item" hidden style="white-space:pre-wrap"></pre>
         </section>
       </div>
 
@@ -252,6 +270,77 @@
         catch (error) { status('data-status', error.message, 'error'); }
       });
       $('refresh-button').addEventListener('click', loadData);
+
+      async function editStudentProfile(kind) {
+        const studentId = Number($('profile-student-id').value);
+        if (!Number.isInteger(studentId) || studentId < 1) {
+          status('student-profile-status', 'Введите корректный ID ученика.', 'error');
+          return;
+        }
+        const isNickname = kind === 'nickname';
+        const value = $(isNickname ? 'profile-nickname' : 'profile-avatar').value.trim();
+        if (!value) {
+          status('student-profile-status', isNickname ? 'Введите новый ник.' : 'Введите новый аватар.', 'error');
+          return;
+        }
+        const button = $(isNickname ? 'nickname-button' : 'avatar-button');
+        button.disabled = true;
+        status('student-profile-status', 'Отправляю запрос…');
+        $('student-profile-result').hidden = true;
+        try {
+          const path = `/student/${studentId}/${kind}`;
+          const payload = isNickname ? { new_nickname: value } : { new_avatar: value };
+          const profile = await request(path, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+          });
+          $('student-profile-result').textContent = JSON.stringify(profile, null, 2);
+          $('student-profile-result').hidden = false;
+          status('student-profile-status', `Профиль ученика #${profile.id} обновлён.`, 'success');
+        } catch (error) {
+          status('student-profile-status', error.message, 'error');
+        } finally {
+          button.disabled = false;
+        }
+      }
+      $('nickname-button').addEventListener('click', () => editStudentProfile('nickname'));
+      $('avatar-button').addEventListener('click', () => editStudentProfile('avatar'));
+
+      $('load-students-button').addEventListener('click', async () => {
+        const button = $('load-students-button');
+        const picker = $('student-picker');
+        button.disabled = true;
+        status('students-load-status', 'Загружаю список учеников…');
+        picker.replaceChildren();
+        try {
+          const students = await request('/student');
+          if (!students.length) {
+            const empty = document.createElement('div');
+            empty.className = 'empty';
+            empty.textContent = 'Ученики не найдены.';
+            picker.append(empty);
+          }
+          for (const student of students) {
+            const item = document.createElement('button');
+            item.type = 'button';
+            item.className = 'student-row';
+            item.textContent = `${student.avatar || '👤'}  ${student.name} (ID ${student.id})`;
+            item.addEventListener('click', () => {
+              $('profile-student-id').value = student.id;
+              $('profile-nickname').value = student.name;
+              $('profile-avatar').value = student.avatar || '';
+              status('students-load-status', `Выбран ученик #${student.id}.`, 'success');
+            });
+            picker.append(item);
+          }
+          if (students.length) status('students-load-status', `Загружено учеников: ${students.length}. Нажмите на ученика, чтобы выбрать его.`, 'success');
+        } catch (error) {
+          status('students-load-status', error.message, 'error');
+        } finally {
+          button.disabled = false;
+        }
+      });
 
       submitForm('teacher-form', 'button', 'teacher-status', async () => {
         const teacher = await request('/teacher/register', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: $('teacher-name').value.trim() }) });

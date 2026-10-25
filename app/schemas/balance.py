@@ -1,15 +1,13 @@
 from datetime import datetime
 from typing import Literal
 
-from app.core.enums import StatusEnum
+from app.schemas.base import APIResponse
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 from app.core.enums import BalanceChangeReasons, BalanceChangeType
 
 
-class BalanceResponse(BaseModel):
+class BalanceResponse(APIResponse):
     balance: int
-    code: int = 200
-    status: str = StatusEnum.SUCCESS
 
 
 class BalanceChangeRequest(BaseModel):
@@ -45,17 +43,13 @@ class BalanceTransactionResponse(BaseModel):
     created_at: datetime
 
 
-class BalanceChangeResponse(BaseModel):
+class BalanceChangeResponse(APIResponse):
     balance: int
     transaction: BalanceTransactionResponse
-    code: int = 200
-    status: str = StatusEnum.SUCCESS
 
 
-class BalanceHistoryResponse(BaseModel):
+class BalanceHistoryResponse(APIResponse):
     transactions: list[BalanceTransactionResponse]
-    code: int = 200
-    status: str = StatusEnum.SUCCESS
 
 
 class GroupPracticeAwardStudent(BaseModel):
@@ -64,12 +58,10 @@ class GroupPracticeAwardStudent(BaseModel):
     transaction: BalanceTransactionResponse
 
 
-class GroupPracticeAwardResponse(BaseModel):
+class GroupPracticeAwardResponse(APIResponse):
     group_id: int
     affected_students: int
     students: list[GroupPracticeAwardStudent]
-    code: int = 200
-    status: str = StatusEnum.SUCCESS
 
 
 class BalanceChangeReasonItem(BaseModel):
@@ -77,7 +69,5 @@ class BalanceChangeReasonItem(BaseModel):
     type: BalanceChangeType
 
 
-class BalanceChangeReasonsResponse(BaseModel):
-    code: int = 200
-    status: str = StatusEnum.SUCCESS
+class BalanceChangeReasonsResponse(APIResponse):
     reasons: list[BalanceChangeReasonItem]

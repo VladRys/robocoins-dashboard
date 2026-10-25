@@ -1,5 +1,5 @@
-from app.core.enums import StatusEnum
 from pydantic import BaseModel, ConfigDict, Field, field_validator
+from app.schemas.base import APIResponse
 from app.schemas.student import StudentProfileResponse
 
 class GroupCreateRequest(BaseModel):
@@ -19,11 +19,13 @@ class GroupCreateRequest(BaseModel):
         return teacher_ids
 
 
-class GroupResponse(BaseModel):
+class GroupStudentAssignmentRequest(BaseModel):
+    student_id: int = Field(gt=0)
+
+
+class GroupResponse(APIResponse):
     model_config = ConfigDict(from_attributes=True)
 
-    status: str = StatusEnum.SUCCESS
-    code: int = 200
     id: int
     name: str
     course_id: int
@@ -37,11 +39,9 @@ class GroupResponse(BaseModel):
         description="User IDs of the group's teachers",
     )
     
-class CourseGroupResponse(BaseModel):
+class CourseGroupResponse(APIResponse):
     model_config = ConfigDict(from_attributes=True)
 
-    status: str = StatusEnum.SUCCESS
-    code: int = 200
     id: int
     name: str
     course_id: int

@@ -1,17 +1,15 @@
-from app.core.enums import StatusEnum
 from pydantic import BaseModel, ConfigDict, Field
 from app.core.enums import CourseCategory
+from app.schemas.base import APIResponse
 from .group import CourseGroupResponse
 
 class CourseCreateRequest(BaseModel):
     name: str = Field(..., description="Name of the course")
     category: CourseCategory = CourseCategory.EMBEDDED
 
-class CourseResponse(BaseModel):
+class CourseResponse(APIResponse):
     model_config = ConfigDict(from_attributes=True)
 
-    status: str = StatusEnum.SUCCESS
-    code: int = 200
     id: int
     name: str
     category: CourseCategory

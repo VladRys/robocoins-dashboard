@@ -1,10 +1,20 @@
 from fastapi import APIRouter, Depends, HTTPException
 
-from app.api.dependencies import get_authenticated_admin, get_authenticated_teacher, get_authenticated_user
+from app.api.dependencies import (
+    get_authenticated_admin,
+    get_authenticated_teacher,
+    get_authenticated_user,
+    get_authorization_service,
+)
 from app.api.errors import validation_error_message
-from app.core.enums import HttpErrorMessage
+from app.core.enums import AuthorizationAction, HttpErrorMessage
 from app.models.group import Group
-from app.schemas.group import GroupCreateRequest, GroupResponse
+from app.models.user import User
+from app.schemas.group import (
+    GroupCreateRequest,
+    GroupResponse,
+    GroupStudentAssignmentRequest,
+)
 from app.schemas.student import StudentProfileResponse
 from app.schemas.balance import (
     BalanceTransactionResponse,
@@ -14,6 +24,7 @@ from app.schemas.balance import (
 from app.services.balance import BalanceService, get_balance_service
 from app.schemas.teacher import TeacherAssignmentRequest
 from app.services.group import GroupService, get_group_service
+from app.services.authorization import AuthorizationService
 
 group_router = APIRouter(
     prefix="/group",
@@ -151,4 +162,30 @@ async def assign_group_teachers(
     
     return _group_response(group)
 
-# TODO: Add same assign method but for students
+
+@group_router.put("/id/{group_id}/student", response_model=GroupResponse)
+async def assign_group_student(
+    group_id: int,
+    request: GroupStudentAssignmentRequest,
+    service: GroupService = Depends(get_group_service),
+    user: User = Depends(get_authenticated_user),
+    authorization: AuthorizationService = Depends(get_authorization_service),
+) -> GroupResponse:
+    if not await authorization.is_allowed(
+        AuthorizationAction.ASSIGN_STUDENT_TO_GROUP,
+        user,
+        group_id,
+    ):
+        raise HTTPException(status_code=403, detail="You cannot assign students to this group")
+
+    try:
+        group = await service.assign_group_student(group_id, request.student_id)
+    except ValueError as error:
+        raise HTTPException(
+            status_code=404,
+            detail=validation_error_message(error, HttpErrorMessage.STUDENT_NOT_FOUND),
+        ) from error
+
+    if group is None:
+        raise HTTPException(status_code=404, detail=HttpErrorMessage.GROUP_NOT_FOUND)
+    return _group_response(group)

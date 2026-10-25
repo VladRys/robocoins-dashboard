@@ -1,6 +1,7 @@
 from pydantic import BaseModel, ConfigDict, model_validator
 
-from app.core.enums import CourseCategory, RewardType, StatusEnum
+from app.core.enums import CourseCategory, RewardType
+from app.schemas.base import APIResponse
 
 class RewardResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
@@ -25,15 +26,12 @@ class CreateRewardRequest(BaseModel):
             raise ValueError("Privileges are available for all courses and cannot be assigned to one category")
         return self
 
-class RewardCreationResponse(BaseModel):
+class RewardCreationResponse(APIResponse):
     reward: RewardResponse
-    code: int = 200
-    status: str = StatusEnum.SUCCESS
 
-class RewardProgressResponse(BaseModel):
+
+class RewardProgressResponse(APIResponse):
     balance: int
     reward: RewardResponse | None
     coins_remaining: int | None
     progress_percent: float | None
-    code: int = 200
-    status: str = StatusEnum.SUCCESS

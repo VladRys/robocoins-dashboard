@@ -1,7 +1,7 @@
 from pydantic import BaseModel, Field
 
 from app.core.enums import UserRole
-from app.core.enums import StatusEnum
+from app.schemas.base import APIResponse
 
 
 class UserLoginRequest(BaseModel):
@@ -15,12 +15,10 @@ class LoginUser(BaseModel):
     role: UserRole
 
 
-class UserLoginResponse(BaseModel):
+class UserLoginResponse(APIResponse):
     message: str
     session_token: str
     user: LoginUser
-    status: str = StatusEnum.SUCCESS
-    code: int = 200
 
 
 class AdminProfileResponse(BaseModel):
@@ -30,15 +28,11 @@ class AdminProfileResponse(BaseModel):
     role: UserRole = UserRole.ADMIN
 
 
-class UserLogoutResponse(BaseModel):
+class UserLogoutResponse(APIResponse):
     message: str
-    status: str = StatusEnum.SUCCESS
-    code: int = 200
 
 
-class StudentCredentialsResponse(BaseModel):
+class StudentCredentialsResponse(APIResponse):
     user_id: int
     name: str
     access_code: str
-    status: str = StatusEnum.SUCCESS
-    code: int = 200

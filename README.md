@@ -156,6 +156,8 @@ _The requirements may be modified as the project evolves_
 * PostgreSQL
 * Docker *(optional)*
 
+Set separate database secrets for each mode: `DEV_DATABASE_URL` for development and `PROD_DATABASE_URL` for production. In `DEV` mode, the application and Alembic require `DEV_DATABASE_URL`; they do not fall back to `DATABASE_URL` or `TEST_DATABASE_URL`.
+
 ### Clone
 
 ```bash

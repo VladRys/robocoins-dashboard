@@ -71,6 +71,22 @@ class StudentService:
     async def get_student_by_id(self, student_id: int) -> Student | None:
         return await self.repository.get_student_by_id(student_id)
 
+    async def get_all_students(self) -> list[Student]:
+        return await self.repository.get_all_students()
+
+    async def is_student_in_teacher_group(
+        self,
+        student_id: int,
+        teacher_id: int,
+    ) -> bool:
+        return await self.repository.is_student_in_teacher_group(student_id, teacher_id)
+
+    async def update_avatar(self, student_id: int, avatar: str) -> Student | None:
+        return await self.repository.update_avatar(student_id, avatar)
+
+    async def update_nickname(self, student_id: int, nickname: str) -> Student | None:
+        return await self.repository.update_nickname(student_id, nickname)
+
     async def get_student_by_access_code(self, access_code: str) -> Student | None:
         return await self.repository.get_student_by_access_code(access_code)
 

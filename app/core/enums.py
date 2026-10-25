@@ -47,6 +47,15 @@ class UserRole(StrEnum):
     ADMIN = "admin"
 
 
+class AuthorizationAction(StrEnum):
+    ADMINISTRATOR_OPERATION = "administrator_operation"
+    TEACHER_OPERATION = "teacher_operation"
+    VIEW_STUDENT_CREDENTIALS = "view_student_credentials"
+    EDIT_STUDENT_AVATAR = "edit_student_avatar"
+    EDIT_STUDENT_NICKNAME = "edit_student_nickname"
+    ASSIGN_STUDENT_TO_GROUP = "assign_student_to_group"
+
+
 class CourseCategory(StrEnum):
     EMBEDDED = "embedded"
     GAME_DEV = "game dev"

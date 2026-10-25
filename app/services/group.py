@@ -12,6 +12,13 @@ class GroupService:
 
     async def get_group_by_id(self, group_id: int):
         return await self.repository.get_group_by_id(group_id)
+
+    async def is_teacher_assigned_to_group(
+        self,
+        group_id: int,
+        teacher_id: int,
+    ) -> bool:
+        return await self.repository.is_teacher_assigned_to_group(group_id, teacher_id)
     
     async def create_group(self, request: GroupCreateRequest):
         await self._validate_teacher_ids(request.teacher_ids)
@@ -39,6 +46,9 @@ class GroupService:
     async def assign_group_teachers(self, group_id: int, teacher_ids: list[int]):
         await self._validate_teacher_ids(teacher_ids)
         return await self.repository.assign_group_teachers(group_id, teacher_ids)
+
+    async def assign_group_student(self, group_id: int, student_id: int):
+        return await self.repository.assign_group_student(group_id, student_id)
 
     async def _validate_teacher_ids(self, teacher_ids: list[int]) -> None:
         if len(teacher_ids) > 2:

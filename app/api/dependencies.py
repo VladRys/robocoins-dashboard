@@ -1,8 +1,11 @@
 from fastapi import Depends, HTTPException, Request
 
-from app.core.enums import HttpErrorMessage, UserRole
+from app.core.enums import AuthorizationAction, HttpErrorMessage
 from app.models.user import User
+from app.services.authorization import AuthorizationService
+from app.services.group import GroupService, get_group_service
 from app.services.session import SessionService, get_session_service
+from app.services.student import StudentService, get_student_service
 from app.services.users import UserService, get_user_service
 
 
@@ -28,17 +31,26 @@ async def get_authenticated_user(
     return user
 
 
+async def get_authorization_service(
+    student_service: StudentService = Depends(get_student_service),
+    group_service: GroupService = Depends(get_group_service),
+) -> AuthorizationService:
+    return AuthorizationService(student_service, group_service)
+
+
 async def get_authenticated_teacher(
     user: User = Depends(get_authenticated_user),
+    authorization: AuthorizationService = Depends(get_authorization_service),
 ) -> User:
-    if user.role != UserRole.TEACHER.value:
+    if not await authorization.is_allowed(AuthorizationAction.TEACHER_OPERATION, user):
         raise HTTPException(status_code=403, detail=HttpErrorMessage.ONLY_TEACHERS_CAN_MODIFY)
     return user
 
 
 async def get_authenticated_admin(
     user: User = Depends(get_authenticated_user),
+    authorization: AuthorizationService = Depends(get_authorization_service),
 ) -> User:
-    if user.role != UserRole.ADMIN.value:
+    if not await authorization.is_allowed(AuthorizationAction.ADMINISTRATOR_OPERATION, user):
         raise HTTPException(status_code=403, detail="Administrator access required")
     return user

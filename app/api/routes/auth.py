@@ -1,10 +1,11 @@
 import hmac
 
-from fastapi import Depends, HTTPException, APIRouter, Request, Response
+from fastapi import APIRouter, Depends, HTTPException, Request, Response
+
+from app.api.dependencies import get_authenticated_user, get_authorization_service
 from app.core.config import Config as cfg
-from app.core.enums import HttpErrorMessage, UserRole
-from app.schemas.student import StudentProfileResponse
-from app.schemas.teacher import TeacherGroupProfile, TeacherProfileResponse
+from app.core.enums import AuthorizationAction, HttpErrorMessage, UserRole
+from app.models.user import User
 from app.schemas.auth import (
     AdminProfileResponse,
     StudentCredentialsResponse,
@@ -12,10 +13,11 @@ from app.schemas.auth import (
     UserLoginRequest,
     UserLoginResponse,
 )
-from app.api.dependencies import get_authenticated_user
-from app.models.user import User
-from app.services.student import StudentService, get_student_service
+from app.schemas.student import StudentProfileResponse
+from app.schemas.teacher import TeacherGroupProfile, TeacherProfileResponse
+from app.services.authorization import AuthorizationService
 from app.services.session import SessionService, get_session_service
+from app.services.student import StudentService, get_student_service
 from app.services.users import UserService, get_user_service
 
 
@@ -28,12 +30,16 @@ auth_router = APIRouter(
 async def get_student_credentials(
     response: Response,
     user: User = Depends(get_authenticated_user),
+    authorization: AuthorizationService = Depends(get_authorization_service),
     student_service: StudentService = Depends(get_student_service),
 ) -> StudentCredentialsResponse:
     response.headers["Cache-Control"] = "no-store"
     response.headers["Pragma"] = "no-cache"
 
-    if user.role != UserRole.STUDENT.value:
+    can_view_credentials = await authorization.is_allowed(
+        AuthorizationAction.VIEW_STUDENT_CREDENTIALS, user
+    )
+    if not can_view_credentials:
         raise HTTPException(
             status_code=403,
             detail=HttpErrorMessage.ONLY_STUDENTS_CAN_VIEW_CREDENTIALS,
