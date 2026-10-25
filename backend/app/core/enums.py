@@ -44,6 +44,7 @@ class ProductMode(StrEnum):
 class UserRole(StrEnum):
     STUDENT = "student"
     TEACHER = "teacher"
+    ADMIN = "admin"
 
 
 class CourseCategory(StrEnum):

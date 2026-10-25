@@ -34,3 +34,11 @@ async def get_authenticated_teacher(
     if user.role != UserRole.TEACHER.value:
         raise HTTPException(status_code=403, detail=HttpErrorMessage.ONLY_TEACHERS_CAN_MODIFY)
     return user
+
+
+async def get_authenticated_admin(
+    user: User = Depends(get_authenticated_user),
+) -> User:
+    if user.role != UserRole.ADMIN.value:
+        raise HTTPException(status_code=403, detail="Administrator access required")
+    return user

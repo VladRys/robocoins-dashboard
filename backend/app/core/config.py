@@ -1,4 +1,5 @@
 import os
+import secrets
 from collections.abc import Callable
 from enum import StrEnum
 from pathlib import Path
@@ -99,6 +100,8 @@ CORS_ORIGINS_BY_MODE = {
 
 class Config:
     PROJECT_NAME = "RoboCoins Dashboard"
+    ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD") or secrets.token_urlsafe(9)
+    ADMIN_PASSWORD_WAS_GENERATED = not bool(os.getenv("ADMIN_PASSWORD"))
     PRODUCT_MODE, DATABASE_URL = resolve_database_url(
         os.getenv("PRODUCT_MODE", ProductMode.DEV.value)
     )

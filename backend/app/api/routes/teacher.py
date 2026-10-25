@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 
-from app.api.dependencies import get_authenticated_teacher, get_authenticated_user
+from app.api.dependencies import get_authenticated_admin, get_authenticated_teacher, get_authenticated_user
 from app.core.enums import HttpErrorMessage
 from app.models.user import User
 from app.schemas.group import CourseGroupResponse
@@ -74,6 +74,7 @@ async def get_teacher_groups(
 async def register_teacher(
     request: TeacherRegistrationRequest,
     service: UserService = Depends(get_user_service),
+    _admin: User = Depends(get_authenticated_admin),
 ) -> TeacherRegistrationResponse:
     teacher = await service.register_teacher(request.name)
     if teacher is None:

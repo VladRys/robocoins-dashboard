@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 
-from app.api.dependencies import get_authenticated_teacher, get_authenticated_user
+from app.api.dependencies import get_authenticated_admin, get_authenticated_user
 from app.api.errors import validation_error_message
 from app.core.enums import CourseCategory, HttpErrorMessage
 from app.schemas.course import CourseCreateRequest, CourseResponse
@@ -46,7 +46,7 @@ def _course_response(course) -> CourseResponse:
 async def create_course(
     course_data: CourseCreateRequest,
     service: CourseService = Depends(get_course_service),
-    _user = Depends(get_authenticated_teacher), # TODO: mb change teacher to admin in future
+    _user = Depends(get_authenticated_admin),
 ) -> CourseResponse:
     try:
         course = await service.create_course(course_data)

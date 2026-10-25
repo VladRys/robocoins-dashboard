@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 
-from app.api.dependencies import get_authenticated_teacher, get_authenticated_user
+from app.api.dependencies import get_authenticated_admin, get_authenticated_teacher, get_authenticated_user
 from app.api.errors import validation_error_message
 from app.core.enums import HttpErrorMessage
 from app.models.group import Group
@@ -40,7 +40,7 @@ def _group_response(group: Group) -> GroupResponse:
 async def create_group(
     group: GroupCreateRequest,
     service: GroupService = Depends(get_group_service),
-    _user = Depends(get_authenticated_teacher),
+    _user = Depends(get_authenticated_admin),
 ) -> GroupResponse:
     try:
         new_group = await service.create_group(group)
@@ -133,7 +133,7 @@ async def assign_group_teachers(
     group_id: int,
     request: TeacherAssignmentRequest,
     service: GroupService = Depends(get_group_service),
-    _user = Depends(get_authenticated_teacher), #TODO: mb change that to admin in future
+    _user = Depends(get_authenticated_admin),
 ) -> GroupResponse: 
     try:
         group = await service.assign_group_teachers(group_id, request.teacher_ids)

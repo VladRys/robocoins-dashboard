@@ -32,6 +32,8 @@ logger = logging.getLogger(__name__)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
+    if cfg.ADMIN_PASSWORD_WAS_GENERATED:
+        logger.info(f"Generated administrator password: {cfg.ADMIN_PASSWORD}")
     logger.info(
         "Application startup",
         extra={"event": "application.starting", "mode": cfg.PRODUCT_MODE.value},
@@ -120,6 +122,11 @@ async def log_http_requests(request, call_next):
     return response
 
 
+@app.get("/admin", include_in_schema=False)
+async def admin_page() -> FileResponse:
+    return FileResponse(BACKEND_DIR / "pages" / "admin-test.html", media_type="text/html")
+
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=cfg.CORS_ORIGINS,
@@ -129,58 +136,6 @@ app.add_middleware(
     allow_headers=["*"],
     expose_headers=["X-Request-ID"],
 )
-
-
-# TODO: mb move redirects to frontend-side.
-@app.get("/registration", include_in_schema=False)
-async def registration_page() -> FileResponse:
-    page_path = Path(__file__).resolve().parents[2] / "frontend" / "register.html"
-    return FileResponse(page_path, media_type="text/html")
-
-
-@app.get("/login", include_in_schema=False)
-async def login_page() -> FileResponse:
-    page_path = Path(__file__).resolve().parents[2] / "frontend" / "login.html"
-    return FileResponse(page_path, media_type="text/html")
-
-
-@app.get("/teacher-registration", include_in_schema=False)
-async def teacher_registration_page() -> FileResponse:
-    page_path = (
-        Path(__file__).resolve().parents[2]
-        / "frontend"
-        / "teacher-register.html"
-    )
-    return FileResponse(page_path, media_type="text/html")
-
-
-@app.get("/teacher-test", include_in_schema=False)
-async def teacher_test_page() -> FileResponse:
-    page_path = Path(__file__).resolve().parents[2] / "frontend" / "teacher-test.html"
-    return FileResponse(page_path, media_type="text/html")
-
-
-@app.get("/teacher-groups-test", include_in_schema=False)
-async def teacher_groups_test_page() -> FileResponse:
-    page_path = (
-        Path(__file__).resolve().parents[2]
-        / "frontend"
-        / "teacher-groups-test.html"
-    )
-    return FileResponse(page_path, media_type="text/html")
-
-
-@app.get("/balance-test", include_in_schema=False)
-async def balance_test_page() -> FileResponse:
-    page_path = Path(__file__).resolve().parents[2] / "frontend" / "balance-test.html"
-    return FileResponse(page_path, media_type="text/html")
-
-
-@app.get("/reward-test", include_in_schema=False)
-async def reward_test_page() -> FileResponse:
-    page_path = Path(__file__).resolve().parents[2] / "frontend" / "reward-test.html"
-    return FileResponse(page_path, media_type="text/html")
-
 
 if __name__ == "__main__":
     uvicorn.run(app, port=8000, log_config=LOGGING_CONFIG)

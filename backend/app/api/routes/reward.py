@@ -3,7 +3,7 @@ from app.models.reward import Reward
 from app.schemas.reward import RewardResponse, CreateRewardRequest, RewardCreationResponse
 from app.services.reward import RewardService, get_reward_service
 from app.models.user import User
-from app.api.dependencies import get_authenticated_user
+from app.api.dependencies import get_authenticated_admin, get_authenticated_user
 from app.core.enums import HttpErrorMessage
 from app.core.enums import CourseCategory
 
@@ -38,7 +38,7 @@ async def get_all_rewards(course_category: CourseCategory | None = Query(default
     return [RewardResponse.model_validate(reward) for reward in rewards]
 
 @rewards_router.post("", response_model = RewardCreationResponse)
-async def create_reward(request: CreateRewardRequest, rewards_service: RewardService = Depends(get_reward_service), _user: User = Depends(get_authenticated_user)):
+async def create_reward(request: CreateRewardRequest, rewards_service: RewardService = Depends(get_reward_service), _user: User = Depends(get_authenticated_admin)):
     new_reward = await rewards_service.create_reward(reward=Reward(name=request.name, price=request.price, description=request.description, type=request.type, course_category=request.course_category))
     if new_reward is None:
         raise HTTPException(status_code = 500, detail=HttpErrorMessage.FAILED_TO_CREATE_REWARD)

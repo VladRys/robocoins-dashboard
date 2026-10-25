@@ -1,0 +1,291 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f5f7fb">
+  <title>Панель администратора — RoboCoins</title>
+  <style>
+    :root { color-scheme:light; --ink:#18233b; --muted:#71809a; --line:#e3e8f1; --blue:#315efb; --blue-dark:#244bd5; --bg:#f5f7fb; --green:#16794d; --red:#b83a45; }
+    * { box-sizing:border-box; }
+    body { margin:0; min-height:100vh; background:var(--bg); color:var(--ink); font:15px/1.5 Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif; }
+    button,input,select,textarea { font:inherit; }
+    .topbar { min-height:68px; display:flex; justify-content:space-between; align-items:center; gap:16px; padding:12px max(20px,calc((100vw - 1120px)/2)); background:#fff; border-bottom:1px solid var(--line); }
+    .brand { display:flex; align-items:center; gap:10px; font-weight:800; }
+    .mark { display:grid; place-items:center; width:36px; height:36px; border-radius:12px; background:#eaf0ff; color:var(--blue); font-size:19px; }
+    .top-actions { display:flex; align-items:center; gap:12px; }
+    .who { color:var(--muted); font-size:13px; }
+    main { width:min(100% - 36px,1080px); margin:36px auto 64px; }
+    h1 { margin:0; font-size:clamp(28px,4vw,38px); line-height:1.15; letter-spacing:-1px; }
+    h2 { margin:0; font-size:18px; letter-spacing:-.3px; }
+    .intro { margin-bottom:24px; }
+    .intro p,.panel-head p { margin:8px 0 0; color:var(--muted); }
+    .login-card,.panel { border:1px solid var(--line); border-radius:17px; background:#fff; box-shadow:0 8px 28px #25385a0a; }
+    .login-card { max-width:470px; margin:55px auto; padding:26px; }
+    .login-card p { color:var(--muted); }
+    .grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; }
+    .panel { padding:20px; }
+    .panel-head { margin-bottom:14px; }
+    label { display:block; margin:12px 0 6px; font-size:13px; font-weight:700; }
+    input,select,textarea { width:100%; min-height:42px; padding:9px 11px; border:1px solid #d5dce8; border-radius:10px; background:#fff; color:var(--ink); outline:none; }
+    textarea { min-height:78px; resize:vertical; }
+    input:focus,select:focus,textarea:focus { border-color:var(--blue); box-shadow:0 0 0 3px #315efb1c; }
+    select[multiple] { min-height:92px; }
+    .button { min-height:40px; padding:8px 14px; border:0; border-radius:10px; background:var(--blue); color:#fff; font-weight:750; cursor:pointer; }
+    .button:hover { background:var(--blue-dark); }
+    .button:disabled { opacity:.55; cursor:wait; }
+    .button.light { border:1px solid var(--line); background:#fff; color:var(--ink); }
+    .button.light:hover { background:#f8faff; }
+    .button.small { min-height:34px; padding:6px 11px; font-size:13px; }
+    form .button { width:100%; margin-top:15px; }
+    .row { display:grid; grid-template-columns:1fr auto; gap:9px; align-items:end; }
+    .row label { grid-column:1/-1; margin-bottom:-3px; }
+    .help { margin:6px 0 0; color:var(--muted); font-size:12px; }
+    .status { min-height:21px; margin:10px 0 0; color:var(--muted); font-size:13px; overflow-wrap:anywhere; }
+    .status.error { color:var(--red); }
+    .status.success { color:var(--green); }
+    .wide { grid-column:1/-1; }
+    .toolbar { display:flex; justify-content:space-between; align-items:center; gap:12px; margin:20px 0 14px; }
+    .toolbar h2 { font-size:16px; }
+    .lists { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; }
+    .list-box { min-width:0; padding:14px; border:1px solid var(--line); border-radius:13px; background:#fff; }
+    .list-box h3 { margin:0 0 9px; font-size:14px; }
+    .list { display:grid; gap:7px; max-height:245px; overflow:auto; }
+    .item { padding:9px 10px; border-radius:9px; background:#f6f8fc; overflow-wrap:anywhere; font-size:13px; }
+    .item small { display:block; color:var(--muted); }
+    .empty { color:var(--muted); font-size:13px; }
+    [hidden] { display:none !important; }
+    @media(max-width:720px) { .grid,.lists { grid-template-columns:1fr; } .wide { grid-column:auto; } main { width:calc(100% - 26px); margin-top:24px; } .topbar { padding:10px 14px; } .login-card { margin:35px auto; padding:21px; } }
+    @media(max-width:430px) { .row { grid-template-columns:1fr; } .row label { grid-column:auto; } .top-actions { gap:7px; } .who { max-width:120px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; } }
+  </style>
+</head>
+<body>
+  <nav class="topbar" aria-label="Главная навигация">
+    <div class="brand"><span class="mark">✦</span> RoboCoins · Администратор</div>
+    <div class="top-actions"><span id="user-name" class="who"></span><button id="logout-button" class="button light small" type="button" hidden>Выйти</button></div>
+  </nav>
+  <main>
+    <header class="intro">
+      <h1>Проверка админских действий</h1>
+      <p>Войдите с паролем из <code>ADMIN_PASSWORD</code>. Здесь можно проверить создание учителей, курсов, групп и наград, а также назначение учителей.</p>
+    </header>
+
+    <section id="login-card" class="login-card">
+      <h2>Вход администратора</h2>
+      <p>Пароль не сохраняется в браузере. При пустом <code>ADMIN_PASSWORD</code> используйте пароль, выведенный сервером при запуске.</p>
+      <form id="login-form">
+        <label for="admin-password">Пароль администратора</label>
+        <div class="row"><input id="admin-password" type="password" autocomplete="current-password" required><button id="login-button" class="button" type="submit">Войти</button></div>
+      </form>
+      <p id="login-status" class="status" role="status" aria-live="polite"></p>
+    </section>
+
+    <section id="dashboard" hidden>
+      <div class="grid">
+        <section class="panel">
+          <div class="panel-head"><h2>Регистрация учителя</h2><p>Код доступа показывается после создания — передайте его учителю.</p></div>
+          <form id="teacher-form">
+            <label for="teacher-name">Имя учителя</label><input id="teacher-name" maxlength="200" required>
+            <button class="button" type="submit">Создать учителя</button>
+          </form>
+          <p id="teacher-status" class="status" role="status" aria-live="polite"></p>
+          <p id="teacher-result" class="status" aria-live="polite"></p>
+        </section>
+
+        <section class="panel">
+          <div class="panel-head"><h2>Создание курса</h2><p>Курс появится в открытом списке курсов.</p></div>
+          <form id="course-form">
+            <label for="course-name">Название курса</label><input id="course-name" maxlength="200" required>
+            <label for="course-category">Категория</label>
+            <select id="course-category">
+              <option value="embedded">Embedded</option><option value="game dev">Game dev</option><option value="web">Web</option><option value="primary">Primary</option><option value="python">Python</option><option value="no category">Без категории</option>
+            </select>
+            <button class="button" type="submit">Создать курс</button>
+          </form>
+          <p id="course-status" class="status" role="status" aria-live="polite"></p>
+        </section>
+
+        <section class="panel">
+          <div class="panel-head"><h2>Создание группы</h2><p>Можно сразу назначить до двух учителей.</p></div>
+          <form id="group-form">
+            <label for="group-name">Название группы</label><input id="group-name" maxlength="200" required>
+            <label for="group-course">Курс</label><select id="group-course" required><option value="">Сначала создайте или обновите курсы</option></select>
+            <label for="group-teachers">Учителя (необязательно, до двух)</label><select id="group-teachers" multiple size="3"></select><p class="help">Для выбора нескольких пунктов используйте Ctrl (Windows) или Cmd (Mac).</p>
+            <button class="button" type="submit">Создать группу</button>
+          </form>
+          <p id="group-status" class="status" role="status" aria-live="polite"></p>
+        </section>
+
+        <section class="panel">
+          <div class="panel-head"><h2>Назначение учителей</h2><p>Сохранение заменяет текущий список назначений.</p></div>
+          <form id="assignment-form">
+            <label for="assignment-group">Группа</label><select id="assignment-group" required><option value="">Нет групп</option></select>
+            <label for="assignment-teachers">Учителя (до двух)</label><select id="assignment-teachers" multiple size="3"></select><p class="help">Оставьте пустым, чтобы снять назначения.</p>
+            <button class="button" type="submit">Сохранить назначения</button>
+          </form>
+          <p id="assignment-status" class="status" role="status" aria-live="polite"></p>
+        </section>
+
+        <section class="panel">
+          <div class="panel-head"><h2>Создание награды</h2><p>Для привилегии категория курса не указывается.</p></div>
+          <form id="reward-form">
+            <label for="reward-name">Название</label><input id="reward-name" maxlength="200" required>
+            <label for="reward-price">Стоимость в монетах</label><input id="reward-price" type="number" min="0" step="1" required>
+            <label for="reward-description">Описание</label><textarea id="reward-description"></textarea>
+            <label for="reward-type">Тип</label><select id="reward-type"><option value="reward">Награда</option><option value="privilege">Привилегия</option></select>
+            <div id="reward-category-wrap"><label for="reward-category">Категория курса (пусто — для всех)</label><select id="reward-category"><option value="">Все курсы</option><option value="embedded">Embedded</option><option value="game dev">Game dev</option><option value="web">Web</option><option value="primary">Primary</option><option value="python">Python</option><option value="no category">Без категории</option></select></div>
+            <button class="button" type="submit">Создать награду</button>
+          </form>
+          <p id="reward-status" class="status" role="status" aria-live="polite"></p>
+        </section>
+
+        <section class="panel">
+          <div class="panel-head"><h2>Обновление списков</h2><p>Проверка доступности курсов, групп и учителей.</p></div>
+          <button id="refresh-button" class="button light" type="button">Обновить данные</button>
+          <p id="data-status" class="status" role="status" aria-live="polite"></p>
+        </section>
+      </div>
+
+      <div class="toolbar"><h2>Текущие данные</h2><span id="counts" class="who"></span></div>
+      <div class="lists">
+        <section class="list-box"><h3>Учителя</h3><div id="teacher-list" class="list"></div></section>
+        <section class="list-box"><h3>Курсы и группы</h3><div id="course-list" class="list"></div></section>
+        <section class="list-box"><h3>Награды</h3><div id="reward-list" class="list"></div></section>
+      </div>
+    </section>
+  </main>
+  <script>
+    (() => {
+      const local = ['localhost', '127.0.0.1', '::1'].includes(location.hostname);
+      const localBase = local ? (location.port === '8000' ? '' : `${location.protocol}//${location.hostname}:8000`) : '';
+      const $ = (id) => document.getElementById(id);
+      const state = { courses: [], groups: [], teachers: [], rewards: [] };
+
+      function apiPath(path) {
+        if (local) return `${localBase}${path}`;
+        return path.startsWith('/auth/') ? path : `/api${path}`;
+      }
+      async function request(path, options = {}) {
+        const response = await fetch(apiPath(path), { credentials: 'include', ...options });
+        const raw = await response.text();
+        let body = null;
+        if (raw) { try { body = JSON.parse(raw); } catch { body = raw; } }
+        if (!response.ok) {
+          const detail = body && typeof body === 'object' && 'detail' in body ? body.detail : typeof body === 'string' ? body : response.statusText;
+          throw new Error(`HTTP ${response.status}: ${detail}`);
+        }
+        return body;
+      }
+      function status(id, message, kind = '') {
+        const el = $(id); el.textContent = message; el.className = `status${kind ? ` ${kind}` : ''}`;
+      }
+      function fillSelect(id, entries, emptyLabel) {
+        const select = $(id); select.replaceChildren();
+        if (!entries.length) { select.add(new Option(emptyLabel, '')); return; }
+        for (const entry of entries) select.add(new Option(entry.label, String(entry.value)));
+      }
+      function selectedIds(id) { return [...$(id).selectedOptions].filter(option => option.value !== '').map(option => Number(option.value)).filter(Number.isInteger); }
+      function renderList(id, entries, emptyMessage) {
+        const container = $(id); container.replaceChildren();
+        if (!entries.length) { const empty = document.createElement('div'); empty.className = 'empty'; empty.textContent = emptyMessage; container.append(empty); return; }
+        for (const entry of entries) {
+          const item = document.createElement('div'); item.className = 'item';
+          const title = document.createElement('span'); title.textContent = entry.title; item.append(title);
+          if (entry.detail) { const detail = document.createElement('small'); detail.textContent = entry.detail; item.append(detail); }
+          container.append(item);
+        }
+      }
+      function renderLists() {
+        renderList('teacher-list', state.teachers.map(t => ({ title: t.name, detail: `ID ${t.id} · код доступа: ${t.access_code || 'скрыт'}` })), 'Учителей пока нет.');
+        renderList('course-list', state.courses.map(c => ({ title: c.name, detail: `${c.category} · курс #${c.id} · групп: ${(c.groups || []).length}` })), 'Курсов пока нет.');
+        renderList('reward-list', state.rewards.map(r => ({ title: r.name, detail: `${r.type} · ${r.price} монет${r.course_category ? ` · ${r.course_category}` : ''}` })), 'Наград пока нет.');
+        $('counts').textContent = `${state.teachers.length} учителей · ${state.courses.length} курсов · ${state.groups.length} групп · ${state.rewards.length} наград`;
+      }
+      function refreshSelectors() {
+        fillSelect('group-course', state.courses.map(c => ({ value: c.id, label: `${c.name} (#${c.id})` })), 'Нет курсов');
+        const teachers = state.teachers.map(t => ({ value: t.id, label: `${t.name} (#${t.id})` }));
+        fillSelect('group-teachers', teachers, 'Нет учителей');
+        fillSelect('assignment-teachers', teachers, 'Нет учителей');
+        fillSelect('assignment-group', state.groups.map(g => ({ value: g.id, label: `${g.name} — ${g.courseName} (#${g.id})` })), 'Нет групп');
+      }
+      async function loadData() {
+        $('refresh-button').disabled = true;
+        status('data-status', 'Загружаю данные…');
+        try {
+          const [users, courses, rewards] = await Promise.all([request('/users'), request('/course'), request('/rewards')]);
+          state.teachers = users.filter(user => user.role === 'teacher');
+          state.courses = courses;
+          state.groups = courses.flatMap(course => (course.groups || []).map(group => ({ ...group, courseName: course.name })));
+          state.rewards = rewards;
+          refreshSelectors(); renderLists();
+          status('data-status', 'Списки обновлены.', 'success');
+        } catch (error) { status('data-status', error.message, 'error'); }
+        finally { $('refresh-button').disabled = false; }
+      }
+      function signedIn(user) {
+        if (user.role !== 'admin') { request('/auth/logout', { method: 'POST' }).catch(() => {}); status('login-status', 'У этой сессии нет роли администратора.', 'error'); return; }
+        $('user-name').textContent = `Администратор: ${user.name}`;
+        $('login-card').hidden = true; $('dashboard').hidden = false; $('logout-button').hidden = false;
+        loadData();
+      }
+      async function submitForm(formId, buttonSelector, statusId, action) {
+        const form = $(formId); form.addEventListener('submit', async event => {
+          event.preventDefault(); const button = form.querySelector(buttonSelector); button.disabled = true;
+          status(statusId, 'Выполняю запрос…');
+          try { await action(); }
+          catch (error) { status(statusId, error.message, 'error'); }
+          finally { button.disabled = false; }
+        });
+      }
+
+      $('login-form').addEventListener('submit', async event => {
+        event.preventDefault(); $('login-button').disabled = true; status('login-status', 'Проверяю пароль…');
+        try {
+          await request('/auth/admin/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ password: $('admin-password').value }) });
+          $('admin-password').value = '';
+          const user = await request('/auth/me'); signedIn(user);
+        } catch (error) { status('login-status', error.message, 'error'); }
+        finally { $('login-button').disabled = false; }
+      });
+      $('logout-button').addEventListener('click', async () => {
+        try { await request('/auth/logout', { method: 'POST' }); location.reload(); }
+        catch (error) { status('data-status', error.message, 'error'); }
+      });
+      $('refresh-button').addEventListener('click', loadData);
+
+      submitForm('teacher-form', 'button', 'teacher-status', async () => {
+        const teacher = await request('/teacher/register', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: $('teacher-name').value.trim() }) });
+        $('teacher-result').textContent = `Создан учитель ${teacher.name} (ID ${teacher.id}). Код входа: ${teacher.access_code}`;
+        $('teacher-form').reset(); status('teacher-status', 'Учитель создан.', 'success'); await loadData();
+      });
+      submitForm('course-form', 'button', 'course-status', async () => {
+        const course = await request('/course', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: $('course-name').value.trim(), category: $('course-category').value }) });
+        $('course-form').reset(); status('course-status', `Курс «${course.name}» создан (ID ${course.id}).`, 'success'); await loadData();
+      });
+      submitForm('group-form', 'button', 'group-status', async () => {
+        const teacherIds = selectedIds('group-teachers');
+        if (teacherIds.length > 2) throw new Error('Для группы можно выбрать не более двух учителей.');
+        const group = await request('/group/create', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: $('group-name').value.trim(), course_id: Number($('group-course').value), teacher_ids: teacherIds }) });
+        $('group-form').reset(); status('group-status', `Группа «${group.name}» создана (ID ${group.id}).`, 'success'); await loadData();
+      });
+      submitForm('assignment-form', 'button', 'assignment-status', async () => {
+        const teacherIds = selectedIds('assignment-teachers');
+        if (teacherIds.length > 2) throw new Error('Для группы можно выбрать не более двух учителей.');
+        const groupId = Number($('assignment-group').value);
+        const group = await request(`/group/id/${groupId}/teachers`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ teacher_ids: teacherIds }) });
+        status('assignment-status', `Назначения для «${group.name}» сохранены.`, 'success'); await loadData();
+      });
+      $('reward-type').addEventListener('change', () => { $('reward-category-wrap').hidden = $('reward-type').value === 'privilege'; });
+      submitForm('reward-form', 'button', 'reward-status', async () => {
+        const type = $('reward-type').value;
+        const payload = { name: $('reward-name').value.trim(), price: Number($('reward-price').value), description: $('reward-description').value.trim() || null, type, course_category: type === 'reward' ? ($('reward-category').value || null) : null };
+        const result = await request('/rewards', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+        $('reward-form').reset(); $('reward-category-wrap').hidden = false;
+        status('reward-status', `Награда «${result.reward.name}» создана.`, 'success'); await loadData();
+      });
+
+      request('/auth/me').then(signedIn).catch(() => {});
+    })();
+  </script>
+</body>
+</html>

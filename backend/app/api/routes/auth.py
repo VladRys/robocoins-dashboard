@@ -1,8 +1,13 @@
+import hmac
+
 from fastapi import Depends, HTTPException, APIRouter, Request, Response
+from app.core.config import Config as cfg
 from app.core.enums import HttpErrorMessage, UserRole
 from app.schemas.student import StudentProfileResponse
 from app.schemas.teacher import TeacherGroupProfile, TeacherProfileResponse
 from app.schemas.auth import (
+    AdminLoginRequest,
+    AdminProfileResponse,
     StudentCredentialsResponse,
     UserLogoutResponse,
     UserLoginRequest,
@@ -89,6 +94,40 @@ async def login(
         },
     )
 
+
+@auth_router.post("/admin/login", response_model=UserLoginResponse)
+async def admin_login(
+    login_request: AdminLoginRequest,
+    response: Response,
+    request: Request,
+    user_service: UserService = Depends(get_user_service),
+    session_service: SessionService = Depends(get_session_service),
+) -> UserLoginResponse:
+    configured_password = cfg.ADMIN_PASSWORD
+    if not configured_password:
+        raise HTTPException(status_code=503, detail="Admin login is not configured")
+    if not hmac.compare_digest(
+        login_request.password.encode("utf-8"), configured_password.encode("utf-8")
+    ):
+        raise HTTPException(status_code=401, detail="Invalid administrator password")
+
+    user = await user_service.get_or_create_admin_user()
+    session_token = await session_service.create_session(user.id)
+    response.set_cookie(
+        key="session_token",
+        value=session_token,
+        httponly=True,
+        secure=request.url.scheme == "https",
+        samesite="lax",
+        max_age=60 * 60 * 24 * 7,
+    )
+    response.headers["Cache-Control"] = "no-store"
+    return UserLoginResponse(
+        message="Login successful",
+        session_token=session_token,
+        user={"id": user.id, "user_id": user.id, "name": user.name, "role": user.role},
+    )
+
 @auth_router.post("/logout", response_model=UserLogoutResponse)
 async def logout(request: Request, response: Response, session_service: SessionService = Depends(get_session_service)):
     token = request.cookies.get("session_token")
@@ -105,14 +144,14 @@ async def logout(request: Request, response: Response, session_service: SessionS
 
 @auth_router.get(
     "/me",
-    response_model=StudentProfileResponse | TeacherProfileResponse,
+    response_model=StudentProfileResponse | TeacherProfileResponse | AdminProfileResponse,
 )
 async def get_current_user(
     request: Request,
     student_service: StudentService = Depends(get_student_service),
     session_service: SessionService = Depends(get_session_service),
     user_service: UserService = Depends(get_user_service),
-) -> StudentProfileResponse | TeacherProfileResponse:
+) -> StudentProfileResponse | TeacherProfileResponse | AdminProfileResponse:
     token = request.cookies.get("session_token")
 
     if not token:
@@ -166,6 +205,14 @@ async def get_current_user(
                 )
                 for group in groups
             ],
+        )
+
+    if user.role == UserRole.ADMIN.value:
+        return AdminProfileResponse(
+            id=user.id,
+            user_id=user.id,
+            name=user.name,
+            role=UserRole.ADMIN,
         )
 
     raise HTTPException(status_code=403, detail=HttpErrorMessage.UNSUPPORTED_USER_ROLE)

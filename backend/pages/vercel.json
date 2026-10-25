@@ -1,0 +1,14 @@
+{
+  "rewrites": [
+    { "source": "/", "destination": "/register.html" },
+    { "source": "/registration", "destination": "/register.html" },
+    { "source": "/login", "destination": "/login.html" },
+    { "source": "/teachers", "destination": "/teacher-assign.html" },
+    { "source": "/admin", "destination": "/admin-test.html" },
+    { "source": "/auth/:path*", "destination": "https://robocoins-dashboard.vercel.app/auth/:path*" },
+    {
+      "source": "/api/:path*",
+      "destination": "https://robocoins-dashboard.vercel.app/:path*"
+    }
+  ]
+}

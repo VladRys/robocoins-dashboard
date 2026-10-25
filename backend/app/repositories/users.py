@@ -1,4 +1,5 @@
 from sqlalchemy import or_, select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -79,5 +80,26 @@ class UserRepository:
         if teacher_exists is None:
             self.session.add(Teacher(user_id=user.id))
         await self.session.commit()
+        await self.session.refresh(user)
+        return user
+
+    async def get_admin_user(self) -> User | None:
+        result = await self.session.execute(
+            select(User).where(User.role == UserRole.ADMIN.value).order_by(User.id)
+        )
+        return result.scalars().first()
+
+    async def create_admin_user(self) -> User:
+        user = User(
+            name="Administrator",
+            role=UserRole.ADMIN.value,
+            access_code=await self._generate_unique_access_code(),
+        )
+        self.session.add(user)
+        try:
+            await self.session.commit()
+        except IntegrityError:
+            await self.session.rollback()
+            raise
         await self.session.refresh(user)
         return user

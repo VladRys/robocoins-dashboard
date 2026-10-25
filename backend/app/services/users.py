@@ -1,4 +1,5 @@
 from fastapi import Depends
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
@@ -28,6 +29,19 @@ class UserService:
 
     async def register_teacher(self, name: str) -> User:
         return await self.repository.create_teacher(name)
+
+    async def get_or_create_admin_user(self) -> User:
+        user = await self.repository.get_admin_user()
+        if user is not None:
+            return user
+        try:
+            return await self.repository.create_admin_user()
+        except IntegrityError:
+            # Another worker may have provisioned the single admin concurrently.
+            user = await self.repository.get_admin_user()
+            if user is None:
+                raise
+            return user
 
 
 async def get_user_service(
