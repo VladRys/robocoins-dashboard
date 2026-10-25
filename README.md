@@ -4,13 +4,13 @@ RoboCoins is an educational platform for managing student groups, virtual coins,
 
 ## Features
 
-- Student and teacher accounts with session-based login
-- A single administrator account, provisioned on the first successful administrator login
-- Courses, groups, and teacher assignments
-- Student profile management, including group membership, nicknames, and avatars
-- Balance transactions, rewards, and transaction history
-- OpenAPI documentation at `/docs`
-- Docker Compose support for the API and PostgreSQL
+- 🪙 Virtual currency for student achievements and activities
+- 👨‍🎓 Student profiles with customizable nicknames and avatars
+- 👨‍🏫 Teacher management of assigned groups and students
+- 👥 Group enrollment and teacher assignments
+- 🎁 Reward and privilege shop with configurable prices
+- 📜 Student transaction history and balance tracking
+- 🔐 Role-based accounts for students, teachers, and administrators
 
 ## Roles and access
 
