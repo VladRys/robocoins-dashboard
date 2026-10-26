@@ -15,6 +15,7 @@ class HttpErrorMessage(str, Enum):
     GROUP_NOT_FOUND = "Group not found"
     FAILED_TO_CREATE_TEACHER = "Failed to create teacher"
     ONLY_STUDENTS_CAN_VIEW_CREDENTIALS = "Only students can view their credentials"
+    ONLY_GROUP_STUDENT_TEACHER_CAN_VIEW = "Only student's teacher can view this." 
     TRANSACTION_NOT_FOUND = "Transaction not found"
     TRANSACTION_ALREADY_CANCELLED = "Transaction has already been cancelled"
     INSUFFICIENT_BALANCE_TO_CANCEL_TRANSACTION = "Insufficient balance to cancel this transaction"
@@ -55,6 +56,7 @@ class AuthorizationAction(StrEnum):
     EDIT_STUDENT_NICKNAME = "edit_student_nickname"
     ASSIGN_STUDENT_TO_GROUP = "assign_student_to_group"
     REMOVE_STUDENT_FROM_GROUP = "remove_student_from_group"
+    SHOW_STUDENT_CREDENTIALS = "show_student_credentials"
 
 
 class CourseCategory(StrEnum):

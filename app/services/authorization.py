@@ -83,7 +83,7 @@ class AuthorizationService:
         self._policies: dict[AuthorizationAction, AuthorizationPolicy] = {
             AuthorizationAction.ADMINISTRATOR_OPERATION: RolePolicy(UserRole.ADMIN),
             AuthorizationAction.TEACHER_OPERATION: RolePolicy(UserRole.TEACHER),
-            AuthorizationAction.VIEW_STUDENT_CREDENTIALS: RolePolicy(UserRole.STUDENT),
+            AuthorizationAction.VIEW_STUDENT_CREDENTIALS: OwnStudentResourcePolicy(),
             AuthorizationAction.EDIT_STUDENT_AVATAR: edit_student_profile_policy,
             AuthorizationAction.EDIT_STUDENT_NICKNAME: edit_student_profile_policy,
             AuthorizationAction.ASSIGN_STUDENT_TO_GROUP: AnyPolicy(
@@ -94,6 +94,11 @@ class AuthorizationService:
                 RolePolicy(UserRole.ADMIN),
                 TeacherAssignedGroupPolicy(group_service),
             ),
+            AuthorizationAction.SHOW_STUDENT_CREDENTIALS: AnyPolicy(
+                RolePolicy(UserRole.ADMIN),
+                TeacherStudentGroupPolicy(student_service),
+                OwnStudentResourcePolicy()
+            )
         }
 
     async def is_allowed(

@@ -33,6 +33,8 @@ async def get_student_credentials(
     authorization: AuthorizationService = Depends(get_authorization_service),
     student_service: StudentService = Depends(get_student_service),
 ) -> StudentCredentialsResponse:
+    """Students can view only their own credentials"""
+    
     response.headers["Cache-Control"] = "no-store"
     response.headers["Pragma"] = "no-cache"
 

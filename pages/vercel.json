@@ -5,6 +5,9 @@
     { "source": "/login", "destination": "/login.html" },
     { "source": "/teachers", "destination": "/teacher-assign.html" },
     { "source": "/admin", "destination": "/admin-test.html" },
+    { "source": "/teacher", "destination": "/teacher-dashboard.html" },
+    { "source": "/teacher-dashboard", "destination": "/teacher-dashboard.html" },
+    { "source": "/teacher-credentials", "destination": "/teacher-dashboard.html" },
     { "source": "/auth/:path*", "destination": "https://robocoins-dashboard.vercel.app/auth/:path*" },
     {
       "source": "/api/:path*",

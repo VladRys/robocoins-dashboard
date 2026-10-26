@@ -1,9 +1,10 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Response
 
 from app.api.dependencies import (
     get_authenticated_admin,
     get_authenticated_user,
-    get_authorization_service,
+    get_authenticated_teacher,
+    get_authorization_service
 )
 from app.api.errors import validation_error_message
 from app.core.enums import AuthorizationAction, HttpErrorMessage, StatusEnum
@@ -15,6 +16,7 @@ from app.schemas.student import (
     StudentProfileResponse,
     StudentResponse,
 )
+from app.schemas.auth import StudentCredentialsResponse
 from app.services.authorization import AuthorizationService
 from app.services.student import StudentService, get_student_service
 
@@ -127,3 +129,40 @@ async def edit_student_nickname(
     if updated_student is None:
         raise HTTPException(status_code=404, detail=HttpErrorMessage.STUDENT_NOT_FOUND)
     return StudentProfileResponse.model_validate(updated_student)
+
+@student_router.get("/{student_id}/credentials", response_model = StudentCredentialsResponse)
+async def show_student_credentials(
+    response: Response,
+    student_id: int,
+    _user: User = Depends(get_authenticated_teacher),
+    student_service: StudentService = Depends(get_student_service),
+    authorization: AuthorizationService = Depends(get_authorization_service)
+) -> StudentCredentialsResponse:
+    """Show student credentials for teacher (only if student in their group)"""
+    response.headers["Cache-Control"] = "no-store"
+    response.headers["Pragma"] = "no-cache"
+    
+    can_view_credentials = await authorization.is_allowed(
+        AuthorizationAction.SHOW_STUDENT_CREDENTIALS,
+        _user,
+        student_id,
+    )
+    
+    if not can_view_credentials:
+        raise HTTPException(
+            status_code=403,
+            detail=HttpErrorMessage.ONLY_GROUP_STUDENT_TEACHER_CAN_VIEW
+        )
+        
+    student = await student_service.get_student_by_id(student_id)
+    if student is None:
+        raise HTTPException(
+            status_code=404,
+            detail=HttpErrorMessage.STUDENT_NOT_FOUND,
+        )
+        
+    return StudentCredentialsResponse(
+        user_id = student.user_id,
+        name = student.name,
+        access_code= student.access_code
+    )

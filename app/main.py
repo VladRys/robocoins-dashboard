@@ -122,6 +122,12 @@ async def log_http_requests(request, call_next):
     return response
 
 
+@app.get("/teacher", include_in_schema=False)
+@app.get("/teacher-credentials", include_in_schema=False)
+async def teacher_credentials_page() -> FileResponse:
+    return FileResponse(BACKEND_DIR / "pages" / "teacher-dashboard.html", media_type="text/html")
+
+
 @app.get("/admin", include_in_schema=False)
 async def admin_page() -> FileResponse:
     return FileResponse(BACKEND_DIR / "pages" / "admin-test.html", media_type="text/html")
