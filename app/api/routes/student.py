@@ -104,7 +104,26 @@ async def edit_student_avatar(
         raise HTTPException(status_code=404, detail=HttpErrorMessage.STUDENT_NOT_FOUND)
     return StudentProfileResponse.model_validate(updated_student)
 
+@student_router.patch("/{student_id}/access_code", response_model=StudentCredentialsResponse)
+async def regenarate_student_access_code(student_id: int, service: StudentService = Depends(get_student_service), _user: User = Depends(get_authenticated_teacher), authorization: AuthorizationService = Depends(get_authorization_service)):
+    student = await service.get_student_by_id(student_id)
+    if student is None:
+        raise HTTPException(status_code=404, detail=HttpErrorMessage.STUDENT_NOT_FOUND)
 
+    can_change_access_code = await authorization.is_allowed(AuthorizationAction.SHOW_STUDENT_CREDENTIALS, _user, student_id)
+    if not can_change_access_code:
+        raise HTTPException(status_code=403, detail=HttpErrorMessage.ONLY_GROUP_STUDENT_TEACHER_CAN_DO)
+
+    updated_student = await service.update_student_access_code(student_id)
+    if updated_student is None:
+        raise HTTPException(status_code=500, detail=HttpErrorMessage.SOMETHING_WENT_WRONG)
+    
+    return StudentCredentialsResponse(
+        user_id = updated_student.user_id,
+        name = updated_student.name,
+        access_code= updated_student.access_code
+    )
+    
 @student_router.patch("/{student_id}/nickname", response_model=StudentProfileResponse)
 async def edit_student_nickname(
     student_id: int,
@@ -151,7 +170,7 @@ async def show_student_credentials(
     if not can_view_credentials:
         raise HTTPException(
             status_code=403,
-            detail=HttpErrorMessage.ONLY_GROUP_STUDENT_TEACHER_CAN_VIEW
+            detail=HttpErrorMessage.ONLY_GROUP_STUDENT_TEACHER_CAN_DO
         )
         
     student = await student_service.get_student_by_id(student_id)

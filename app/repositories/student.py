@@ -70,6 +70,20 @@ class StudentRepository:
         await self.session.commit()
         return await self.get_student_by_id(student_id)
 
+    async def update_access_code(self, student_id: int, new_access_code: str) -> Student | None:
+        student = await self.session.get(Student, student_id)
+        if student is None:
+            return None
+        
+        user = await self.session.get(User, student.user_id)
+        if user is None:
+            return None
+
+        student.access_code = new_access_code
+        user.access_code = new_access_code
+        await self.session.commit()
+        return await self.get_student_by_id(student_id)
+
     async def change_balance(self, student_id: int, amount: int) -> int | None:
         """Atomically change a balance without allowing it to fall below zero."""
         result = await self.session.execute(

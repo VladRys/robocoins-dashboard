@@ -15,7 +15,7 @@ class HttpErrorMessage(str, Enum):
     GROUP_NOT_FOUND = "Group not found"
     FAILED_TO_CREATE_TEACHER = "Failed to create teacher"
     ONLY_STUDENTS_CAN_VIEW_CREDENTIALS = "Only students can view their credentials"
-    ONLY_GROUP_STUDENT_TEACHER_CAN_VIEW = "Only student's teacher can view this." 
+    ONLY_GROUP_STUDENT_TEACHER_CAN_DO = "Only student's teacher can do this." 
     TRANSACTION_NOT_FOUND = "Transaction not found"
     TRANSACTION_ALREADY_CANCELLED = "Transaction has already been cancelled"
     INSUFFICIENT_BALANCE_TO_CANCEL_TRANSACTION = "Insufficient balance to cancel this transaction"
@@ -31,6 +31,7 @@ class HttpErrorMessage(str, Enum):
     INVALID_TEACHER_ASSIGNMENT = "Invalid teacher assignment"
     COURSE_ALREADY_EXISTS = "A course with this name already exists"
     COURSE_CREATION_FAILED = "Course creation failed"
+    SOMETHING_WENT_WRONG = "Something went wrong"
 
 
 class StatusEnum(str, Enum):
