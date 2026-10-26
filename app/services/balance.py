@@ -1,9 +1,7 @@
 from datetime import datetime, timezone
 
-from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.database import get_db
 from app.core.enums import BalanceChangeReasons
 from app.models.group import Group
 from app.models.transaction import BalanceTransaction
@@ -144,9 +142,3 @@ class BalanceService:
         return balance, transaction
 
 
-def get_balance_service(session: AsyncSession = Depends(get_db)) -> BalanceService:
-    return BalanceService(
-        session,
-        StudentRepository(session),
-        TransactionRepository(session),
-    )

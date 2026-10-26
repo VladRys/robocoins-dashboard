@@ -1,8 +1,13 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from app.schemas.reward import RewardProgressResponse, RewardResponse
-from app.services.reward import RewardService, get_reward_service
+from app.services.reward import RewardService
 
-from app.api.dependencies import get_authenticated_teacher, get_authenticated_user
+from app.api.dependencies import (
+    get_authenticated_teacher,
+    get_authenticated_user,
+    get_balance_service,
+    get_reward_service,
+)
 from app.core.enums import HttpErrorMessage, BalanceChangeReasons
 from app.models.user import User
 from app.schemas.balance import (
@@ -19,7 +24,6 @@ from app.services.balance import (
     StudentNotFoundError,
     TransactionAlreadyCancelledError,
     TransactionNotFoundError,
-    get_balance_service,
 )
 
 coins_router = APIRouter(prefix="/student", tags=["balance"])

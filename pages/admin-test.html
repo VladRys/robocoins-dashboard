@@ -161,6 +161,13 @@
           </form>
           <p id="student-profile-status" class="status" role="status" aria-live="polite"></p>
           <pre id="student-profile-result" class="item" hidden style="white-space:pre-wrap"></pre>
+          <form id="student-streak-form">
+            <label for="profile-streak-days">Текущий стрик, дней</label>
+            <div class="row"><input id="profile-streak-days" type="number" min="0" step="1" value="0" required><button id="streak-button" class="button" type="submit">Сохранить стрик</button></div>
+            <p class="help">Введите ID ученика выше. Сохранение обновит его текущий стрик; если стрика ещё нет, он будет создан.</p>
+          </form>
+          <p id="student-streak-status" class="status" role="status" aria-live="polite"></p>
+          <pre id="student-streak-result" class="item" hidden style="white-space:pre-wrap"></pre>
         </section>
       </div>
 
@@ -306,6 +313,29 @@
       }
       $('nickname-button').addEventListener('click', () => editStudentProfile('nickname'));
       $('avatar-button').addEventListener('click', () => editStudentProfile('avatar'));
+
+      $('student-streak-form').addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const studentId = Number($('profile-student-id').value);
+        const days = Number($('profile-streak-days').value);
+        if (!Number.isInteger(studentId) || studentId < 1 || !Number.isInteger(days) || days < 0) {
+          status('student-streak-status', 'Введите корректный ID ученика и число дней от 0.', 'error');
+          return;
+        }
+        const button = $('streak-button'); button.disabled = true;
+        status('student-streak-status', 'Сохраняю стрик…');
+        $('student-streak-result').hidden = true;
+        try {
+          const streak = await request(`/student/${studentId}/streak`, {
+            method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ days }),
+          });
+          $('student-streak-result').textContent = JSON.stringify(streak, null, 2);
+          $('student-streak-result').hidden = false;
+          status('student-streak-status', `Стрик ученика #${studentId} обновлён: ${streak.days} дн.`, 'success');
+        } catch (error) { status('student-streak-status', error.message, 'error'); }
+        finally { button.disabled = false; }
+      });
 
       $('load-students-button').addEventListener('click', async () => {
         const button = $('load-students-button');

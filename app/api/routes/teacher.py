@@ -1,6 +1,12 @@
 from fastapi import APIRouter, Depends, HTTPException
 
-from app.api.dependencies import get_authenticated_admin, get_authenticated_teacher, get_authenticated_user
+from app.api.dependencies import (
+    get_authenticated_admin,
+    get_authenticated_teacher,
+    get_authenticated_user,
+    get_group_service,
+    get_user_service,
+)
 from app.core.enums import HttpErrorMessage
 from app.models.user import User
 from app.schemas.group import CourseGroupResponse
@@ -10,8 +16,8 @@ from app.schemas.teacher import (
     TeacherRegistrationRequest,
     TeacherRegistrationResponse,
 )
-from app.services.group import GroupService, get_group_service
-from app.services.users import UserService, get_user_service
+from app.services.group import GroupService
+from app.services.users import UserService
 
 
 teacher_router = APIRouter(

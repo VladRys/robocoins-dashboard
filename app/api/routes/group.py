@@ -5,6 +5,8 @@ from app.api.dependencies import (
     get_authenticated_teacher,
     get_authenticated_user,
     get_authorization_service,
+    get_balance_service,
+    get_group_service,
 )
 from app.api.errors import validation_error_message
 from app.core.enums import AuthorizationAction, HttpErrorMessage
@@ -21,9 +23,9 @@ from app.schemas.balance import (
     GroupPracticeAwardResponse,
     GroupPracticeAwardStudent,
 )
-from app.services.balance import BalanceService, get_balance_service
+from app.services.balance import BalanceService
 from app.schemas.teacher import TeacherAssignmentRequest
-from app.services.group import GroupService, get_group_service
+from app.services.group import GroupService
 from app.services.authorization import AuthorizationService
 
 group_router = APIRouter(

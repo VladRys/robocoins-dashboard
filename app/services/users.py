@@ -1,8 +1,4 @@
-from fastapi import Depends
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.ext.asyncio import AsyncSession
-
-from app.core.database import get_db
 from app.models.group import Group
 from app.models.user import User
 from app.repositories.users import UserRepository
@@ -44,7 +40,3 @@ class UserService:
             return user
 
 
-async def get_user_service(
-    db: AsyncSession = Depends(get_db),
-) -> UserService:
-    return UserService(UserRepository(db))

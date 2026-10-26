@@ -1,12 +1,12 @@
 from fastapi import APIRouter, Depends, HTTPException
 
-from app.api.dependencies import get_authenticated_admin, get_authenticated_user
+from app.api.dependencies import get_authenticated_admin, get_authenticated_user, get_course_service
 from app.api.errors import validation_error_message
 from app.core.enums import CourseCategory, HttpErrorMessage
 from app.schemas.course import CourseCreateRequest, CourseResponse
 from app.schemas.group import GroupResponse
 from app.schemas.student import StudentProfileResponse
-from app.services.course import CourseService, get_course_service
+from app.services.course import CourseService
 
 course_router = APIRouter(
     prefix="/course",

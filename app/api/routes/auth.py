@@ -2,7 +2,13 @@ import hmac
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
 
-from app.api.dependencies import get_authenticated_user, get_authorization_service
+from app.api.dependencies import (
+    get_authenticated_user,
+    get_authorization_service,
+    get_session_service,
+    get_student_service,
+    get_user_service,
+)
 from app.core.config import Config as cfg
 from app.core.enums import AuthorizationAction, HttpErrorMessage, UserRole
 from app.models.user import User
@@ -16,9 +22,9 @@ from app.schemas.auth import (
 from app.schemas.student import StudentProfileResponse
 from app.schemas.teacher import TeacherGroupProfile, TeacherProfileResponse
 from app.services.authorization import AuthorizationService
-from app.services.session import SessionService, get_session_service
-from app.services.student import StudentService, get_student_service
-from app.services.users import UserService, get_user_service
+from app.services.session import SessionService
+from app.services.student import StudentService
+from app.services.users import UserService
 
 
 auth_router = APIRouter(

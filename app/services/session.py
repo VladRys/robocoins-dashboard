@@ -1,8 +1,5 @@
 import hashlib
 import secrets
-from fastapi import Depends
-from sqlalchemy.ext.asyncio import AsyncSession
-from app.core.database import get_db
 from app.models.session import Session
 from app.repositories.session import SessionRepository
 
@@ -35,6 +32,3 @@ class SessionService:
         token_hash = self._hash_session_token(session_token)
         await self.repository.delete_session(token_hash)
 
-def get_session_service(db_session: AsyncSession = Depends(get_db)) -> SessionService:
-    repository = SessionRepository(db_session)
-    return SessionService(repository)

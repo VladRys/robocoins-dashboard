@@ -11,6 +11,7 @@ if TYPE_CHECKING:
     from app.models.group import Group
     from app.models.transaction import BalanceTransaction
     from app.models.user import User
+    from app.models.streak import Streak
 
 
 class Student(Base):
@@ -50,4 +51,7 @@ class Student(Base):
     # Access code - keyword for auth.
     access_code: Mapped[str] = mapped_column(String, nullable=False, unique=True)
 
-    # TODO: Add achievements and other relevant fields as needed
+    # TODO: Add achievements and streak system
+    current_streak: Mapped[list["Streak"]] = relationship(
+        back_populates="student", cascade="all, delete-orphan"
+    )

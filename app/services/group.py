@@ -1,9 +1,7 @@
-from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.repositories.group import GroupRepository
 from app.schemas.group import GroupCreateRequest
-from app.core.database import get_db
 
 class GroupService:
     def __init__(self, db: AsyncSession, repository: GroupRepository):
@@ -62,6 +60,3 @@ class GroupService:
         if existing_ids != set(teacher_ids):
             raise ValueError("One or more teachers were not found")
     
-def get_group_service(db: AsyncSession = Depends(get_db)) -> GroupService:
-    repository = GroupRepository(db)
-    return GroupService(db, repository)

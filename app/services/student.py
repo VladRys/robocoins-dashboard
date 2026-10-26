@@ -1,12 +1,10 @@
 
 import uuid
 
-from fastapi import Depends
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.database import get_db
 from app.core.access_code import generate_access_code
 from app.models.student import Student
 from app.models.group import Group
@@ -94,6 +92,3 @@ class StudentService:
         new_access_code = await self.generate_unique_access_code()
         return await self.repository.update_access_code(student_id, new_access_code)
 
-async def get_student_service(db: AsyncSession = Depends(get_db)) -> StudentService:
-    repository = StudentRepository(db)
-    return StudentService(db, repository)

@@ -1,12 +1,58 @@
 from fastapi import Depends, HTTPException, Request
+from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.database import get_db
 from app.core.enums import AuthorizationAction, HttpErrorMessage
 from app.models.user import User
+from app.repositories.course import CourseRepository
+from app.repositories.group import GroupRepository
+from app.repositories.reward import RewardRepository
+from app.repositories.session import SessionRepository
+from app.repositories.streak import StreakRepository
+from app.repositories.student import StudentRepository
+from app.repositories.transaction import TransactionRepository
+from app.repositories.users import UserRepository
 from app.services.authorization import AuthorizationService
-from app.services.group import GroupService, get_group_service
-from app.services.session import SessionService, get_session_service
-from app.services.student import StudentService, get_student_service
-from app.services.users import UserService, get_user_service
+from app.services.balance import BalanceService
+from app.services.course import CourseService
+from app.services.group import GroupService
+from app.services.reward import RewardService
+from app.services.session import SessionService
+from app.services.streak import StreakService
+from app.services.student import StudentService
+from app.services.users import UserService
+
+
+def get_user_service(db: AsyncSession = Depends(get_db)) -> UserService:
+    return UserService(UserRepository(db))
+
+
+async def get_student_service(db: AsyncSession = Depends(get_db)) -> StudentService:
+    return StudentService(db, StudentRepository(db))
+
+
+def get_session_service(db: AsyncSession = Depends(get_db)) -> SessionService:
+    return SessionService(SessionRepository(db))
+
+
+def get_group_service(db: AsyncSession = Depends(get_db)) -> GroupService:
+    return GroupService(db, GroupRepository(db))
+
+
+def get_course_service(db: AsyncSession = Depends(get_db)) -> CourseService:
+    return CourseService(CourseRepository(db))
+
+
+async def get_reward_service(db: AsyncSession = Depends(get_db)) -> RewardService:
+    return RewardService(RewardRepository(db))
+
+
+def get_balance_service(db: AsyncSession = Depends(get_db)) -> BalanceService:
+    return BalanceService(db, StudentRepository(db), TransactionRepository(db))
+
+
+def get_streak_service(db: AsyncSession = Depends(get_db)) -> StreakService:
+    return StreakService(StreakRepository(db))
 
 
 async def get_authenticated_user(
