@@ -13,14 +13,15 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    op.create_table(
-        "streaks",
-        sa.Column("id", sa.Integer(), primary_key=True),
-        sa.Column("student_id", sa.Integer(), sa.ForeignKey("students.id"), nullable=False),
-        sa.Column("start_date", sa.DateTime(), nullable=False),
-        sa.Column("end_date", sa.DateTime(), nullable=True),
-        sa.Column("days", sa.Integer(), server_default="0", nullable=False),
-    )
+    if not sa.inspect(op.get_bind()).has_table("streaks"):
+        op.create_table(
+            "streaks",
+            sa.Column("id", sa.Integer(), primary_key=True),
+            sa.Column("student_id", sa.Integer(), sa.ForeignKey("students.id"), nullable=False),
+            sa.Column("start_date", sa.DateTime(), nullable=False),
+            sa.Column("end_date", sa.DateTime(), nullable=True),
+            sa.Column("days", sa.Integer(), server_default="0", nullable=False),
+        )
 
 
 def downgrade() -> None:

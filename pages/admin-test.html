@@ -56,6 +56,10 @@
     .empty { color:var(--muted); font-size:13px; }
     .student-row { width:100%; padding:9px 10px; border:0; border-radius:9px; background:#f6f8fc; color:var(--ink); text-align:left; cursor:pointer; }
     .student-row:hover { background:#edf2ff; }
+    .leaderboard { width:100%; border-collapse:collapse; margin-top:12px; }
+    .leaderboard th,.leaderboard td { padding:9px 8px; border-bottom:1px solid var(--line); text-align:left; }
+    .leaderboard th { color:var(--muted); font-size:12px; }
+    .pager { display:flex; align-items:center; justify-content:flex-end; gap:10px; margin-top:12px; }
     [hidden] { display:none !important; }
     @media(max-width:720px) { .grid,.lists { grid-template-columns:1fr; } .wide { grid-column:auto; } main { width:calc(100% - 26px); margin-top:24px; } .topbar { padding:10px 14px; } .login-card { margin:35px auto; padding:21px; } }
     @media(max-width:430px) { .row { grid-template-columns:1fr; } .row label { grid-column:auto; } .top-actions { gap:7px; } .who { max-width:120px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; } }
@@ -171,6 +175,14 @@
         </section>
       </div>
 
+      <section class="panel wide" style="margin-top:16px">
+        <div class="panel-head"><h2>Абсолютный лидерборд по балансу</h2><p>Все ученики, от большего баланса к меньшему. При равном балансе порядок определяется ID.</p></div>
+        <div class="row"><label for="leaderboard-limit">Записей на странице</label><select id="leaderboard-limit"><option>10</option><option selected>20</option><option>50</option><option>100</option></select><button id="leaderboard-refresh" class="button light" type="button">Обновить</button></div>
+        <p id="leaderboard-status" class="status" role="status" aria-live="polite"></p>
+        <div style="overflow-x:auto"><table class="leaderboard"><thead><tr><th>Место</th><th>Ученик</th><th>ID</th><th>Курс</th><th>Баланс</th></tr></thead><tbody id="leaderboard-rows"></tbody></table></div>
+        <div class="pager"><button id="leaderboard-prev" class="button light small" type="button">Назад</button><span id="leaderboard-page" class="who"></span><button id="leaderboard-next" class="button light small" type="button">Дальше</button></div>
+      </section>
+
       <div class="toolbar"><h2>Текущие данные</h2><span id="counts" class="who"></span></div>
       <div class="lists">
         <section class="list-box"><h3>Учителя</h3><div id="teacher-list" class="list"></div></section>
@@ -184,7 +196,7 @@
       const local = ['localhost', '127.0.0.1', '::1'].includes(location.hostname);
       const localBase = local ? (location.port === '8000' ? '' : `${location.protocol}//${location.hostname}:8000`) : '';
       const $ = (id) => document.getElementById(id);
-      const state = { courses: [], groups: [], teachers: [], rewards: [] };
+      const state = { courses: [], groups: [], teachers: [], rewards: [], leaderboardOffset: 0, leaderboardTotal: 0 };
 
       function apiPath(path) {
         if (local) return `${localBase}${path}`;
@@ -247,11 +259,36 @@
         } catch (error) { status('data-status', error.message, 'error'); }
         finally { $('refresh-button').disabled = false; }
       }
+      async function loadLeaderboard() {
+        const limit = Number($('leaderboard-limit').value);
+        $('leaderboard-refresh').disabled = true;
+        status('leaderboard-status', 'Загружаю лидерборд…');
+        try {
+          const data = await request(`/student/leaderboard/balance?limit=${limit}&offset=${state.leaderboardOffset}`);
+          const rows = $('leaderboard-rows'); rows.replaceChildren();
+          for (const entry of data.entries) {
+            const row = document.createElement('tr');
+            for (const value of [`#${entry.rank}`, `${entry.avatar || '👤'} ${entry.name}`, entry.student_id, entry.course_name, `${entry.balance} 🪙`]) {
+              const cell = document.createElement('td'); cell.textContent = value; row.append(cell);
+            }
+            rows.append(row);
+          }
+          if (!data.entries.length) { const row = document.createElement('tr'); const cell = document.createElement('td'); cell.colSpan = 5; cell.textContent = 'Учеников пока нет.'; row.append(cell); rows.append(row); }
+          const first = data.total ? data.offset + 1 : 0;
+          const last = Math.min(data.offset + data.entries.length, data.total);
+          $('leaderboard-page').textContent = `${first}–${last} из ${data.total} · offset ${data.offset}`;
+          $('leaderboard-prev').disabled = data.offset === 0;
+          $('leaderboard-next').disabled = data.offset + data.entries.length >= data.total;
+          status('leaderboard-status', 'Лидерборд обновлён.', 'success');
+        } catch (error) { status('leaderboard-status', error.message, 'error'); }
+        finally { $('leaderboard-refresh').disabled = false; }
+      }
       function signedIn(user) {
         if (user.role !== 'admin') { request('/auth/logout', { method: 'POST' }).catch(() => {}); status('login-status', 'У этой сессии нет роли администратора.', 'error'); return; }
         $('user-name').textContent = `Администратор: ${user.name}`;
         $('login-card').hidden = true; $('dashboard').hidden = false; $('logout-button').hidden = false;
         loadData();
+        loadLeaderboard();
       }
       async function submitForm(formId, buttonSelector, statusId, action) {
         const form = $(formId); form.addEventListener('submit', async event => {
@@ -277,6 +314,10 @@
         catch (error) { status('data-status', error.message, 'error'); }
       });
       $('refresh-button').addEventListener('click', loadData);
+      $('leaderboard-refresh').addEventListener('click', loadLeaderboard);
+      $('leaderboard-limit').addEventListener('change', () => { state.leaderboardOffset = 0; loadLeaderboard(); });
+      $('leaderboard-prev').addEventListener('click', () => { state.leaderboardOffset = Math.max(0, state.leaderboardOffset - Number($('leaderboard-limit').value)); loadLeaderboard(); });
+      $('leaderboard-next').addEventListener('click', () => { state.leaderboardOffset += Number($('leaderboard-limit').value); loadLeaderboard(); });
 
       async function editStudentProfile(kind) {
         const studentId = Number($('profile-student-id').value);

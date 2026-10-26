@@ -1,5 +1,5 @@
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import case, or_, select, update
+from sqlalchemy import case, func, or_, select, update
 from sqlalchemy.orm import selectinload
 
 from app.models.student import Student
@@ -26,6 +26,33 @@ class StudentRepository:
             .order_by(Student.id)
         )
         return list(result.scalars().all())
+
+    async def get_balance_leaderboard(
+        self, limit: int, offset: int
+    ) -> tuple[list[Student], int]:
+        total = await self.session.scalar(select(func.count()).select_from(Student))
+        result = await self.session.execute(
+            select(Student)
+            .options(selectinload(Student.groups).selectinload(Group.course))
+            .order_by(Student.balance.desc(), Student.id.asc())
+            .limit(limit)
+            .offset(offset)
+        )
+        return list(result.scalars().all()), total or 0
+
+    async def get_balance_leaderboard_rank(self, student_id: int) -> tuple[int, Student] | None:
+        student = await self.session.get(Student, student_id)
+        if student is None:
+            return None
+        students_ahead = await self.session.scalar(
+            select(func.count())
+            .select_from(Student)
+            .where(
+                (Student.balance > student.balance)
+                | ((Student.balance == student.balance) & (Student.id < student.id))
+            )
+        )
+        return (students_ahead or 0) + 1, student
 
     async def is_student_in_teacher_group(
         self,

@@ -61,6 +61,28 @@ class StudentProfileResponse(APIResponse):
             "balance": value.balance,
         }
 
+
+class BalanceLeaderboardEntry(BaseModel):
+    rank: int
+    student_id: int
+    name: str
+    avatar: str | None = None
+    balance: float
+    course_names: list[str]
+
+
+class BalanceLeaderboardResponse(BaseModel):
+    entries: list[BalanceLeaderboardEntry]
+    total: int
+    limit: int
+    offset: int
+
+
+class BalanceLeaderboardRankResponse(BaseModel):
+    student_id: int
+    rank: int
+    balance: float
+
 class StudentAvatarEditRequest(BaseModel):
     new_avatar: str = Field(min_length=1, max_length=16)
 

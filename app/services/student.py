@@ -72,6 +72,16 @@ class StudentService:
     async def get_all_students(self) -> list[Student]:
         return await self.repository.get_all_students()
 
+    async def get_balance_leaderboard(
+        self, limit: int, offset: int
+    ) -> tuple[list[Student], int]:
+        return await self.repository.get_balance_leaderboard(limit, offset)
+
+    async def get_balance_leaderboard_rank(
+        self, student_id: int
+    ) -> tuple[int, Student] | None:
+        return await self.repository.get_balance_leaderboard_rank(student_id)
+
     async def is_student_in_teacher_group(
         self,
         student_id: int,

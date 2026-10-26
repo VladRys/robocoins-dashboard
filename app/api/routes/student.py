@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Response
+from fastapi import APIRouter, Depends, HTTPException, Query, Response
 
 from app.api.dependencies import (
     get_authenticated_admin,
@@ -17,6 +17,9 @@ from app.schemas.student import (
     StudentNicknameEditRequest,
     StudentProfileResponse,
     StudentResponse,
+    BalanceLeaderboardEntry,
+    BalanceLeaderboardResponse,
+    BalanceLeaderboardRankResponse,
 )
 from app.schemas.auth import StudentCredentialsResponse
 from app.services.authorization import AuthorizationService
@@ -67,6 +70,52 @@ async def get_all_students(
 ) -> list[StudentProfileResponse]:
     students = await service.get_all_students()
     return [StudentProfileResponse.model_validate(student) for student in students]
+
+
+@student_router.get("/leaderboard/balance", response_model=BalanceLeaderboardResponse)
+async def get_balance_leaderboard(
+    limit: int = Query(default=20, ge=1, le=100),
+    offset: int = Query(default=0, ge=0),
+    service: StudentService = Depends(get_student_service),
+    _user: User = Depends(get_authenticated_user),
+) -> BalanceLeaderboardResponse:
+    students, total = await service.get_balance_leaderboard(limit, offset)
+    return BalanceLeaderboardResponse(
+        entries=[
+            BalanceLeaderboardEntry(
+                rank=offset + index,
+                student_id=student.id,
+                name=student.name,
+                avatar=student.avatar,
+                course_names = [group.course.name for group in student.groups],
+                balance=student.balance,
+            )
+            for index, student in enumerate(students, start=1)
+        ],
+        total=total,
+        limit=limit,
+        offset=offset,
+    )
+
+
+@student_router.get(
+    "/leaderboard/balance/{student_id}",
+    response_model=BalanceLeaderboardRankResponse,
+)
+async def get_balance_leaderboard_rank(
+    student_id: int,
+    service: StudentService = Depends(get_student_service),
+    _user: User = Depends(get_authenticated_user),
+) -> BalanceLeaderboardRankResponse:
+    result = await service.get_balance_leaderboard_rank(student_id)
+    if result is None:
+        raise HTTPException(status_code=404, detail=HttpErrorMessage.STUDENT_NOT_FOUND)
+    rank, student = result
+    return BalanceLeaderboardRankResponse(
+        student_id=student.id,
+        rank=rank,
+        balance=student.balance,
+    )
 
 
 @student_router.post("/register", response_model=StudentResponse)
