@@ -7,7 +7,7 @@ from app.core.enums import BalanceChangeReasons, BalanceChangeType
 
 
 class BalanceResponse(APIResponse):
-    balance: int
+    balance: float
 
 
 class BalanceChangeRequest(BaseModel):
@@ -36,7 +36,7 @@ class BalanceTransactionResponse(BaseModel):
     id: int
     student_id: int
     operation: Literal["deposit", "deduct"]
-    amount: int
+    amount: float
     reason: list[str] | None
     cancelled_at: datetime | None = None
     cancelled_by_user_id: int | None = None
@@ -44,7 +44,7 @@ class BalanceTransactionResponse(BaseModel):
 
 
 class BalanceChangeResponse(APIResponse):
-    balance: int
+    balance: float
     transaction: BalanceTransactionResponse
 
 
@@ -54,7 +54,7 @@ class BalanceHistoryResponse(APIResponse):
 
 class GroupPracticeAwardStudent(BaseModel):
     student_id: int
-    balance: int
+    balance: float
     transaction: BalanceTransactionResponse
 
 

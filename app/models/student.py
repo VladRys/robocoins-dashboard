@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from sqlalchemy import CheckConstraint, ForeignKey, Integer, String, UniqueConstraint
+from sqlalchemy import CheckConstraint, Float, ForeignKey, Integer, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
@@ -44,7 +44,7 @@ class Student(Base):
         cascade="all, delete-orphan",
     )
     avatar: Mapped[str | None] = mapped_column(String, nullable=True)
-    balance: Mapped[int] = mapped_column(Integer, default=0)
+    balance: Mapped[float] = mapped_column(Float, nullable=False, default=0.0)
     hash_access_key: Mapped[str] = mapped_column(String, nullable=False, unique=True)
 
     # Access code - keyword for auth.

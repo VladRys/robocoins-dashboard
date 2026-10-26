@@ -23,7 +23,7 @@ class StudentResponse(APIResponse):
     course_names: list[str]
     group_ids: list[int]
     avatar: str | None = None
-    balance: int
+    balance: float
     hash_access_key: str
 
     # Access code - keyword for auth.
@@ -38,7 +38,7 @@ class StudentProfileResponse(APIResponse):
     course_names: list[str]
     group_ids: list[int]
     avatar: str | None = None
-    balance: int
+    balance: float
 
     @model_validator(mode="before")
     @classmethod

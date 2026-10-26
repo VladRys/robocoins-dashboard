@@ -31,7 +31,7 @@ class RewardCreationResponse(APIResponse):
 
 
 class RewardProgressResponse(APIResponse):
-    balance: int
+    balance: float
     reward: RewardResponse | None
-    coins_remaining: int | None
+    coins_remaining: float | None
     progress_percent: float | None

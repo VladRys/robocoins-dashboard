@@ -1,13 +1,10 @@
 import asyncio
-import sys
 from pathlib import Path
 
 import pytest
 from fastapi import HTTPException
 from sqlalchemy.engine import URL
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
-
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from app.api.routes.group import assign_group_student, remove_group_student
 from app.api.routes.student import edit_student_avatar, edit_student_nickname
@@ -65,7 +62,7 @@ def test_authorization_policies_and_scoped_avatar_and_group_actions(tmp_path: Pa
                     user_id=student.id,
                     name=student.name,
                     avatar="🤖",
-                    balance=0,
+                    balance=0.0,
                     hash_access_key="student-hash-1",
                     access_code="STU00001",
                 )
@@ -74,7 +71,7 @@ def test_authorization_policies_and_scoped_avatar_and_group_actions(tmp_path: Pa
                     user_id=other_student.id,
                     name=other_student.name,
                     avatar="🦊",
-                    balance=0,
+                    balance=0.0,
                     hash_access_key="student-hash-2",
                     access_code="STU00002",
                 )
@@ -103,10 +100,12 @@ def test_authorization_policies_and_scoped_avatar_and_group_actions(tmp_path: Pa
                 assert await authorization.is_allowed(
                     AuthorizationAction.VIEW_STUDENT_CREDENTIALS,
                     student,
+                    student.id,
                 )
                 assert not await authorization.is_allowed(
                     AuthorizationAction.VIEW_STUDENT_CREDENTIALS,
                     teacher,
+                    student.id,
                 )
                 assert await authorization.is_allowed(
                     AuthorizationAction.EDIT_STUDENT_AVATAR,

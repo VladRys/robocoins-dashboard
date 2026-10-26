@@ -1,6 +1,5 @@
 import asyncio
 import logging
-import sys
 from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import AsyncMock
@@ -10,35 +9,26 @@ from fastapi import HTTPException
 from sqlalchemy.engine import URL
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "app"))
-
-from api.routes.student import get_student_by_id as get_student_endpoint
+from app.api.routes.student import get_student_by_id as get_student_endpoint
 from app.core.database import Base
-from models.course import Course
-from models.group import Group
-from models.student import Student
-from models.teacher import Teacher
-from models.transaction import BalanceTransaction
-from models.user import User
-from repositories.student import StudentRepository
-from schemas.student import StudentCreateRequest
-from services.student import StudentService
+from app.core.enums import HttpErrorMessage
+from app.models.course import Course
+from app.models.group import Group
+from app.models.user import User
+from app.repositories.student import StudentRepository
+from app.schemas.student import StudentCreateRequest
+from app.services.student import StudentService
+from tests.conftest import student_with_groups
 
 logger = logging.getLogger(__name__)
 
 
 def test_get_student_by_id_returns_student():
     logger.info("Requesting existing student id=%s", 123456)
-    student = Student(
-        id=123456,
-        user_id=123456,
+    student = student_with_groups(
+        student_id=123456,
         name="Макс",
-        group_id=1,
-        course_name="Python",
         avatar="🐯",
-        balance=0,
-        hash_access_key="test-hash",
-        access_code="ABC12345",
     )
     service = SimpleNamespace(
         get_student_by_id=AsyncMock(return_value=student)
@@ -50,9 +40,10 @@ def test_get_student_by_id_returns_student():
     assert response.user_id == response.id
     assert response.role == "student"
     assert response.name == "Макс"
-    assert response.course_name == "Python"
+    assert response.course_names == ["Python"]
+    assert response.group_ids == [1]
     assert response.avatar == "🐯"
-    assert response.balance == 0
+    assert response.balance == 0.0
     assert not hasattr(response, "hash_access_key")
     service.get_student_by_id.assert_awaited_once_with(123456)
     logger.info("Student id=%s returned the expected response", response.id)
@@ -66,12 +57,13 @@ def test_get_student_by_id_returns_404_when_missing():
         asyncio.run(get_student_endpoint(123456, service))
 
     assert error.value.status_code == 404
-    assert error.value.detail == "Student not found"
+    assert error.value.detail == HttpErrorMessage.STUDENT_NOT_FOUND
     logger.info("Missing student correctly returned HTTP 404")
 
 
 def test_create_student_generates_unique_hash(tmp_path: Path):
     logger.info("Starting SQLite student creation integration test")
+
     async def run_test():
         engine = create_async_engine(
             URL.create(
@@ -94,15 +86,24 @@ def test_create_student_generates_unique_hash(tmp_path: Path):
                 course = Course(name="Python")
                 session.add(course)
                 await session.flush()
-                session.add(Group(id=1, name="Default", course_id=course.id))
+                group = Group(id=1, name="Default", course_id=course.id)
+                session.add(group)
                 await session.commit()
 
                 first_student = await service.create_student(
-                    StudentCreateRequest(name="Макс", course_name="Python", group_id=1, avatar="🐯")
+                    StudentCreateRequest(
+                        name="Макс",
+                        avatar="🐯",
+                        group_ids=[1],
+                    )
                 )
                 logger.info("Created first student id=%s", first_student.id)
                 second_student = await service.create_student(
-                    StudentCreateRequest(name="Иван", course_name="Python", group_id=1, avatar="🐻")
+                    StudentCreateRequest(
+                        name="Иван",
+                        avatar="🐻",
+                        group_ids=[1],
+                    )
                 )
                 logger.info("Created second student id=%s", second_student.id)
 
@@ -115,7 +116,8 @@ def test_create_student_generates_unique_hash(tmp_path: Path):
                 assert saved_student is not None
                 assert saved_student.name == "Макс"
                 assert saved_student.avatar == "🐯"
-                assert saved_student.balance == 0
+                assert saved_student.balance == 0.0
+                assert [group.id for group in saved_student.groups] == [1]
                 saved_user = await verification_session.get(User, saved_student.user_id)
                 assert saved_user is not None
                 assert saved_user.name == saved_student.name

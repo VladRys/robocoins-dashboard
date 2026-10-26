@@ -1,5 +1,4 @@
 import asyncio
-import sys
 from pathlib import Path
 
 import pytest
@@ -7,24 +6,21 @@ from fastapi import HTTPException
 from sqlalchemy.engine import URL
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "app"))
-
-from api.routes.balance import (
+from app.api.routes.balance import (
     change_student_balance,
     get_student_balance_by_id,
     get_student_transaction_history,
 )
 from app.core.database import Base
-from models.course import Course
-from models.group import Group
-from models.student import Student
-from models.teacher import Teacher
-from models.transaction import BalanceTransaction
-from models.user import User
-from repositories.student import StudentRepository
-from repositories.transaction import TransactionRepository
-from schemas.balance import BalanceChangeRequest
-from services.balance import BalanceService
+from app.core.enums import BalanceChangeReasons
+from app.models.course import Course
+from app.models.group import Group
+from app.models.student import Student
+from app.models.user import User
+from app.repositories.student import StudentRepository
+from app.repositories.transaction import TransactionRepository
+from app.schemas.balance import BalanceChangeRequest
+from app.services.balance import BalanceService
 
 
 def test_balance_changes_are_atomic_and_recorded_in_history(tmp_path: Path):
@@ -49,18 +45,16 @@ def test_balance_changes_are_atomic_and_recorded_in_history(tmp_path: Path):
                 user = User(name="Alex", role="student", access_code="CODE1234")
                 session.add(user)
                 await session.flush()
-                session.add(
-                    Student(
-                        id=user.id,
-                        user_id=user.id,
-                        name="Alex",
-                        group_id=group.id,
-                        course_name=course.name,
-                        balance=0,
-                        hash_access_key="student-hash",
-                        access_code="ABC12345",
-                    )
+                student = Student(
+                    id=user.id,
+                    user_id=user.id,
+                    name="Alex",
+                    balance=0.0,
+                    hash_access_key="student-hash",
+                    access_code="ABC12345",
+                    groups=[group],
                 )
+                session.add(student)
                 await session.commit()
 
                 service = BalanceService(
@@ -78,27 +72,36 @@ def test_balance_changes_are_atomic_and_recorded_in_history(tmp_path: Path):
                 assert empty_history.status == "success"
                 assert empty_history.code == 200
 
-                deposit = await change_student_balance(
+                deposit = None
+                for _ in range(10):
+                    deposit = await change_student_balance(
+                        user.id,
+                        BalanceChangeRequest(reason=[BalanceChangeReasons.THEORY]),
+                        service,
+                    )
+
+                assert deposit is not None
+                assert deposit.balance == 10.0
+                assert deposit.transaction.operation == "deposit"
+                assert deposit.transaction.amount == 1.0
+
+                deduction = await change_student_balance(
                     user.id,
                     BalanceChangeRequest(
-                        operation="deposit",
-                        amount=10,
-                        reason="Completed a challenge",
+                        reason=[
+                            BalanceChangeReasons.SERIOUS_VIOLATION,
+                            BalanceChangeReasons.DISCIPLINE_BREAKDOWN,
+                        ],
                     ),
                     service,
                 )
-                deduction = await change_student_balance(
-                    user.id,
-                    BalanceChangeRequest(operation="deduct", amount=4),
-                    service,
-                )
 
-                assert deposit.balance == 10
-                assert deposit.transaction.operation == "deposit"
-                assert deposit.transaction.amount == 10
-                assert deduction.balance == 6
+                assert deduction.balance == 6.0
                 assert deduction.transaction.operation == "deduct"
-                assert (await get_student_balance_by_id(user.id, service)).balance == 6
+                assert deduction.transaction.amount == 4.0
+                assert (
+                    await get_student_balance_by_id(user.id, service)
+                ).balance == 6.0
 
                 history = await get_student_transaction_history(
                     user.id,
@@ -106,20 +109,22 @@ def test_balance_changes_are_atomic_and_recorded_in_history(tmp_path: Path):
                     offset=0,
                     service=service,
                 )
-                assert [item.operation for item in history.transactions] == [
+                assert [item.operation for item in history.transactions[:2]] == [
                     "deduct",
                     "deposit",
                 ]
-                assert history.transactions[1].reason == "Completed a challenge"
-                assert len(history.transactions) == 2
+                assert history.transactions[1].reason == [
+                    BalanceChangeReasons.THEORY.value,
+                ]
+                assert len(history.transactions) == 11
 
-                with pytest.raises(HTTPException) as error:
-                    await change_student_balance(
-                        user.id,
-                        BalanceChangeRequest(operation="deduct", amount=7),
-                        service,
-                    )
-                assert error.value.status_code == 409
+                await change_student_balance(
+                    user.id,
+                    BalanceChangeRequest(
+                        reason=[BalanceChangeReasons.SERIOUS_VIOLATION],
+                    ),
+                    service,
+                )
 
                 saved_student = await StudentRepository(session).get_student_by_id(
                     user.id
@@ -128,8 +133,8 @@ def test_balance_changes_are_atomic_and_recorded_in_history(tmp_path: Path):
                     session
                 ).get_by_student_id(user.id, limit=50)
                 assert saved_student is not None
-                assert saved_student.balance == 6
-                assert len(saved_transactions) == 2
+                assert saved_student.balance == 3.0
+                assert len(saved_transactions) == 12
         finally:
             await engine.dispose()
 

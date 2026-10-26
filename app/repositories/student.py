@@ -84,7 +84,7 @@ class StudentRepository:
         await self.session.commit()
         return await self.get_student_by_id(student_id)
 
-    async def change_balance(self, student_id: int, amount: int) -> int | None:
+    async def change_balance(self, student_id: int, amount: float) -> float | None:
         """Atomically change a balance without allowing it to fall below zero."""
         result = await self.session.execute(
             update(Student)
@@ -103,8 +103,8 @@ class StudentRepository:
         self,
         student_id: int,
         operation: str,
-        amount: int,
-    ) -> int | None:
+        amount: float,
+    ) -> float | None:
         """Reverse a ledger operation, refusing to overdraw a prior deposit."""
         delta = -amount if operation == "deposit" else amount
         statement = update(Student).where(Student.id == student_id)

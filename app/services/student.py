@@ -61,7 +61,7 @@ class StudentService:
             user_id=user.id,
             name=student.name,
             avatar=student.avatar,
-            balance=0,
+            balance=0.0,
             groups=groups,
             hash_access_key=self.generate_hash_access_key(),
             access_code=access_code,

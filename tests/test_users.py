@@ -1,7 +1,7 @@
 import asyncio
 import importlib.util
-import sys
 from pathlib import Path
+from unittest.mock import AsyncMock
 
 import pytest
 from alembic.migration import MigrationContext
@@ -10,39 +10,35 @@ from fastapi import Request, Response
 from sqlalchemy import create_engine, inspect, text
 from sqlalchemy.engine import URL
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
-from unittest.mock import AsyncMock
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "app"))
-
-from api.routes.course import get_courses
-from api.routes.group import (
+from app.api.routes.auth import get_current_user, login
+from app.api.routes.course import get_courses
+from app.api.routes.group import (
     create_group,
     get_group_by_id,
     get_group_by_name,
     get_groups_by_course_id,
 )
-from api.routes.auth import get_current_user, login
-from api.routes.student import create_student
-from api.routes.student import get_student_by_id
-from api.routes.teacher import get_teacher_profile, register_teacher
-from api.routes.users import get_user_by_id, get_users
+from app.api.routes.student import create_student, get_student_by_id
+from app.api.routes.teacher import get_teacher_profile, register_teacher
+from app.api.routes.users import get_user_by_id, get_users
 from app.core.database import Base
-from models.course import Course
-from models.student import Student
-from repositories.group import GroupRepository
-from repositories.course import CourseRepository
-from repositories.student import StudentRepository
-from repositories.session import SessionRepository
-from repositories.users import UserRepository
-from schemas.group import GroupCreateRequest
-from schemas.auth import UserLoginRequest
-from schemas.student import StudentCreateRequest
-from schemas.teacher import TeacherRegistrationRequest
-from services.group import GroupService
-from services.course import CourseService
-from services.student import StudentService
-from services.session import SessionService
-from services.users import UserService
+from app.models.course import Course
+from app.repositories.course import CourseRepository
+from app.repositories.group import GroupRepository
+from app.repositories.session import SessionRepository
+from app.repositories.student import StudentRepository
+from app.repositories.users import UserRepository
+from app.schemas.auth import UserLoginRequest
+from app.schemas.group import GroupCreateRequest
+from app.schemas.student import StudentCreateRequest
+from app.schemas.teacher import TeacherRegistrationRequest
+from app.services.course import CourseService
+from app.services.group import GroupService
+from app.services.session import SessionService
+from app.services.student import StudentService
+from app.services.users import UserService
+from tests.conftest import student_with_groups
 
 
 def _auth_request(path: str, cookie: str | None = None) -> Request:
@@ -69,14 +65,11 @@ def _auth_request(path: str, cookie: str | None = None) -> Request:
 
 def test_auth_me_returns_user_profile_fields():
     async def run_test():
-        student = Student(
-            id=123456,
-            user_id=123456,
+        student = student_with_groups(
+            student_id=123456,
             name="Student One",
-            group_id=1,
-            course_name="Python",
             avatar="🤖",
-            balance=10,
+            balance=10.0,
             hash_access_key="hash",
             access_code="CODE1234",
         )
@@ -198,8 +191,7 @@ def test_student_and_teacher_registration_and_group_assignments(tmp_path: Path):
                     StudentCreateRequest(
                         name="Student One",
                         avatar="🤖",
-                        course_name=course.name,
-                        group_id=group_response.id,
+                        group_ids=[group_response.id],
                     ),
                     service=student_service,
                 )

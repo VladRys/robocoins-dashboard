@@ -1,25 +1,20 @@
 import asyncio
-import sys
 from pathlib import Path
 
 from sqlalchemy.engine import URL
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "app"))
-
-from api.routes.course import get_courses
-from api.routes.group import get_groups_by_course_id
+from app.api.routes.course import get_courses
+from app.api.routes.group import get_groups_by_course_id
 from app.core.database import Base
-from models.course import Course
-from models.group import Group
-from models.student import Student
-from models.teacher import Teacher
-from models.transaction import BalanceTransaction
-from models.user import User
-from repositories.course import CourseRepository
-from repositories.group import GroupRepository
-from services.course import CourseService
-from services.group import GroupService
+from app.models.course import Course
+from app.models.group import Group
+from app.models.student import Student
+from app.models.user import User
+from app.repositories.course import CourseRepository
+from app.repositories.group import GroupRepository
+from app.services.course import CourseService
+from app.services.group import GroupService
 
 
 def test_get_courses_returns_course_and_group_mapping(tmp_path: Path):
@@ -79,17 +74,18 @@ def test_get_groups_by_course_returns_groups_without_lazy_loading(tmp_path: Path
                 user = User(name="Alex", role="student", access_code="CODE1234")
                 session.add(user)
                 await session.flush()
-                session.add(Student(
-                    id=user.id,
-                    user_id=user.id,
-                    name="Alex",
-                    group_id=group.id,
-                    course_name=course.name,
-                    avatar="🤖",
-                    balance=0,
-                    hash_access_key="test-hash",
-                    access_code="ABC12345",
-                ))
+                session.add(
+                    Student(
+                        id=user.id,
+                        user_id=user.id,
+                        name="Alex",
+                        avatar="🤖",
+                        balance=0.0,
+                        hash_access_key="test-hash",
+                        access_code="ABC12345",
+                        groups=[group],
+                    )
+                )
                 await session.commit()
 
                 response = await get_groups_by_course_id(
@@ -101,7 +97,7 @@ def test_get_groups_by_course_returns_groups_without_lazy_loading(tmp_path: Path
             assert response[0].name == "Group A"
             assert len(response[0].students) == 1
             assert response[0].students_count == 1
-            assert response[0].students == [user.id]
+            assert response[0].students[0].id == user.id
         finally:
             await engine.dispose()
 

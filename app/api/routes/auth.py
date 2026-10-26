@@ -39,7 +39,9 @@ async def get_student_credentials(
     response.headers["Pragma"] = "no-cache"
 
     can_view_credentials = await authorization.is_allowed(
-        AuthorizationAction.VIEW_STUDENT_CREDENTIALS, user
+        AuthorizationAction.VIEW_STUDENT_CREDENTIALS,
+        user,
+        user.id,
     )
     if not can_view_credentials:
         raise HTTPException(

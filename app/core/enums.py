@@ -98,12 +98,12 @@ class BalanceChangeReasons(StrEnum):
         }[self]
 
     @property
-    def balance_delta(self) -> int:
+    def balance_delta(self) -> float:
         return {
-            BalanceChangeReasons.THEORY: 1,
-            BalanceChangeReasons.PRACTICE_COMPLETED: 1,
-            BalanceChangeReasons.ADDITIONAL_TASK_COMPLETED: 1,
-            BalanceChangeReasons.DISCIPLINE_BREAKDOWN: -1,
-            BalanceChangeReasons.MIDDLE_LEVEL_VIOLATION: -2,
-            BalanceChangeReasons.SERIOUS_VIOLATION: -3,
+            BalanceChangeReasons.THEORY: 1.0,
+            BalanceChangeReasons.PRACTICE_COMPLETED: 1.0,
+            BalanceChangeReasons.ADDITIONAL_TASK_COMPLETED: 1.0,
+            BalanceChangeReasons.DISCIPLINE_BREAKDOWN: -1.0,
+            BalanceChangeReasons.MIDDLE_LEVEL_VIOLATION: -2.0,
+            BalanceChangeReasons.SERIOUS_VIOLATION: -3.0,
         }[self]

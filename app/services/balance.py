@@ -38,7 +38,7 @@ class BalanceService:
         self.student_repository = student_repository
         self.transaction_repository = transaction_repository
 
-    async def get_balance(self, student_id: int) -> int:
+    async def get_balance(self, student_id: int) -> float:
         student = await self.student_repository.get_student_by_id(student_id)
         if student is None:
             raise StudentNotFoundError
@@ -46,7 +46,7 @@ class BalanceService:
 
     async def change_balance(
         self, student_id: int, change: BalanceChangeRequest
-    ) -> tuple[int, BalanceTransaction]:
+    ) -> tuple[float, BalanceTransaction]:
         signed_amount = sum(reason.balance_delta for reason in change.reason)
         operation = "deposit" if signed_amount > 0 else "deduct"
         amount = abs(signed_amount)
@@ -69,7 +69,7 @@ class BalanceService:
 
     async def award_group_practice_completed(
         self, group_id: int
-    ) -> tuple[Group, list[tuple[int, BalanceTransaction]]] | None:
+    ) -> tuple[Group, list[tuple[float, BalanceTransaction]]] | None:
         """Award one practice-completed coin to every current group member."""
         from sqlalchemy import select
 
@@ -89,15 +89,15 @@ class BalanceService:
                 )
             ).all()
         )
-        results: list[tuple[int, BalanceTransaction]] = []
+        results: list[tuple[float, BalanceTransaction]] = []
         for student_id in student_ids:
-            balance = await self.student_repository.change_balance(student_id, 1)
+            balance = await self.student_repository.change_balance(student_id, 1.0)
             if balance is None:
                 continue
             transaction = BalanceTransaction(
                 student_id=student_id,
                 operation="deposit",
-                amount=1,
+                amount=1.0,
                 reason=[BalanceChangeReasons.PRACTICE_COMPLETED.value],
             )
             await self.transaction_repository.create(transaction)
@@ -121,7 +121,7 @@ class BalanceService:
         self,
         transaction_id: int,
         cancelled_by_user_id: int,
-    ) -> tuple[int, BalanceTransaction]:
+    ) -> tuple[float, BalanceTransaction]:
         transaction = await self.transaction_repository.get_by_id_for_update(
             transaction_id
         )

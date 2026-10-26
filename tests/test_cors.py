@@ -1,11 +1,7 @@
 import asyncio
-import sys
-from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "app"))
-
-from core.config import prod_cors_origins
-from main import app
+from app.core.config import prod_cors_origins
+from app.main import app
 
 
 def test_prod_cors_origins_normalizes_bare_hosts(monkeypatch):

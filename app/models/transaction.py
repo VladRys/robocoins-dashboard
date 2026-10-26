@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy import CheckConstraint, DateTime, ForeignKey, Integer, JSON, String, func
+from sqlalchemy import CheckConstraint, DateTime, Float, ForeignKey, Integer, JSON, String, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
@@ -29,7 +29,7 @@ class BalanceTransaction(Base):
         index=True,
     )
     operation: Mapped[str] = mapped_column(String(20), nullable=False)
-    amount: Mapped[int] = mapped_column(Integer, nullable=False)
+    amount: Mapped[float] = mapped_column(Float, nullable=False)
     reason: Mapped[list[str] | None] = mapped_column(JSON, nullable=True)
     cancelled_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True),
