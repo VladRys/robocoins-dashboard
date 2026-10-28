@@ -65,7 +65,7 @@ async def get_daily_task(
 
 
 @daily_task_router.get(
-    "/{student_id}/test-tasks",
+    "/{student_id}/dev-tasks",
     response_model=list[DailyTaskTestResponse],
 )
 async def get_daily_task_test_tasks(
@@ -88,7 +88,7 @@ async def get_daily_task_test_tasks(
 
 
 @daily_task_router.post(
-    "/{student_id}/test-tasks/{task_id}/answer",
+    "/{student_id}/dev-tasks/{task_id}/answer",
     response_model=DailyTaskTestAnswerResponse,
 )
 async def answer_daily_task_test_task(
