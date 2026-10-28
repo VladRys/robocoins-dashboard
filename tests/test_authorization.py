@@ -102,8 +102,23 @@ def test_authorization_policies_and_scoped_avatar_and_group_actions(tmp_path: Pa
                     student,
                     student.id,
                 )
+                assert await authorization.is_allowed(
+                    AuthorizationAction.ACCESS_DAILY_TASK,
+                    student,
+                    student.id,
+                )
+                assert not await authorization.is_allowed(
+                    AuthorizationAction.ACCESS_DAILY_TASK,
+                    student,
+                    other_student.id,
+                )
                 assert not await authorization.is_allowed(
                     AuthorizationAction.VIEW_STUDENT_CREDENTIALS,
+                    teacher,
+                    student.id,
+                )
+                assert not await authorization.is_allowed(
+                    AuthorizationAction.ACCESS_DAILY_TASK,
                     teacher,
                     student.id,
                 )

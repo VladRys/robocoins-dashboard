@@ -84,6 +84,7 @@ class AuthorizationService:
             AuthorizationAction.ADMINISTRATOR_OPERATION: RolePolicy(UserRole.ADMIN),
             AuthorizationAction.TEACHER_OPERATION: RolePolicy(UserRole.TEACHER),
             AuthorizationAction.VIEW_STUDENT_CREDENTIALS: OwnStudentResourcePolicy(),
+            AuthorizationAction.ACCESS_DAILY_TASK: OwnStudentResourcePolicy(),
             AuthorizationAction.EDIT_STUDENT_AVATAR: edit_student_profile_policy,
             AuthorizationAction.EDIT_STUDENT_NICKNAME: edit_student_profile_policy,
             AuthorizationAction.ASSIGN_STUDENT_TO_GROUP: AnyPolicy(

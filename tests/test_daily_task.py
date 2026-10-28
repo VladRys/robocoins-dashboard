@@ -4,12 +4,14 @@ from types import SimpleNamespace
 from unittest.mock import AsyncMock
 
 import pytest
+from fastapi import HTTPException
 from sqlalchemy import func, select
 from sqlalchemy.dialects import postgresql
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
+from app.api.routes.daily_task import answer_daily_task, get_daily_task
 from app.core.database import Base
-from app.core.enums import TaskType, UserRole
+from app.core.enums import AuthorizationAction, TaskType, UserRole
 from app.models.course import Course  # noqa: F401
 from app.models.daily_task import DailyTask, DailyTaskQuestion
 from app.models.group import Group  # noqa: F401
@@ -18,10 +20,55 @@ from app.models.streak import Streak  # noqa: F401
 from app.models.teacher import Teacher  # noqa: F401
 from app.models.transaction import BalanceTransaction
 from app.models.user import User
+from app.schemas.daily_task import DailyTaskAnswer
 from app.services.daily_task import (
     DailyTaskAlreadyCompletedError,
     DailyTaskService,
 )
+
+
+def test_daily_task_routes_use_authorization_service():
+    async def run():
+        user = SimpleNamespace(id=12, role=UserRole.TEACHER.value)
+        authorization = SimpleNamespace(is_allowed=AsyncMock(return_value=False))
+        service = SimpleNamespace(
+            get_or_create=AsyncMock(),
+            answer=AsyncMock(),
+        )
+
+        with pytest.raises(HTTPException) as get_error:
+            await get_daily_task(
+                34,
+                user=user,
+                service=service,
+                authorization=authorization,
+            )
+        assert get_error.value.status_code == 403
+        authorization.is_allowed.assert_awaited_once_with(
+            AuthorizationAction.ACCESS_DAILY_TASK,
+            user,
+            34,
+        )
+        service.get_or_create.assert_not_awaited()
+
+        authorization.is_allowed.reset_mock()
+        with pytest.raises(HTTPException) as answer_error:
+            await answer_daily_task(
+                34,
+                DailyTaskAnswer(answer="answer"),
+                user=user,
+                service=service,
+                authorization=authorization,
+            )
+        assert answer_error.value.status_code == 403
+        authorization.is_allowed.assert_awaited_once_with(
+            AuthorizationAction.ACCESS_DAILY_TASK,
+            user,
+            34,
+        )
+        service.answer.assert_not_awaited()
+
+    asyncio.run(run())
 
 
 def test_daily_task_answer_locks_only_assignment_row():
