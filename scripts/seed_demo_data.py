@@ -24,7 +24,7 @@ from app.models.student import Student
 from app.models.teacher import Teacher  # noqa: F401
 from app.models.transaction import BalanceTransaction  # noqa: F401
 from app.models.user import User
-
+from scripts.seed_daily_tasks import seed_daily_tasks
 
 DEMO_GROUPS = (
     (
@@ -112,6 +112,7 @@ async def seed_demo_data() -> tuple[int, int]:
             await align_sequence(db, "groups")
             await align_sequence(db, "users")
             await seed_demo_rewards(db)
+            await seed_daily_tasks(db)
 
             course_names = {course_name for _, course_name, _ in DEMO_GROUPS}
             courses = {
@@ -216,4 +217,4 @@ async def main() -> None:
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    asyncio.run(main(), loop_factory=asyncio.SelectorEventLoop)

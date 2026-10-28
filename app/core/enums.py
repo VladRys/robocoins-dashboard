@@ -107,3 +107,9 @@ class BalanceChangeReasons(StrEnum):
             BalanceChangeReasons.MIDDLE_LEVEL_VIOLATION: -2.0,
             BalanceChangeReasons.SERIOUS_VIOLATION: -3.0,
         }[self]
+
+class TaskType(StrEnum):
+    MULTIPLE_CHOICE = "multiple_choice"
+    TRUE_FALSE = "true_false"
+    TEXT = "text"
+    PICTURE = "picture"

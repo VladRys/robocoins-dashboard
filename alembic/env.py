@@ -20,6 +20,7 @@ from app.models.teacher import Teacher
 from app.models.transaction import BalanceTransaction
 from app.models.reward import Reward
 from app.models.user import User
+from app.models.daily_task import DailyTask
 from app.core.config import Config as cfg
 
 # this is the Alembic Config object, which provides

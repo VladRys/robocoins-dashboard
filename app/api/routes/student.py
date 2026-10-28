@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, Response
+from fastapi.responses import Response as RawResponse
 
 from app.api.dependencies import (
     get_authenticated_admin,
@@ -7,6 +8,7 @@ from app.api.dependencies import (
     get_authorization_service,
     get_streak_service,
     get_student_service,
+    get_daily_task_service,
 )
 from app.api.errors import validation_error_message
 from app.core.enums import AuthorizationAction, HttpErrorMessage, StatusEnum
@@ -26,11 +28,89 @@ from app.services.authorization import AuthorizationService
 from app.services.student import StudentService
 from app.services.streak import StreakService
 from app.schemas.streak import StreakResponse, LongestStreakResponse, StreakDaysUpdate
+from app.schemas.daily_task import (
+    DailyTaskAnswer,
+    DailyTaskAnswerResponse,
+    DailyTaskResponse,
+)
+from app.services.daily_task import (
+    DailyTaskAlreadyCompletedError,
+    DailyTaskNotFoundError,
+    DailyTaskService,
+    StudentNotFoundError as DailyTaskStudentNotFoundError,
+)
 
 student_router = APIRouter(
     prefix="/student",
     tags=["students"],
 )
+
+
+def _require_own_student(student_id: int, user: User) -> None:
+    if user.role != "student" or user.id != student_id:
+        raise HTTPException(
+            status_code=403,
+            detail="Only the student can access their daily task",
+        )
+
+
+@student_router.get("/{student_id}/daily-task", response_model=DailyTaskResponse)
+async def get_daily_task(
+    student_id: int,
+    user: User = Depends(get_authenticated_user),
+    service: DailyTaskService = Depends(get_daily_task_service),
+):
+    _require_own_student(student_id, user)
+    try:
+        return await service.get_or_create(student_id)
+    except DailyTaskStudentNotFoundError as error:
+        raise HTTPException(
+            status_code=404,
+            detail=HttpErrorMessage.STUDENT_NOT_FOUND,
+        ) from error
+    except DailyTaskNotFoundError as error:
+        raise HTTPException(
+            status_code=404,
+            detail="No daily tasks are available",
+        ) from error
+
+
+@student_router.post(
+    "/{student_id}/daily-task/answer",
+    response_model=DailyTaskAnswerResponse,
+)
+async def answer_daily_task(
+    student_id: int,
+    request: DailyTaskAnswer,
+    user: User = Depends(get_authenticated_user),
+    service: DailyTaskService = Depends(get_daily_task_service),
+):
+    _require_own_student(student_id, user)
+    try:
+        return await service.answer(student_id, request.answer)
+    except DailyTaskNotFoundError as error:
+        raise HTTPException(
+            status_code=404,
+            detail="No daily task is assigned for today",
+        ) from error
+    except DailyTaskAlreadyCompletedError as error:
+        raise HTTPException(
+            status_code=409,
+            detail="Today's daily task is already completed",
+        ) from error
+    except DailyTaskStudentNotFoundError as error:
+        raise HTTPException(
+            status_code=404,
+            detail=HttpErrorMessage.STUDENT_NOT_FOUND,
+        ) from error
+
+
+@student_router.get("/daily-task/assets/components.svg", include_in_schema=False)
+async def daily_task_components_image():
+    return RawResponse(
+        content='''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 240"><rect width="640" height="240" rx="20" fill="#f4f7fb"/><rect x="55" y="65" width="130" height="100" rx="14" fill="#dbeafe" stroke="#2563eb" stroke-width="5"/><text x="120" y="205" text-anchor="middle" font-family="sans-serif" font-size="20">Контролер</text><circle cx="320" cy="115" r="52" fill="#fef3c7" stroke="#d97706" stroke-width="5"/><path d="M320 57v-18m-18 76h36m-30 28h24m-20 13h16" stroke="#d97706" stroke-width="6" stroke-linecap="round"/><text x="320" y="205" text-anchor="middle" font-family="sans-serif" font-size="20">Світлодіод</text><rect x="455" y="70" width="130" height="90" rx="12" fill="#dcfce7" stroke="#16a34a" stroke-width="5"/><circle cx="490" cy="115" r="15" fill="#16a34a"/><circle cx="550" cy="115" r="15" fill="#16a34a"/><text x="520" y="205" text-anchor="middle" font-family="sans-serif" font-size="20">Датчик</text></svg>''',
+        media_type="image/svg+xml",
+    )
 
 @student_router.get("/{student_id}/streak", response_model=StreakResponse)
 async def get_student_streak(student_id: int, streak_service: StreakService = Depends(get_streak_service)):

@@ -19,6 +19,7 @@ from app.services.group import GroupService
 from app.services.reward import RewardService
 from app.services.session import SessionService
 from app.services.streak import StreakService
+from app.services.daily_task import DailyTaskService
 from app.services.student import StudentService
 from app.services.users import UserService
 
@@ -53,6 +54,10 @@ def get_balance_service(db: AsyncSession = Depends(get_db)) -> BalanceService:
 
 def get_streak_service(db: AsyncSession = Depends(get_db)) -> StreakService:
     return StreakService(StreakRepository(db))
+
+
+def get_daily_task_service(db: AsyncSession = Depends(get_db)) -> DailyTaskService:
+    return DailyTaskService(db)
 
 
 async def get_authenticated_user(

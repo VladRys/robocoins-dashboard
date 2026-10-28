@@ -8,6 +8,7 @@
     { "source": "/teacher", "destination": "/teacher-dashboard.html" },
     { "source": "/teacher-dashboard", "destination": "/teacher-dashboard.html" },
     { "source": "/teacher-credentials", "destination": "/teacher-dashboard.html" },
+    { "source": "/daily-task-test", "destination": "/daily-task-test.html" },
     { "source": "/auth/:path*", "destination": "https://robocoins-dashboard.vercel.app/auth/:path*" },
     {
       "source": "/api/:path*",
