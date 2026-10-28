@@ -4,10 +4,10 @@ from datetime import datetime
 class StreakResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
-    id: int
-    start_date: datetime
-    end_date: datetime | None
-    days: int
+    id: int | None = None
+    start_date: datetime | None = None
+    end_date: datetime | None = None
+    days: int = 0
 
 class StreakRequest(BaseModel):
     student_id: int
@@ -19,5 +19,4 @@ class StreakDaysUpdate(BaseModel):
 class LongestStreakResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
-    days: int
-
+    days: int = 0

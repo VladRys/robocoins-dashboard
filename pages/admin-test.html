@@ -172,6 +172,7 @@
           </form>
           <p id="student-streak-status" class="status" role="status" aria-live="polite"></p>
           <pre id="student-streak-result" class="item" hidden style="white-space:pre-wrap"></pre>
+          <div id="student-streak-display" class="item" aria-live="polite">Выберите ученика, чтобы загрузить стрики.</div>
         </section>
       </div>
 
@@ -374,8 +375,31 @@
           $('student-streak-result').textContent = JSON.stringify(streak, null, 2);
           $('student-streak-result').hidden = false;
           status('student-streak-status', `Стрик ученика #${studentId} обновлён: ${streak.days} дн.`, 'success');
+          await loadStudentStreaks(studentId);
         } catch (error) { status('student-streak-status', error.message, 'error'); }
         finally { button.disabled = false; }
+      });
+
+      async function loadStudentStreaks(studentId) {
+        const display = $('student-streak-display');
+        display.textContent = `Загружаю стрики ученика #${studentId}…`;
+        try {
+          const [current, longest] = await Promise.all([
+            request(`/student/${studentId}/streak`),
+            request(`/student/${studentId}/longest-streak`),
+          ]);
+          if (Number($('profile-student-id').value) !== studentId) return;
+          display.textContent = `Текущий стрик: ${current.days} дн. · Лучший стрик: ${longest.days} дн.`;
+        } catch (error) {
+          if (Number($('profile-student-id').value) === studentId) {
+            display.textContent = `Не удалось загрузить стрики: ${error.message}`;
+          }
+        }
+      }
+
+      $('profile-student-id').addEventListener('change', () => {
+        const studentId = Number($('profile-student-id').value);
+        if (Number.isInteger(studentId) && studentId > 0) loadStudentStreaks(studentId);
       });
 
       $('load-students-button').addEventListener('click', async () => {
@@ -402,6 +426,7 @@
               $('profile-nickname').value = student.name;
               $('profile-avatar').value = student.avatar || '';
               status('students-load-status', `Выбран ученик #${student.id}.`, 'success');
+              loadStudentStreaks(student.id);
             });
             picker.append(item);
           }
