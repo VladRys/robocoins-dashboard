@@ -34,19 +34,19 @@ student_router = APIRouter(
 
 
 @student_router.get("/{student_id}/streak", response_model=StreakResponse)
-async def get_student_streak(student_id: int, streak_service: StreakService = Depends(get_streak_service)):
+async def get_student_streak(student_id: int, streak_service: StreakService = Depends(get_streak_service), _user: User = Depends(get_authenticated_user)):
     return await streak_service.get_streak(student_id)
 
 @student_router.get("/{student_id}/longest-streak", response_model=LongestStreakResponse)
-async def get_student_longest_streak(student_id: int, streak_service: StreakService = Depends(get_streak_service)):
+async def get_student_longest_streak(student_id: int, streak_service: StreakService = Depends(get_streak_service), _user: User = Depends(get_authenticated_user)):
     return await streak_service.get_longest_streak(student_id)
 
 @student_router.post("/{student_id}/streak/start", response_model=StreakResponse)
-async def start_student_streak(student_id: int, streak_service: StreakService = Depends(get_streak_service)):
+async def start_student_streak(student_id: int, streak_service: StreakService = Depends(get_streak_service), _user: User = Depends(get_authenticated_user)):
     return await streak_service.start_streak(student_id)
 
 @student_router.post("/{student_id}/streak/end", response_model=StreakResponse)
-async def end_student_streak(student_id: int, streak_service: StreakService = Depends(get_streak_service)):
+async def end_student_streak(student_id: int, streak_service: StreakService = Depends(get_streak_service), _user: User = Depends(get_authenticated_user)):
     return await streak_service.end_streak(student_id)
 
 @student_router.patch("/{student_id}/streak", response_model=StreakResponse)
@@ -55,7 +55,7 @@ async def update_student_streak(
     request: StreakDaysUpdate,
     streak_service: StreakService = Depends(get_streak_service),
     student_service: StudentService = Depends(get_student_service),
-    _admin: User = Depends(get_authenticated_admin),
+    _user: User = Depends(get_authenticated_user),
 ):
     if await student_service.get_student_by_id(student_id) is None:
         raise HTTPException(status_code=404, detail=HttpErrorMessage.STUDENT_NOT_FOUND)
@@ -67,7 +67,7 @@ async def update_student_streak(
 @student_router.get("", response_model=list[StudentProfileResponse])
 async def get_all_students(
     service: StudentService = Depends(get_student_service),
-    _admin: User = Depends(get_authenticated_admin),
+    _user: User = Depends(get_authenticated_user),
 ) -> list[StudentProfileResponse]:
     students = await service.get_all_students()
     return [StudentProfileResponse.model_validate(student) for student in students]

@@ -21,7 +21,7 @@ from app.services.daily_task import (
 )
 from app.services.authorization import AuthorizationService
 
-daily_task_router = APIRouter(prefix="/student", tags=["daily-tasks"])
+daily_task_router = APIRouter(prefix="/daily", tags=["daily-tasks"])
 
 @daily_task_router.get(
     "/{student_id}/daily-task",
