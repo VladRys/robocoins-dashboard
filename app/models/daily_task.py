@@ -46,7 +46,7 @@ class DailyTaskQuestion(Base):
         nullable=False,
     )
     options: Mapped[list[str] | None] = mapped_column(JSON, nullable=True)
-    course_categories: Mapped[list[str]] = mapped_column(
+    course_ids: Mapped[list[int]] = mapped_column(
         JSON,
         nullable=False,
         default=list,

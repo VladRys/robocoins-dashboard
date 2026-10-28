@@ -321,7 +321,7 @@
       $('test-tasks-button').disabled = true;
       setStatus('test-status', 'Загружаю задания для теста…');
       try {
-        const tasks = await request(`/daily/${currentUser.id}/test-tasks`);
+        const tasks = await request(`/daily/${currentUser.id}/dev-tasks`);
         if (!tasks.length) throw new Error('В наборе пока нет заданий.');
         testTaskBank = tasks;
         const select = $('test-task-select');
@@ -377,7 +377,7 @@
       setStatus('task-status', 'Проверяю ответ…');
       try {
         const answerPath = testMode
-          ? `/daily/${currentUser.id}/test-tasks/${currentTask.id}/answer`
+          ? `/daily/${currentUser.id}/dev-tasks/${currentTask.id}/answer`
           : `/daily/${currentUser.id}/daily-task/answer`;
         const result = await request(
           answerPath,

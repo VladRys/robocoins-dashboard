@@ -46,8 +46,10 @@ DEMO_GROUPS = (
 DEMO_COURSE_CATEGORIES = {
     "Arduino Junior": CourseCategory.EMBEDDED,
     "Middle Embedded": CourseCategory.EMBEDDED,
+    "Pro Embedded": CourseCategory.EMBEDDED,
     "Unity 3D": CourseCategory.GAME_DEV,
 }
+DEMO_DAILY_TASK_COURSES = ("Pro Embedded",)
 
 # Keep these IDs stable so the demo catalog matches the documented sample data.
 DEMO_REWARDS = (
@@ -112,9 +114,10 @@ async def seed_demo_data() -> tuple[int, int]:
             await align_sequence(db, "groups")
             await align_sequence(db, "users")
             await seed_demo_rewards(db)
-            await seed_daily_tasks(db)
 
-            course_names = {course_name for _, course_name, _ in DEMO_GROUPS}
+            course_names = {
+                course_name for _, course_name, _ in DEMO_GROUPS
+            } | set(DEMO_DAILY_TASK_COURSES)
             courses = {
                 course.name: course
                 for course in (
@@ -129,6 +132,7 @@ async def seed_demo_data() -> tuple[int, int]:
                 db.add(course)
                 courses[course_name] = course
             await db.flush()
+            await seed_daily_tasks(db)
 
             for group_name, course_name, student_names in DEMO_GROUPS:
                 group = await db.scalar(

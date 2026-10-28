@@ -113,9 +113,27 @@ async def log_http_requests(request, call_next):
             duration_ms=duration_ms,
         )
         if response.status_code >= 500:
-            logger.error("Request completed with server error", extra=log_fields)
+            logger.error(
+                "Request completed with server error: %s %s returned %s "
+                "in %sms (request_id=%s)",
+                request.method,
+                request.url.path,
+                response.status_code,
+                duration_ms,
+                request_id,
+                extra=log_fields,
+            )
         elif response.status_code >= 400:
-            logger.warning("Request completed with client error", extra=log_fields)
+            logger.warning(
+                "Request completed with client error: %s %s returned %s "
+                "in %sms (request_id=%s)",
+                request.method,
+                request.url.path,
+                response.status_code,
+                duration_ms,
+                request_id,
+                extra=log_fields,
+            )
         else:
             logger.info("Request completed", extra=log_fields)
 

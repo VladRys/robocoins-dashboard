@@ -6,7 +6,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.enums import BalanceChangeReasons
 from app.models.daily_task import DailyTask, DailyTaskQuestion, StudentDailyTask
-from app.models.group import Group
 from app.models.student import Student
 from app.models.transaction import BalanceTransaction
 from app.schemas.daily_task import (
@@ -78,7 +77,7 @@ class DailyTaskService:
 
         student = await self.session.scalar(
             select(Student)
-            .options(selectinload(Student.groups).selectinload(Group.course))
+            .options(selectinload(Student.groups))
             .where(Student.id == student_id)
             .with_for_update()
         )
@@ -89,9 +88,7 @@ class DailyTaskService:
         if assignment is not None:
             return self._response(assignment)
 
-        course_categories = {
-            group.course.category.value for group in student.groups
-        }
+        course_ids = {group.course_id for group in student.groups}
         available_tasks = list(
             (
                 await self.session.scalars(
@@ -109,10 +106,8 @@ class DailyTaskService:
             (
                 candidate
                 for candidate in available_tasks
-                if not candidate.question.course_categories
-                or course_categories.intersection(
-                    candidate.question.course_categories
-                )
+                if not candidate.question.course_ids
+                or course_ids.intersection(candidate.question.course_ids)
             ),
             None,
         )

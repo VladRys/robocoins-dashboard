@@ -93,6 +93,117 @@ def test_seeded_picture_task_uses_data_url_images():
         ElementTree.fromstring(unquote(encoded_image))
 
 
+def test_seeded_embedded_questions_are_scoped_to_their_courses():
+    async def run():
+        from scripts.seed_daily_tasks import TASKS, seed_daily_tasks
+
+        engine = create_async_engine("sqlite+aiosqlite:///:memory:")
+        async with engine.begin() as connection:
+            await connection.run_sync(Base.metadata.create_all)
+
+        sessions = async_sessionmaker(engine, expire_on_commit=False)
+        async with sessions() as session:
+            courses = {
+                name: Course(name=name)
+                for name in ("Arduino Junior", "Middle Embedded", "Pro Embedded")
+            }
+            session.add_all(courses.values())
+            await session.flush()
+
+            await seed_daily_tasks(session)
+
+            questions = {
+                question.slug: question
+                for question in (
+                    await session.scalars(select(DailyTaskQuestion))
+                ).all()
+            }
+            for slug, task_data in TASKS.items():
+                expected_course_ids = [
+                    courses[name].id for name in task_data.get("course_names", [])
+                ]
+                assert questions[slug].course_ids == expected_course_ids
+
+            scoped_tasks = [
+                (slug, task_data)
+                for slug, task_data in TASKS.items()
+                if task_data.get("course_names")
+            ]
+            assert len(scoped_tasks) == 27
+            for course_name, expected_slugs in (
+                (
+                    "Arduino Junior",
+                    (
+                        "junior_robot_controller",
+                        "junior_wiring_safety",
+                        "junior_turnstile_servo",
+                    ),
+                ),
+                (
+                    "Middle Embedded",
+                    (
+                        "middle_digital_write",
+                        "middle_array_indexing",
+                        "middle_setup_function",
+                    ),
+                ),
+                (
+                    "Pro Embedded",
+                    (
+                        "pro_pin_mode",
+                        "pro_serial_monitor",
+                        "pro_if_condition",
+                    ),
+                ),
+            ):
+                assert [
+                    slug
+                    for slug, task_data in scoped_tasks
+                    if task_data["course_names"] == [course_name]
+                ][:3] == list(expected_slugs)
+                assert {
+                    TASKS[slug]["type"] for slug in expected_slugs
+                } == {"multiple_choice", "true_false", "text"}
+
+            for course_name, additional_slugs in (
+                (
+                    "Arduino Junior",
+                    (
+                        "junior_smart_lamp",
+                        "junior_joystick",
+                        "junior_seven_segment",
+                    ),
+                ),
+                (
+                    "Middle Embedded",
+                    (
+                        "middle_loop_function",
+                        "middle_library_purpose",
+                        "middle_tinkercad_model",
+                    ),
+                ),
+                (
+                    "Pro Embedded",
+                    (
+                        "pro_lcd_display",
+                        "pro_array_zero_index",
+                        "pro_arduino_language",
+                    ),
+                ),
+            ):
+                assert all(
+                    TASKS[slug]["course_names"] == [course_name]
+                    for slug in additional_slugs
+                )
+                assert {
+                    TASKS[slug]["type"] for slug in additional_slugs
+                } == {"multiple_choice", "true_false", "text"}
+
+        await engine.dispose()
+
+    asyncio.run(run())
+
+
 def test_daily_task_test_routes_require_student_authorization(monkeypatch):
     async def run():
         from app.api.routes import daily_task as daily_task_routes
@@ -218,6 +329,64 @@ def test_daily_task_hides_answer_and_awards_correct_submission_once():
             assert await session.scalar(
                 select(Student.balance).where(Student.id == 1)
             ) == 0.1
+
+        await engine.dispose()
+
+    asyncio.run(run())
+
+
+def test_daily_task_selection_uses_course_ids_not_categories():
+    async def run():
+        engine = create_async_engine("sqlite+aiosqlite:///:memory:")
+        async with engine.begin() as connection:
+            await connection.run_sync(Base.metadata.create_all)
+
+        sessions = async_sessionmaker(engine, expire_on_commit=False)
+        async with sessions() as session:
+            user = User(
+                id=1,
+                name="Student",
+                role=UserRole.STUDENT.value,
+                access_code="ABC12345",
+            )
+            student = Student(
+                id=1,
+                user_id=1,
+                name="Student",
+                balance=0,
+                hash_access_key="test-key",
+                access_code="ABC12345",
+            )
+            student_course = Course(name="Student course")
+            other_course = Course(name="Other course")
+            student_group = Group(name="Student group", course=student_course)
+            student.groups.append(student_group)
+            session.add_all([user, student, other_course])
+            await session.flush()
+
+            other_course_task = DailyTask(
+                question=DailyTaskQuestion(
+                    slug="other-course-task",
+                    question="Other course question",
+                    task_type=TaskType.TEXT,
+                    answer="other",
+                    course_ids=[other_course.id],
+                )
+            )
+            student_course_task = DailyTask(
+                question=DailyTaskQuestion(
+                    slug="student-course-task",
+                    question="Student course question",
+                    task_type=TaskType.TEXT,
+                    answer="student",
+                    course_ids=[student_course.id],
+                )
+            )
+            session.add_all([other_course_task, student_course_task])
+            await session.commit()
+
+            response = await DailyTaskService(session).get_or_create(1)
+            assert response.question == "Student course question"
 
         await engine.dispose()
 
