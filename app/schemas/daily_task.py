@@ -16,8 +16,22 @@ class DailyTaskResponse(BaseModel):
     reward: float
 
 
+class DailyTaskTestResponse(BaseModel):
+    id: int
+    type: TaskType
+    question: str
+    options: list[str] | None = None
+    image_url: str | None = None
+    hotspots: list[dict[str, int | str]] | None = None
+    reward: float
+
+
 class DailyTaskAnswer(BaseModel):
     answer: str = Field(min_length=1, max_length=200, strict=True)
+
+
+class DailyTaskTestAnswerResponse(BaseModel):
+    correct: bool
 
 
 class DailyTaskAnswerResponse(BaseModel):

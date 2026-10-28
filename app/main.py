@@ -8,7 +8,7 @@ from time import perf_counter
 from traceback import format_tb
 from uuid import uuid4
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
 import uvicorn
@@ -21,6 +21,7 @@ if str(BACKEND_DIR) not in sys.path:
     sys.path.insert(0, str(BACKEND_DIR))
 
 from app.core.config import Config as cfg
+from app.core.enums import ProductMode
 from app.core.database import create_db_and_tables
 from app.core.logging_setup import configure_logging
 from app.api.router import router
@@ -120,17 +121,6 @@ async def log_http_requests(request, call_next):
 
     response.headers["X-Request-ID"] = request_id
     return response
-
-
-@app.get("/teacher", include_in_schema=False)
-@app.get("/teacher-credentials", include_in_schema=False)
-async def teacher_credentials_page() -> FileResponse:
-    return FileResponse(BACKEND_DIR / "pages" / "teacher-dashboard.html", media_type="text/html")
-
-
-@app.get("/admin", include_in_schema=False)
-async def admin_page() -> FileResponse:
-    return FileResponse(BACKEND_DIR / "pages" / "admin-test.html", media_type="text/html")
 
 
 app.add_middleware(

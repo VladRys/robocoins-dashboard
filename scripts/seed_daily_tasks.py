@@ -3,6 +3,7 @@
 import asyncio
 import sys
 from pathlib import Path
+from urllib.parse import quote
 
 BACKEND_DIR = Path(__file__).resolve().parents[1]
 APP_DIR = BACKEND_DIR / "app"
@@ -23,6 +24,39 @@ from app.models.streak import Streak  # noqa: F401
 from app.models.teacher import Teacher  # noqa: F401
 from app.models.transaction import BalanceTransaction  # noqa: F401
 from app.models.user import User  # noqa: F401
+
+PICTURE_OPTIONS = [
+    "data:image/svg+xml," + quote(
+        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 140">'
+        '<path d="M18 70h38m108 0h38" stroke="#64748b" stroke-width="7"/>'
+        '<rect x="55" y="46" width="110" height="48" rx="18" fill="#e8c99a" stroke="#a87943" stroke-width="5"/>'
+        '<path d="M78 49v42m23-42v42m23-42v42m22-42v42" stroke="#a43d32" stroke-width="7"/>'
+        "</svg>",
+        safe="",
+    ),
+    "data:image/svg+xml," + quote(
+        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 140">'
+        '<path d="M92 79v40m36-40v40" stroke="#64748b" stroke-width="8"/>'
+        '<path d="M110 20c-21 0-38 17-38 38 0 14 8 24 18 32h40c10-8 18-18 18-32 0-21-17-38-38-38Z" fill="#ef4444" stroke="#b91c1c" stroke-width="5"/>'
+        "</svg>",
+        safe="",
+    ),
+    "data:image/svg+xml," + quote(
+        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 140">'
+        '<path d="M74 91v29m72-29v29" stroke="#64748b" stroke-width="8"/>'
+        '<rect x="50" y="42" width="120" height="62" rx="16" fill="#cbd5e1" stroke="#64748b" stroke-width="5"/>'
+        '<rect x="70" y="22" width="80" height="61" rx="27" fill="#3b82f6" stroke="#1d4ed8" stroke-width="6"/>'
+        "</svg>",
+        safe="",
+    ),
+    "data:image/svg+xml," + quote(
+        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 140">'
+        '<path d="M28 105V65c0-22 18-40 40-40h84c22 0 40 18 40 40v40" stroke="#2563eb" stroke-width="16" fill="none"/>'
+        '<path d="M18 104h20v22H18zm146 0h20v22h-20z" fill="#d1d5db" stroke="#64748b" stroke-width="4"/>'
+        "</svg>",
+        safe="",
+    ),
+]
 
 TASKS: dict[str, dict] = {
     "mc_led": {
@@ -77,12 +111,9 @@ TASKS: dict[str, dict] = {
     },
     "picture_led": {
         "type": "picture",
-        "question": "Натисни на світлодіод.",
-        "image_url": "/student/daily-task/assets/components.svg",
-        "hotspots": [
-            {"id": "led", "x": 268, "y": 63, "width": 104, "height": 104}
-        ],
-        "answer": "led",
+        "question": "Обери світлодіод.",
+        "options": PICTURE_OPTIONS,
+        "answer": "1",
     },
 }
 

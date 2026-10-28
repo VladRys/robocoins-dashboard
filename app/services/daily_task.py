@@ -9,7 +9,12 @@ from app.models.daily_task import DailyTask, DailyTaskQuestion, StudentDailyTask
 from app.models.group import Group
 from app.models.student import Student
 from app.models.transaction import BalanceTransaction
-from app.schemas.daily_task import DailyTaskAnswerResponse, DailyTaskResponse
+from app.schemas.daily_task import (
+    DailyTaskAnswerResponse,
+    DailyTaskResponse,
+    DailyTaskTestAnswerResponse,
+    DailyTaskTestResponse,
+)
 
 
 class DailyTaskNotFoundError(Exception):
@@ -27,6 +32,43 @@ class StudentNotFoundError(Exception):
 class DailyTaskService:
     def __init__(self, session: AsyncSession):
         self.session = session
+
+    async def get_test_tasks(self) -> list[DailyTaskTestResponse]:
+        tasks = (
+            await self.session.scalars(
+                select(DailyTask)
+                .options(joinedload(DailyTask.question))
+                .order_by(DailyTask.id.asc())
+            )
+        ).all()
+        return [
+            DailyTaskTestResponse(
+                id=task.id,
+                type=task.question.task_type,
+                question=task.question.question,
+                options=task.question.options,
+                image_url=task.question.image_url,
+                hotspots=task.question.hotspots,
+                reward=task.question.reward,
+            )
+            for task in tasks
+        ]
+
+    async def answer_test_task(
+        self,
+        task_id: int,
+        answer: str,
+    ) -> DailyTaskTestAnswerResponse:
+        question = await self.session.scalar(
+            select(DailyTaskQuestion)
+            .join(DailyTask, DailyTask.question_id == DailyTaskQuestion.id)
+            .where(DailyTask.id == task_id)
+        )
+        if question is None:
+            raise DailyTaskNotFoundError
+        return DailyTaskTestAnswerResponse(
+            correct=answer.strip().casefold() == question.answer.strip().casefold()
+        )
 
     async def get_or_create(self, student_id: int) -> DailyTaskResponse:
         today = date.today()
