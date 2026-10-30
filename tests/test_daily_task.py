@@ -15,12 +15,18 @@ from app.api.routes.daily_task import (
     answer_daily_task,
     answer_daily_task_test_task,
     get_daily_task,
+    get_daily_tasks,
     get_daily_task_test_tasks,
 )
 from app.core.database import Base
 from app.core.enums import AuthorizationAction, ProductMode, TaskType, UserRole
 from app.models.course import Course  # noqa: F401
-from app.models.daily_task import DailyTask, DailyTaskQuestion
+from app.models.daily_task import (
+    CourseDailyTask,
+    DailyTask,
+    DailyTaskQuestion,
+    StudentDailyTask,
+)
 from app.models.group import Group  # noqa: F401
 from app.models.student import Student
 from app.models.streak import Streak  # noqa: F401
@@ -40,6 +46,7 @@ def test_daily_task_routes_use_authorization_service():
         authorization = SimpleNamespace(is_allowed=AsyncMock(return_value=False))
         service = SimpleNamespace(
             get_or_create=AsyncMock(),
+            get_or_create_all=AsyncMock(),
             answer=AsyncMock(),
         )
 
@@ -57,6 +64,22 @@ def test_daily_task_routes_use_authorization_service():
             34,
         )
         service.get_or_create.assert_not_awaited()
+
+        authorization.is_allowed.reset_mock()
+        with pytest.raises(HTTPException) as get_all_error:
+            await get_daily_tasks(
+                34,
+                user=user,
+                service=service,
+                authorization=authorization,
+            )
+        assert get_all_error.value.status_code == 403
+        authorization.is_allowed.assert_awaited_once_with(
+            AuthorizationAction.ACCESS_DAILY_TASK,
+            user,
+            34,
+        )
+        service.get_or_create_all.assert_not_awaited()
 
         authorization.is_allowed.reset_mock()
         with pytest.raises(HTTPException) as answer_error:
@@ -103,9 +126,14 @@ def test_seeded_embedded_questions_are_scoped_to_their_courses():
 
         sessions = async_sessionmaker(engine, expire_on_commit=False)
         async with sessions() as session:
+            course_names = {
+                course_name
+                for task_data in TASKS.values()
+                for course_name in task_data.get("course_names", [])
+            }
             courses = {
                 name: Course(name=name)
-                for name in ("Arduino Junior", "Middle Embedded", "Pro Embedded")
+                for name in course_names
             }
             session.add_all(courses.values())
             await session.flush()
@@ -129,7 +157,22 @@ def test_seeded_embedded_questions_are_scoped_to_their_courses():
                 for slug, task_data in TASKS.items()
                 if task_data.get("course_names")
             ]
-            assert len(scoped_tasks) == 27
+            assert len(scoped_tasks) == 52
+            for course_name in (
+                "Unity Beginner",
+                "Construct 3",
+                "Unity 3D",
+                "Unity 2D",
+            ):
+                course_tasks = [
+                    task_data
+                    for _, task_data in scoped_tasks
+                    if task_data["course_names"] == [course_name]
+                ]
+                assert len(course_tasks) == 6
+                assert {
+                    task_data["type"] for task_data in course_tasks
+                } == {"multiple_choice", "true_false", "text"}
             for course_name, expected_slugs in (
                 (
                     "Arduino Junior",
@@ -387,6 +430,103 @@ def test_daily_task_selection_uses_course_ids_not_categories():
 
             response = await DailyTaskService(session).get_or_create(1)
             assert response.question == "Student course question"
+
+        await engine.dispose()
+
+    asyncio.run(run())
+
+
+def test_daily_tasks_are_synchronized_per_course_and_support_multiple_courses():
+    async def run():
+        engine = create_async_engine("sqlite+aiosqlite:///:memory:")
+        async with engine.begin() as connection:
+            await connection.run_sync(Base.metadata.create_all)
+
+        sessions = async_sessionmaker(engine, expire_on_commit=False)
+        async with sessions() as session:
+            course_a = Course(name="Course A")
+            course_b = Course(name="Course B")
+            group_a1 = Group(name="Course A group 1", course=course_a)
+            group_a2 = Group(name="Course A group 2", course=course_a)
+            group_b = Group(name="Course B group", course=course_b)
+            users = [
+                User(
+                    id=student_id,
+                    name=f"Student {student_id}",
+                    role=UserRole.STUDENT.value,
+                    access_code=f"ABC{student_id:05d}",
+                )
+                for student_id in (1, 2)
+            ]
+            student_a_b = Student(
+                id=1,
+                user_id=1,
+                name="Student 1",
+                balance=0,
+                hash_access_key="test-key-1",
+                access_code="ABC00001",
+                groups=[group_a1, group_b],
+            )
+            student_a = Student(
+                id=2,
+                user_id=2,
+                name="Student 2",
+                balance=0,
+                hash_access_key="test-key-2",
+                access_code="ABC00002",
+                groups=[group_a2],
+            )
+            session.add_all([*users, student_a_b, student_a])
+            await session.flush()
+
+            task_a = DailyTask(
+                question=DailyTaskQuestion(
+                    slug="course-a-task",
+                    question="Question for course A",
+                    task_type=TaskType.TEXT,
+                    answer="A",
+                    course_ids=[course_a.id],
+                )
+            )
+            task_b = DailyTask(
+                question=DailyTaskQuestion(
+                    slug="course-b-task",
+                    question="Question for course B",
+                    task_type=TaskType.TEXT,
+                    answer="B",
+                    course_ids=[course_b.id],
+                )
+            )
+            session.add_all([task_a, task_b])
+            await session.commit()
+
+            service = DailyTaskService(session)
+            assignments_for_a_b = await service.get_or_create_all(1)
+            assignments_for_a = await service.get_or_create_all(2)
+
+            by_course_a_b = {
+                assignment.course_id: assignment for assignment in assignments_for_a_b
+            }
+            by_course_a = {
+                assignment.course_id: assignment for assignment in assignments_for_a
+            }
+            assert list(by_course_a_b) == [course_a.id, course_b.id]
+            assert list(by_course_a) == [course_a.id]
+            assert by_course_a_b[course_a.id].question == "Question for course A"
+            assert by_course_a[course_a.id].question == by_course_a_b[course_a.id].question
+            assert by_course_a_b[course_b.id].question == "Question for course B"
+            assert await service.get_or_create_all(1) == assignments_for_a_b
+            assert await session.scalar(
+                select(func.count()).select_from(CourseDailyTask)
+            ) == 2
+            assert await session.scalar(
+                select(func.count()).select_from(StudentDailyTask)
+            ) == 3
+
+            await service.answer(1, "A", course_id=course_a.id)
+            result = await service.answer(1, "B", course_id=course_b.id)
+            assert result.correct is True
+            assert result.balance == 0.2
 
         await engine.dispose()
 

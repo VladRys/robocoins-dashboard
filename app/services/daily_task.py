@@ -5,7 +5,13 @@ from sqlalchemy.orm import joinedload, selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.enums import BalanceChangeReasons
-from app.models.daily_task import DailyTask, DailyTaskQuestion, StudentDailyTask
+from app.models.course import Course
+from app.models.daily_task import (
+    CourseDailyTask,
+    DailyTask,
+    DailyTaskQuestion,
+    StudentDailyTask,
+)
 from app.models.student import Student
 from app.models.transaction import BalanceTransaction
 from app.schemas.daily_task import (
@@ -70,11 +76,13 @@ class DailyTaskService:
         )
 
     async def get_or_create(self, student_id: int) -> DailyTaskResponse:
-        today = date.today()
-        assignment = await self._get_assignment(student_id, today)
-        if assignment is not None:
-            return self._response(assignment)
+        assignments = await self.get_or_create_all(student_id)
+        if not assignments:
+            raise DailyTaskNotFoundError
+        return assignments[0]
 
+    async def get_or_create_all(self, student_id: int) -> list[DailyTaskResponse]:
+        today = date.today()
         student = await self.session.scalar(
             select(Student)
             .options(selectinload(Student.groups))
@@ -84,11 +92,65 @@ class DailyTaskService:
         if student is None:
             raise StudentNotFoundError
 
-        assignment = await self._get_assignment(student_id, today)
-        if assignment is not None:
-            return self._response(assignment)
+        course_ids = sorted({group.course_id for group in student.groups})
+        assignments: list[DailyTaskResponse] = []
+        if not course_ids:
+            assignment = await self._get_assignment(student_id, today)
+            if assignment is None:
+                task = await self._select_task(set())
+                task.last_date = today
+                assignment = StudentDailyTask(
+                    student_id=student_id,
+                    daily_task=task,
+                    task_date=today,
+                )
+                self.session.add(assignment)
+                await self.session.commit()
+                await self.session.refresh(assignment)
+            return [self._response(assignment)]
 
-        course_ids = {group.course_id for group in student.groups}
+        for course_id in course_ids:
+            course_assignment = await self._get_course_assignment(course_id, today)
+            assignment = await self._get_assignment(
+                student_id,
+                today,
+                course_id=course_id,
+            )
+            if assignment is None:
+                if course_assignment is None:
+                    await self.session.scalar(
+                        select(Course)
+                        .where(Course.id == course_id)
+                        .with_for_update()
+                    )
+                    course_assignment = await self._get_course_assignment(
+                        course_id,
+                        today,
+                    )
+                if course_assignment is None:
+                    task = await self._select_task({course_id})
+                    task.last_date = today
+                    course_assignment = CourseDailyTask(
+                        course_id=course_id,
+                        daily_task=task,
+                        task_date=today,
+                    )
+                    self.session.add(course_assignment)
+                assignment = StudentDailyTask(
+                    student_id=student_id,
+                    course_id=course_id,
+                    daily_task=course_assignment.daily_task,
+                    task_date=today,
+                )
+                self.session.add(assignment)
+            assignments.append(assignment)
+
+        await self.session.commit()
+        for assignment in assignments:
+            await self.session.refresh(assignment)
+        return [self._response(assignment) for assignment in assignments]
+
+    async def _select_task(self, course_ids: set[int]) -> DailyTask:
         available_tasks = list(
             (
                 await self.session.scalars(
@@ -113,24 +175,22 @@ class DailyTaskService:
         )
         if task is None:
             raise DailyTaskNotFoundError
-
-        task.last_date = today
-        assignment = StudentDailyTask(
-            student_id=student_id,
-            daily_task=task,
-            task_date=today,
-        )
-        self.session.add(assignment)
-        await self.session.commit()
-        await self.session.refresh(assignment)
-        return self._response(assignment)
+        return task
 
     async def answer(
         self,
         student_id: int,
         answer: str,
+        *,
+        course_id: int | None = None,
     ) -> DailyTaskAnswerResponse:
-        assignment = await self._get_assignment(student_id, date.today(), lock=True)
+        assignment = await self._get_assignment(
+            student_id,
+            date.today(),
+            course_id=course_id,
+            first_available=course_id is None,
+            lock=True,
+        )
         if assignment is None:
             raise DailyTaskNotFoundError
         if assignment.completed_at is not None:
@@ -179,6 +239,8 @@ class DailyTaskService:
         student_id: int,
         task_date: date,
         *,
+        course_id: int | None = None,
+        first_available: bool = False,
         lock: bool = False,
     ) -> StudentDailyTask | None:
         statement = (
@@ -193,9 +255,33 @@ class DailyTaskService:
                 StudentDailyTask.task_date == task_date,
             )
         )
+        if first_available:
+            statement = statement.order_by(
+                StudentDailyTask.course_id.asc().nullslast()
+            )
+        else:
+            statement = statement.where(StudentDailyTask.course_id == course_id)
         if lock:
             statement = statement.with_for_update(of=StudentDailyTask)
         return await self.session.scalar(statement)
+
+    async def _get_course_assignment(
+        self,
+        course_id: int,
+        task_date: date,
+    ) -> CourseDailyTask | None:
+        return await self.session.scalar(
+            select(CourseDailyTask)
+            .options(
+                joinedload(CourseDailyTask.daily_task).joinedload(
+                    DailyTask.question
+                )
+            )
+            .where(
+                CourseDailyTask.course_id == course_id,
+                CourseDailyTask.task_date == task_date,
+            )
+        )
 
     @staticmethod
     def _response(assignment: StudentDailyTask) -> DailyTaskResponse:
@@ -203,6 +289,7 @@ class DailyTaskService:
         return DailyTaskResponse(
             id=assignment.id,
             date=assignment.task_date,
+            course_id=assignment.course_id,
             type=question.task_type,
             question=question.question,
             options=question.options,

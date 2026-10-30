@@ -48,8 +48,16 @@ DEMO_COURSE_CATEGORIES = {
     "Middle Embedded": CourseCategory.EMBEDDED,
     "Pro Embedded": CourseCategory.EMBEDDED,
     "Unity 3D": CourseCategory.GAME_DEV,
+    "Unity Beginner": CourseCategory.GAME_DEV,
+    "Construct 3": CourseCategory.GAME_DEV,
+    "Unity 2D": CourseCategory.GAME_DEV,
 }
-DEMO_DAILY_TASK_COURSES = ("Pro Embedded",)
+DEMO_DAILY_TASK_COURSES = (
+    "Pro Embedded",
+    "Unity Beginner",
+    "Construct 3",
+    "Unity 2D",
+)
 
 # Keep these IDs stable so the demo catalog matches the documented sample data.
 DEMO_REWARDS = (

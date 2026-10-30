@@ -7,6 +7,7 @@ from app.core.enums import TaskType
 class DailyTaskResponse(BaseModel):
     id: int
     date: date
+    course_id: int | None = None
     type: TaskType
     question: str
     options: list[str] | None = None

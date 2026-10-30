@@ -32,6 +32,39 @@ def _require_test_mode() -> None:
 
 
 @daily_task_router.get(
+    "/{student_id}/daily-tasks",
+    response_model=list[DailyTaskResponse],
+)
+async def get_daily_tasks(
+    student_id: int,
+    user: User = Depends(get_authenticated_user),
+    service: DailyTaskService = Depends(get_daily_task_service),
+    authorization: AuthorizationService = Depends(get_authorization_service),
+):
+    if not await authorization.is_allowed(
+        AuthorizationAction.ACCESS_DAILY_TASK,
+        user,
+        student_id,
+    ):
+        raise HTTPException(
+            status_code=403,
+            detail="Only the student can access their daily task",
+        )
+    try:
+        return await service.get_or_create_all(student_id)
+    except StudentNotFoundError as error:
+        raise HTTPException(
+            status_code=404,
+            detail=HttpErrorMessage.STUDENT_NOT_FOUND,
+        ) from error
+    except DailyTaskNotFoundError as error:
+        raise HTTPException(
+            status_code=404,
+            detail="No daily tasks are available",
+        ) from error
+
+
+@daily_task_router.get(
     "/{student_id}/daily-task",
     response_model=DailyTaskResponse,
 )
@@ -125,6 +158,7 @@ async def answer_daily_task_test_task(
 async def answer_daily_task(
     student_id: int,
     request: DailyTaskAnswer,
+    course_id: int | None = None,
     user: User = Depends(get_authenticated_user),
     service: DailyTaskService = Depends(get_daily_task_service),
     authorization: AuthorizationService = Depends(get_authorization_service),
@@ -139,7 +173,11 @@ async def answer_daily_task(
             detail="Only the student can access their daily task",
         )
     try:
-        return await service.answer(student_id, request.answer)
+        return await service.answer(
+            student_id,
+            request.answer,
+            course_id=course_id,
+        )
     except DailyTaskNotFoundError as error:
         raise HTTPException(
             status_code=404,

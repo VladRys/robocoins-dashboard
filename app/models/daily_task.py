@@ -11,10 +11,12 @@ from sqlalchemy import (
     Enum as SqlEnum,
     Float,
     ForeignKey,
+    Index,
     Integer,
     JSON,
     String,
     UniqueConstraint,
+    text,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -23,6 +25,7 @@ from app.core.database import Base
 from app.core.enums import TaskType
 
 if TYPE_CHECKING:
+    from app.models.course import Course
     from app.models.student import Student
 
 
@@ -84,12 +87,52 @@ class DailyTask(Base):
     student_assignments: Mapped[list["StudentDailyTask"]] = relationship(
         back_populates="daily_task",
     )
+    course_assignments: Mapped[list["CourseDailyTask"]] = relationship(
+        back_populates="daily_task",
+    )
+
+
+class CourseDailyTask(Base):
+    __tablename__ = "course_daily_tasks"
+    __table_args__ = (
+        UniqueConstraint("course_id", "task_date", name="uq_course_daily_task_date"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    course_id: Mapped[int] = mapped_column(
+        ForeignKey("courses.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    daily_task_id: Mapped[int] = mapped_column(
+        ForeignKey("daily_tasks.id", ondelete="RESTRICT"),
+        nullable=False,
+    )
+    task_date: Mapped[date] = mapped_column(Date, nullable=False)
+
+    course: Mapped["Course"] = relationship()
+    daily_task: Mapped[DailyTask] = relationship(back_populates="course_assignments")
 
 
 class StudentDailyTask(Base):
     __tablename__ = "student_daily_tasks"
     __table_args__ = (
-        UniqueConstraint("student_id", "task_date", name="uq_student_daily_task_date"),
+        Index(
+            "uq_student_daily_task_course_date",
+            "student_id",
+            "course_id",
+            "task_date",
+            unique=True,
+            postgresql_where=text("course_id IS NOT NULL"),
+            sqlite_where=text("course_id IS NOT NULL"),
+        ),
+        Index(
+            "uq_student_daily_task_unscoped_date",
+            "student_id",
+            "task_date",
+            unique=True,
+            postgresql_where=text("course_id IS NULL"),
+            sqlite_where=text("course_id IS NULL"),
+        ),
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
@@ -102,6 +145,10 @@ class StudentDailyTask(Base):
         ForeignKey("daily_tasks.id", ondelete="RESTRICT"),
         nullable=False,
     )
+    course_id: Mapped[int | None] = mapped_column(
+        ForeignKey("courses.id", ondelete="CASCADE"),
+        nullable=True,
+    )
     task_date: Mapped[date] = mapped_column(Date, nullable=False)
     submitted_answer: Mapped[str | None] = mapped_column(String(200), nullable=True)
     correct: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
@@ -111,4 +158,5 @@ class StudentDailyTask(Base):
     )
 
     student: Mapped["Student"] = relationship()
+    course: Mapped["Course | None"] = relationship()
     daily_task: Mapped[DailyTask] = relationship(back_populates="student_assignments")
