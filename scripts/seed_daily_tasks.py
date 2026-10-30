@@ -60,7 +60,7 @@ PICTURE_OPTIONS = [
 
 TASKS: dict[str, dict] = {
     "junior_robot_controller": {
-        "type": "multiple_choice",
+        "type": TaskType.MULTIPLE_CHOICE,
         "question": "Яка частина робота виконує програму та керує його компонентами?",
         "options": [
             "Контролер",
@@ -72,20 +72,20 @@ TASKS: dict[str, dict] = {
         "course_names": ["Arduino Junior"],
     },
     "junior_wiring_safety": {
-        "type": "true_false",
+        "type": TaskType.TRUE_FALSE,
         "question": "Перед зміною з'єднань у схемі Arduino безпечно вимкнути живлення.",
         "options": ["Так", "Ні"],
         "answer": "Так",
         "course_names": ["Arduino Junior"],
     },
     "junior_turnstile_servo": {
-        "type": "text",
+        "type": TaskType.TEXT,
         "question": "Який компонент може повертати шлагбаум розумного турнікета?",
         "answer": "сервопривід",
         "course_names": ["Arduino Junior"],
     },
     "junior_smart_lamp": {
-        "type": "multiple_choice",
+        "type": TaskType.MULTIPLE_CHOICE,
         "question": "Який датчик допоможе розумній лампі вмикатися, коли в кімнаті темно?",
         "options": [
             "Фоторезистор",
@@ -97,20 +97,20 @@ TASKS: dict[str, dict] = {
         "course_names": ["Arduino Junior"],
     },
     "junior_joystick": {
-        "type": "true_false",
+        "type": TaskType.TRUE_FALSE,
         "question": "Джойстик можна використовувати для керування напрямком руху робота.",
         "options": ["Так", "Ні"],
         "answer": "Так",
         "course_names": ["Arduino Junior"],
     },
     "junior_seven_segment": {
-        "type": "text",
+        "type": TaskType.TEXT,
         "question": "Скільки сегментів має стандартний семисегментний індикатор для цифр?",
         "answer": "7",
         "course_names": ["Arduino Junior"],
     },
     "middle_digital_write": {
-        "type": "multiple_choice",
+        "type": TaskType.MULTIPLE_CHOICE,
         "question": "Яку дію виконує digitalWrite(pin, HIGH) для цифрового піна?",
         "options": [
             "Встановлює високий логічний рівень",
@@ -122,40 +122,40 @@ TASKS: dict[str, dict] = {
         "course_names": ["Middle Embedded"],
     },
     "middle_array_indexing": {
-        "type": "true_false",
+        "type": TaskType.TRUE_FALSE,
         "question": "У C++ індекс першого елемента масиву дорівнює нулю.",
         "options": ["Так", "Ні"],
         "answer": "Так",
         "course_names": ["Middle Embedded"],
     },
     "middle_setup_function": {
-        "type": "text",
+        "type": TaskType.TEXT,
         "question": "Як називається функція Arduino, яка виконується один раз під час запуску?",
         "answer": "setup",
         "course_names": ["Middle Embedded"],
     },
     "middle_loop_function": {
-        "type": "multiple_choice",
+        "type": TaskType.MULTIPLE_CHOICE,
         "question": "Яка функція Arduino повторюється постійно після завершення setup()?",
         "options": ["loop()", "setup()", "attachInterrupt()", "serialEvent()"],
         "answer": "loop()",
         "course_names": ["Middle Embedded"],
     },
     "middle_library_purpose": {
-        "type": "true_false",
+        "type": TaskType.TRUE_FALSE,
         "question": "Бібліотека в Arduino може містити готові функції для роботи з дисплеєм або датчиком.",
         "options": ["Так", "Ні"],
         "answer": "Так",
         "course_names": ["Middle Embedded"],
     },
     "middle_tinkercad_model": {
-        "type": "text",
+        "type": TaskType.TEXT,
         "question": "У якій програмі з плану курсу створюють і тестують 3D-моделі електронних проєктів?",
         "answer": "Tinkercad",
         "course_names": ["Middle Embedded"],
     },
     "pro_pin_mode": {
-        "type": "multiple_choice",
+        "type": TaskType.MULTIPLE_CHOICE,
         "question": "Для чого в Arduino використовують pinMode()?",
         "options": [
             "Щоб налаштувати пін як вхід або вихід",
@@ -167,7 +167,7 @@ TASKS: dict[str, dict] = {
         "course_names": ["Pro Embedded"],
     },
     "pro_serial_monitor": {
-        "type": "true_false",
+        "type": TaskType.TRUE_FALSE,
         "question": "Монітор порту можна використовувати, щоб переглядати повідомлення, які програма надсилає через Serial.",
         "options": ["Так", "Ні"],
         "answer": "Так",
@@ -180,7 +180,7 @@ TASKS: dict[str, dict] = {
         "course_names": ["Pro Embedded"],
     },
     "pro_lcd_display": {
-        "type": "multiple_choice",
+        "type": TaskType.MULTIPLE_CHOICE,
         "question": "Для чого в Arduino-проєкті використовують LCD?",
         "options": [
             "Щоб виводити текст або значення на екран",
@@ -192,20 +192,20 @@ TASKS: dict[str, dict] = {
         "course_names": ["Pro Embedded"],
     },
     "pro_array_zero_index": {
-        "type": "true_false",
+        "type": TaskType.TRUE_FALSE,
         "question": "У C++ перший елемент масиву має індекс 1.",
         "options": ["Так", "Ні"],
         "answer": "Ні",
         "course_names": ["Pro Embedded"],
     },
     "pro_arduino_language": {
-        "type": "text",
+        "type": TaskType.TEXT,
         "question": "Яка мова програмування використовується в основах Arduino з плану Pro Embedded?",
         "answer": "C++",
         "course_names": ["Pro Embedded"],
     },
     "junior_sonar": {
-        "type": "multiple_choice",
+        "type": TaskType.MULTIPLE_CHOICE,
         "question": "Як сонар Arduino визначає відстань до перешкоди?",
         "options": [
             "Вимірює час повернення звукового сигналу",
@@ -217,7 +217,7 @@ TASKS: dict[str, dict] = {
         "course_names": ["Arduino Junior"],
     },
     "junior_analog_input": {
-        "type": "multiple_choice",
+        "type": TaskType.MULTIPLE_CHOICE,
         "question": "Яку величину зчитують з аналогового піна Arduino за допомогою analogRead()?",
         "options": [
             "Рівень аналогової напруги",
@@ -229,14 +229,14 @@ TASKS: dict[str, dict] = {
         "course_names": ["Arduino Junior"],
     },
     "junior_relay": {
-        "type": "true_false",
+        "type": TaskType.TRUE_FALSE,
         "question": "Реле дає змогу керувати електричним колом за допомогою сигналу від Arduino.",
         "options": ["Так", "Ні"],
         "answer": "Так",
         "course_names": ["Arduino Junior"],
     },
     "middle_line_sensor": {
-        "type": "multiple_choice",
+        "type": TaskType.MULTIPLE_CHOICE,
         "question": "Для чого мобільній платформі потрібні датчики чорної лінії?",
         "options": [
             "Щоб визначати лінію на поверхні та рухатися вздовж неї",
@@ -248,21 +248,21 @@ TASKS: dict[str, dict] = {
         "course_names": ["Middle Embedded"],
     },
     "middle_array_index": {
-        "type": "multiple_choice",
+        "type": TaskType.MULTIPLE_CHOICE,
         "question": "З якого індексу починається нумерація елементів масиву в C++?",
         "options": ["0", "1", "Розмір масиву", "-1"],
         "answer": "0",
         "course_names": ["Middle Embedded"],
     },
     "middle_game_collision": {
-        "type": "true_false",
+        "type": TaskType.TRUE_FALSE,
         "question": "У грі Arkanoid перевірка зіткнень потрібна, щоб визначити контакт м'яча з платформою або ціллю.",
         "options": ["Так", "Ні"],
         "answer": "Так",
         "course_names": ["Middle Embedded"],
     },
     "pro_nonblocking_timing": {
-        "type": "multiple_choice",
+        "type": TaskType.MULTIPLE_CHOICE,
         "question": "Чому замість довгих викликів delay() у проєкті Arduino часто використовують millis()?",
         "options": [
             "Щоб перевіряти час без зупинки виконання інших команд",
@@ -274,7 +274,7 @@ TASKS: dict[str, dict] = {
         "course_names": ["Pro Embedded"],
     },
     "pro_esp32_web_server": {
-        "type": "multiple_choice",
+        "type": TaskType.MULTIPLE_CHOICE,
         "question": "Яку роль виконує вебсервер на ESP32 у проєкті з керуванням через браузер?",
         "options": [
             "Приймає HTTP-запити від браузера та надсилає відповіді",
@@ -286,7 +286,7 @@ TASKS: dict[str, dict] = {
         "course_names": ["Pro Embedded"],
     },
     "pro_blynk_chart": {
-        "type": "multiple_choice",
+        "type": TaskType.MULTIPLE_CHOICE,
         "question": "Для чого в Blynk використовують графік?",
         "options": [
             "Щоб бачити, як значення датчика змінюється з часом",
