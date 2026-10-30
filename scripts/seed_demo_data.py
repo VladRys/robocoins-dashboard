@@ -51,12 +51,14 @@ DEMO_COURSE_CATEGORIES = {
     "Unity Beginner": CourseCategory.GAME_DEV,
     "Construct 3": CourseCategory.GAME_DEV,
     "Unity 2D": CourseCategory.GAME_DEV,
+    "Web Middle": CourseCategory.WEB,
 }
 DEMO_DAILY_TASK_COURSES = (
     "Pro Embedded",
     "Unity Beginner",
     "Construct 3",
     "Unity 2D",
+    "Web Middle",
 )
 
 # Keep these IDs stable so the demo catalog matches the documented sample data.

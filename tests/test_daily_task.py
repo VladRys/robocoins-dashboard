@@ -157,7 +157,7 @@ def test_seeded_embedded_questions_are_scoped_to_their_courses():
                 for slug, task_data in TASKS.items()
                 if task_data.get("course_names")
             ]
-            assert len(scoped_tasks) == 52
+            assert len(scoped_tasks) == 82
             for course_name in (
                 "Unity Beginner",
                 "Construct 3",
@@ -173,6 +173,15 @@ def test_seeded_embedded_questions_are_scoped_to_their_courses():
                 assert {
                     task_data["type"] for task_data in course_tasks
                 } == {"multiple_choice", "true_false", "text"}
+            web_middle_tasks = [
+                task_data
+                for _, task_data in scoped_tasks
+                if task_data["course_names"] == ["Web Middle"]
+            ]
+            assert len(web_middle_tasks) == 30
+            assert {
+                task_data["type"] for task_data in web_middle_tasks
+            } == {"multiple_choice", "true_false", "text"}
             for course_name, expected_slugs in (
                 (
                     "Arduino Junior",
