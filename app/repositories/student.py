@@ -1,0 +1,186 @@
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import case, func, or_, select, update
+from sqlalchemy.orm import selectinload
+
+from app.models.student import Student
+from app.models.group import Group, student_groups
+from app.models.user import User
+
+class StudentRepository:
+    def __init__(self, session: AsyncSession):
+        self.session = session
+
+    async def get_student_by_id(self, student_id: int) -> Student | None:
+        """Fetch a student by their ID."""
+        result = await self.session.execute(
+            select(Student)
+            .options(selectinload(Student.groups).selectinload(Group.course))
+            .where(Student.id == student_id)
+        )
+        return result.scalar_one_or_none()
+
+    async def get_all_students(self) -> list[Student]:
+        result = await self.session.execute(
+            select(Student)
+            .options(selectinload(Student.groups).selectinload(Group.course))
+            .order_by(Student.id)
+        )
+        return list(result.scalars().all())
+
+    async def get_balance_leaderboard(
+        self, limit: int, offset: int
+    ) -> tuple[list[Student], int]:
+        total = await self.session.scalar(select(func.count()).select_from(Student))
+        result = await self.session.execute(
+            select(Student)
+            .options(selectinload(Student.groups).selectinload(Group.course))
+            .order_by(Student.balance.desc(), Student.id.asc())
+            .limit(limit)
+            .offset(offset)
+        )
+        return list(result.scalars().all()), total or 0
+
+    async def get_balance_leaderboard_rank(self, student_id: int) -> tuple[int, Student] | None:
+        student = await self.session.get(Student, student_id)
+        if student is None:
+            return None
+        students_ahead = await self.session.scalar(
+            select(func.count())
+            .select_from(Student)
+            .where(
+                (Student.balance > student.balance)
+                | ((Student.balance == student.balance) & (Student.id < student.id))
+            )
+        )
+        return (students_ahead or 0) + 1, student
+
+    async def is_student_in_teacher_group(
+        self,
+        student_id: int,
+        teacher_id: int,
+    ) -> bool:
+        result = await self.session.scalar(
+            select(Student.id)
+            .join(student_groups, student_groups.c.student_id == Student.id)
+            .join(Group, Group.id == student_groups.c.group_id)
+            .where(
+                Student.id == student_id,
+                or_(Group.teacher_1_id == teacher_id, Group.teacher_2_id == teacher_id),
+            )
+            .limit(1)
+        )
+        return result is not None
+
+    async def update_avatar(self, student_id: int, avatar: str) -> Student | None:
+        result = await self.session.execute(
+            update(Student)
+            .where(Student.id == student_id)
+            .values(avatar=avatar)
+            .returning(Student.id)
+        )
+        updated_id = result.scalar_one_or_none()
+        if updated_id is None:
+            return None
+        await self.session.commit()
+        return await self.get_student_by_id(updated_id)
+
+    async def update_nickname(self, student_id: int, nickname: str) -> Student | None:
+        student = await self.session.get(Student, student_id)
+        if student is None:
+            return None
+        user = await self.session.get(User, student.user_id)
+        if user is None:
+            return None
+
+        student.name = nickname
+        user.name = nickname
+        await self.session.commit()
+        return await self.get_student_by_id(student_id)
+
+    async def update_access_code(self, student_id: int, new_access_code: str) -> Student | None:
+        student = await self.session.get(Student, student_id)
+        if student is None:
+            return None
+        
+        user = await self.session.get(User, student.user_id)
+        if user is None:
+            return None
+
+        student.access_code = new_access_code
+        user.access_code = new_access_code
+        await self.session.commit()
+        return await self.get_student_by_id(student_id)
+
+    async def change_balance(self, student_id: int, amount: float) -> float | None:
+        """Atomically change a balance without allowing it to fall below zero."""
+        result = await self.session.execute(
+            update(Student)
+            .where(Student.id == student_id)
+            .values(
+                balance=case(
+                    (Student.balance + amount < 0, 0),
+                    else_=Student.balance + amount,
+                )
+            )
+            .returning(Student.balance)
+        )
+        return result.scalar_one_or_none()
+
+    async def reverse_balance_transaction(
+        self,
+        student_id: int,
+        operation: str,
+        amount: float,
+    ) -> float | None:
+        """Reverse a ledger operation, refusing to overdraw a prior deposit."""
+        delta = -amount if operation == "deposit" else amount
+        statement = update(Student).where(Student.id == student_id)
+        if delta < 0:
+            statement = statement.where(Student.balance >= amount)
+        result = await self.session.execute(
+            statement.values(balance=Student.balance + delta).returning(Student.balance)
+        )
+        return result.scalar_one_or_none()
+
+    async def get_student_by_hash_access_key(
+        self, hash_access_key: str
+    ) -> Student | None:
+        """Fetch a student by their hash access key."""
+        result = await self.session.execute(
+            select(Student).where(Student.hash_access_key == hash_access_key)
+        )
+        return result.scalar_one_or_none()
+
+    async def get_student_by_access_code(self, access_code: str) -> Student | None:
+        """Fetch a student by their access code."""
+        result = await self.session.execute(
+            select(Student)
+            .join(User, User.id == Student.user_id)
+            .where(User.access_code == access_code)
+        )
+        return result.scalar_one_or_none()
+    
+    async def create_student(self, student: Student) -> Student:
+        """Create a new student record."""
+        self.session.add(student)
+        await self.session.commit()
+        # Reload relationships explicitly before the API builds its response.
+        # Accessing unloaded relationships here can trigger async lazy loading
+        # outside SQLAlchemy's greenlet context.
+        created_student = await self.get_student_by_id(student.id)
+        if created_student is None:
+            raise RuntimeError("Student was not available after being created")
+        return created_student
+    
+    async def assign_student_to_groups(self, student_id: int, group_ids: list[int]) -> Student | None:
+        """Replace a student's group assignments."""
+        student = await self.get_student_by_id(student_id)
+        if student is None:
+            return None
+        result = await self.session.execute(select(Group).where(Group.id.in_(group_ids)))
+        groups = list(result.scalars().all())
+        if len(groups) != len(set(group_ids)):
+            raise ValueError("One or more groups were not found")
+        student.groups = groups
+        await self.session.commit()
+        return await self.get_student_by_id(student_id)

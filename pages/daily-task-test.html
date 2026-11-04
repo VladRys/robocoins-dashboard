@@ -1,0 +1,487 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>RoboCoins — тест ежедневного задания</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --blue: #1769ff;
+      --blue-dark: #0d55d9;
+      --bg: #f3f6fb;
+      --text: #172033;
+      --muted: #637089;
+      --line: #e1e7f0;
+      --green: #067647;
+      --red: #b42318;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      padding: 32px 16px;
+      color: var(--text);
+      background: radial-gradient(circle at 15% 0, #1769ff12, transparent 32%), var(--bg);
+      font: 16px/1.5 system-ui, sans-serif;
+    }
+    main { width: min(100%, 700px); margin: 0 auto; }
+    header { margin-bottom: 22px; }
+    h1 { margin: 0 0 8px; font-size: clamp(27px, 5vw, 38px); letter-spacing: -.8px; }
+    h2 { margin: 0 0 14px; font-size: 19px; }
+    p { color: var(--muted); }
+    .panel {
+      margin-top: 16px;
+      padding: 22px;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: white;
+      box-shadow: 0 12px 34px #243b5a0b;
+    }
+    label { display: block; margin: 12px 0 6px; font-weight: 700; }
+    input, select, button {
+      min-height: 44px;
+      padding: 9px 12px;
+      border-radius: 10px;
+      font: inherit;
+    }
+    input, select { width: 100%; border: 1px solid #ccd5e2; color: var(--text); background: white; }
+    input:focus, select:focus { outline: 3px solid #1769ff25; border-color: var(--blue); }
+    button {
+      border: 0;
+      background: var(--blue);
+      color: white;
+      font-weight: 750;
+      cursor: pointer;
+    }
+    button:hover { background: var(--blue-dark); }
+    button:disabled { opacity: .55; cursor: wait; }
+    button.secondary { background: white; border: 1px solid var(--line); color: var(--text); }
+    button.secondary:hover { background: #f6f8fb; }
+    .row { display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: end; }
+    .row button { min-width: 115px; }
+    .identity, .status {
+      margin-top: 12px;
+      padding: 10px 12px;
+      border-radius: 10px;
+      background: #f3f6fb;
+      color: var(--muted);
+      overflow-wrap: anywhere;
+    }
+    .identity:empty, .status:empty { display: none; }
+    .status.error { background: #fff1f0; color: var(--red); }
+    .status.success { background: #ecfdf3; color: var(--green); }
+    .task { display: none; }
+    .task.visible { display: block; }
+    .task-meta { display: flex; justify-content: space-between; gap: 12px; color: var(--muted); font-size: 14px; }
+    .question { margin: 18px 0; color: var(--text); font-size: 22px; font-weight: 750; line-height: 1.3; }
+    .options { display: grid; gap: 10px; margin: 18px 0; }
+    .option {
+      width: 100%;
+      min-height: 50px;
+      border: 1px solid var(--line);
+      background: white;
+      color: var(--text);
+      text-align: left;
+    }
+    .option:hover, .option.selected { border-color: var(--blue); background: #f4f8ff; }
+    .picture-options { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .picture-option { min-height: 150px; display: grid; place-items: center; padding: 14px; }
+    .picture-option img { width: 100%; height: 120px; object-fit: contain; }
+    .hint { margin: 8px 0; font-size: 14px; }
+    .reward { margin: 18px 0 0; font-weight: 750; }
+    [hidden] { display: none !important; }
+    @media (max-width: 520px) {
+      body { padding: 20px 12px; }
+      .panel { padding: 18px; }
+      .row { grid-template-columns: 1fr; }
+      .row button { width: 100%; }
+      .question { font-size: 20px; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <h1>Ежедневное задание</h1>
+      <p>Войдите под учеником, чтобы проверить сегодняшнее задание или пройти весь набор daily tasks по очереди.</p>
+    </header>
+
+    <section class="panel" aria-labelledby="session-title">
+      <h2 id="session-title">Сессия ученика</h2>
+      <form id="login-form">
+        <label for="access-code">Код доступа</label>
+        <div class="row">
+          <input id="access-code" name="code" autocomplete="one-time-code" required>
+          <button id="login-button" type="submit">Войти</button>
+        </div>
+      </form>
+      <div id="identity" class="identity" aria-live="polite"></div>
+      <div class="row" style="margin-top:12px">
+        <button id="load-button" class="secondary" type="button" disabled>Задание на сегодня</button>
+      </div>
+      <button id="logout-button" class="secondary" type="button" style="margin-top:10px" hidden>Выйти</button>
+      <p id="session-status" class="status" role="status" aria-live="polite"></p>
+    </section>
+
+    <section class="panel" aria-labelledby="test-title">
+      <h2 id="test-title">Тестирование заданий</h2>
+      <label for="test-task-select">Выберите задание</label>
+      <div class="row">
+        <select id="test-task-select" disabled>
+          <option value="">Войдите, чтобы загрузить задания</option>
+        </select>
+        <button id="test-selected-button" type="button" disabled>Проверить выбранное</button>
+      </div>
+      <button id="test-tasks-button" class="secondary" type="button" disabled style="margin-top:10px">Пройти все задания по очереди</button>
+      <p id="test-status" class="status" role="status" aria-live="polite"></p>
+    </section>
+
+    <section id="task-panel" class="panel task" aria-labelledby="task-heading">
+      <div class="task-meta">
+        <span id="task-date"></span>
+        <span id="task-reward"></span>
+      </div>
+      <h2 id="task-heading" class="question"></h2>
+      <div id="answer-input"></div>
+      <button id="submit-button" type="button" disabled>Ответить</button>
+      <button id="next-test-button" type="button" hidden>Следующее задание</button>
+      <p id="task-status" class="status" role="status" aria-live="polite"></p>
+    </section>
+  </main>
+
+  <script>
+    const isLocal = ['localhost', '127.0.0.1', '::1'].includes(location.hostname);
+    const apiBase = isLocal
+      ? (location.port === '8000' ? '' : `${location.protocol}//${location.hostname}:8000`)
+      : '/api';
+    const $ = (id) => document.getElementById(id);
+    let currentUser = null;
+    let currentTask = null;
+    let selectedAnswer = '';
+    let testTaskBank = [];
+    let testTasks = [];
+    let testTaskIndex = 0;
+    let testMode = false;
+
+    async function request(path, options = {}) {
+      const response = await fetch(`${apiBase}${path}`, {
+        credentials: 'include',
+        cache: 'no-store',
+        ...options,
+      });
+      const text = await response.text();
+      let body = null;
+      if (text) {
+        try { body = JSON.parse(text); } catch { body = text; }
+      }
+      if (!response.ok) {
+        const detail = body && typeof body === 'object' && 'detail' in body
+          ? body.detail
+          : typeof body === 'string' ? body : response.statusText;
+        throw new Error(`HTTP ${response.status}: ${detail}`);
+      }
+      return body;
+    }
+
+    function setStatus(id, message, kind = '') {
+      const element = $(id);
+      element.textContent = message;
+      element.className = `status${kind ? ` ${kind}` : ''}`;
+    }
+
+    function setUser(user) {
+      currentUser = user;
+      $('identity').textContent = user
+        ? `${user.name} · ${user.role === 'student' ? 'ученик' : user.role} · ID ${user.id}`
+        : '';
+      $('load-button').disabled = !user || user.role !== 'student';
+      $('test-tasks-button').disabled = !user || user.role !== 'student' || !testTaskBank.length;
+      $('test-task-select').disabled = !user || user.role !== 'student' || !testTaskBank.length;
+      $('test-selected-button').disabled = !user || user.role !== 'student' || !testTaskBank.length;
+      $('logout-button').hidden = !user;
+      if (!user || user.role !== 'student') {
+        $('task-panel').classList.remove('visible');
+        testTaskBank = [];
+        testTasks = [];
+        testMode = false;
+        $('test-task-select').replaceChildren(
+          new Option('Войдите, чтобы загрузить задания', ''),
+        );
+      }
+    }
+
+    function selectAnswer(value, button) {
+      selectedAnswer = value;
+      document.querySelectorAll('.option').forEach((item) => {
+        item.classList.toggle('selected', item === button);
+      });
+      $('submit-button').disabled = false;
+    }
+
+    function renderTask(task, progress = null) {
+      currentTask = task;
+      selectedAnswer = '';
+      $('task-panel').classList.add('visible');
+      $('task-date').textContent = progress
+        ? `Задание ${progress.current} из ${progress.total}`
+        : `Задание на ${new Date(`${task.date}T00:00:00`).toLocaleDateString('ru-RU')}`;
+      $('task-reward').textContent = `Награда: ${task.reward} 🪙`;
+      $('task-heading').textContent = task.question;
+      $('answer-input').replaceChildren();
+      $('submit-button').hidden = false;
+      $('submit-button').disabled = true;
+      $('next-test-button').hidden = true;
+      setStatus('task-status', '');
+
+      if (task.type === 'multiple_choice' || task.type === 'true_false') {
+        renderOptions(task, false);
+      } else if (task.type === 'text') {
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.maxLength = 200;
+        input.autocomplete = 'off';
+        input.setAttribute('aria-label', 'Ваш ответ');
+        input.placeholder = 'Введите ответ';
+        input.addEventListener('input', () => {
+          selectedAnswer = input.value;
+          $('submit-button').disabled = !input.value.trim();
+        });
+        $('answer-input').append(input);
+      } else if (task.type === 'picture') {
+        renderOptions(task, true);
+      } else {
+        setStatus('task-status', `Неизвестный тип задания: ${task.type}`, 'error');
+        $('submit-button').hidden = true;
+        return;
+      }
+
+      if (task.completed_at) {
+        $('answer-input').replaceChildren();
+        $('submit-button').hidden = true;
+        setStatus(
+          'task-status',
+          'На сегодня попытка уже использована. Правильный ответ здесь не раскрывается.',
+        );
+        return;
+      }
+      $('submit-button').onclick = submitAnswer;
+    }
+
+    function renderOptions(task, pictureOptions) {
+      const options = document.createElement('div');
+      options.className = `options${pictureOptions ? ' picture-options' : ''}`;
+      for (const [index, value] of (task.options || []).entries()) {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = pictureOptions ? 'option picture-option' : 'option';
+        if (pictureOptions) {
+          const image = document.createElement('img');
+          image.src = value;
+          image.alt = `Вариант ${index + 1}`;
+          image.addEventListener('error', () => {
+            setStatus('task-status', 'Не удалось загрузить изображение варианта.', 'error');
+          });
+          button.setAttribute('aria-label', `Выбрать вариант ${index + 1}`);
+          button.append(image);
+        } else {
+          button.textContent = value;
+        }
+        button.addEventListener(
+          'click',
+          () => selectAnswer(pictureOptions ? String(index) : value, button),
+        );
+        options.append(button);
+      }
+      $('answer-input').append(options);
+    }
+
+    async function loadTask() {
+      if (!currentUser || currentUser.role !== 'student') {
+        throw new Error('Войдите под аккаунтом ученика.');
+      }
+      $('load-button').disabled = true;
+      setStatus('session-status', 'Загружаю задание…');
+      try {
+        const task = await request(`/daily/${currentUser.id}/daily-task`);
+        testMode = false;
+        renderTask(task);
+        setStatus('session-status', 'Задание загружено.', 'success');
+      } finally {
+        $('load-button').disabled = false;
+      }
+    }
+
+    async function loadTestTaskBank() {
+      if (!currentUser || currentUser.role !== 'student') {
+        throw new Error('Войдите под аккаунтом ученика.');
+      }
+      $('test-task-select').disabled = true;
+      $('test-selected-button').disabled = true;
+      $('test-tasks-button').disabled = true;
+      setStatus('test-status', 'Загружаю задания для теста…');
+      try {
+        const tasks = await request(`/daily/${currentUser.id}/dev-tasks`);
+        if (!tasks.length) throw new Error('В наборе пока нет заданий.');
+        testTaskBank = tasks;
+        const select = $('test-task-select');
+        select.replaceChildren(new Option('Выберите задание…', ''));
+        for (const task of testTaskBank) {
+          select.add(new Option(task.question, String(task.id)));
+        }
+        select.disabled = false;
+        $('test-selected-button').disabled = false;
+        $('test-tasks-button').disabled = false;
+        setStatus('test-status', `Загружено заданий: ${tasks.length}. Выберите одно или запустите все по очереди.`, 'success');
+      } catch (error) {
+        setStatus('test-status', error.message, 'error');
+        testTaskBank = [];
+        $('test-task-select').disabled = true;
+        $('test-selected-button').disabled = true;
+        $('test-tasks-button').disabled = true;
+      }
+    }
+
+    function startSelectedTestTask() {
+      const taskId = Number($('test-task-select').value);
+      const task = testTaskBank.find((item) => item.id === taskId);
+      if (!task) {
+        setStatus('test-status', 'Сначала выберите задание.', 'error');
+        return;
+      }
+      testTasks = [task];
+      testMode = true;
+      testTaskIndex = 0;
+      renderTask(task, { current: 1, total: 1 });
+      setStatus('test-status', 'Тестируется выбранное задание. Ответ не влияет на баланс.', 'success');
+    }
+
+    function startAllTestTasks() {
+      if (!testTaskBank.length) {
+        setStatus('test-status', 'Список заданий не загружен.', 'error');
+        return;
+      }
+      testTasks = [...testTaskBank];
+      testMode = true;
+      testTaskIndex = 0;
+      renderTask(testTasks[testTaskIndex], {
+        current: testTaskIndex + 1,
+        total: testTasks.length,
+      });
+      setStatus('test-status', 'Набор запущен. Ответы не влияют на баланс.', 'success');
+    }
+
+    async function submitAnswer() {
+      if (!currentTask || !selectedAnswer.trim()) return;
+      $('submit-button').disabled = true;
+      setStatus('task-status', 'Проверяю ответ…');
+      try {
+        const answerPath = testMode
+          ? `/daily/${currentUser.id}/dev-tasks/${currentTask.id}/answer`
+          : `/daily/${currentUser.id}/daily-task/answer`;
+        const result = await request(
+          answerPath,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ answer: selectedAnswer.trim() }),
+          },
+        );
+        $('answer-input').replaceChildren();
+        $('submit-button').hidden = true;
+        if (testMode) {
+          setStatus(
+            'task-status',
+            result.correct ? 'Верно!' : 'Ответ неверный.',
+            result.correct ? 'success' : 'error',
+          );
+          $('next-test-button').hidden = false;
+          $('next-test-button').textContent = testTaskIndex + 1 < testTasks.length
+            ? 'Следующее задание'
+            : 'Завершить тестирование';
+        } else {
+          setStatus(
+            'task-status',
+            result.correct
+              ? `Верно! Начислено ${result.reward} 🪙. Баланс: ${result.balance} 🪙.`
+              : 'Ответ неверный. Попытка использована; правильный ответ не раскрывается.',
+            result.correct ? 'success' : 'error',
+          );
+        }
+      } catch (error) {
+        setStatus('task-status', error.message, 'error');
+        $('submit-button').disabled = false;
+      }
+    }
+
+    $('login-form').addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const button = $('login-button');
+      button.disabled = true;
+      setStatus('session-status', 'Выполняется вход…');
+      try {
+        await request('/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ code: $('access-code').value.trim() }),
+        });
+        setUser(await request('/auth/me'));
+        if (currentUser.role === 'student') {
+          await loadTask();
+          await loadTestTaskBank();
+        }
+        else setStatus('session-status', 'Для теста войдите под аккаунтом ученика.', 'error');
+      } catch (error) {
+        setStatus('session-status', error.message, 'error');
+      } finally {
+        button.disabled = false;
+      }
+    });
+
+    $('load-button').addEventListener('click', () => {
+      loadTask().catch((error) => setStatus('session-status', error.message, 'error'));
+    });
+
+    $('test-selected-button').addEventListener('click', startSelectedTestTask);
+    $('test-tasks-button').addEventListener('click', startAllTestTasks);
+
+    $('next-test-button').addEventListener('click', () => {
+      testTaskIndex += 1;
+      if (testTaskIndex >= testTasks.length) {
+        $('task-heading').textContent = 'Тестирование завершено!';
+        $('task-date').textContent = `Проверено заданий: ${testTasks.length}`;
+        $('task-reward').textContent = '';
+        $('answer-input').replaceChildren();
+        $('next-test-button').hidden = true;
+        setStatus('task-status', 'Тестирование набора завершено.', 'success');
+        return;
+      }
+      renderTask(testTasks[testTaskIndex], {
+        current: testTaskIndex + 1,
+        total: testTasks.length,
+      });
+    });
+
+    $('logout-button').addEventListener('click', async () => {
+      try {
+        await request('/auth/logout', { method: 'POST' });
+        setUser(null);
+        $('task-panel').classList.remove('visible');
+        setStatus('session-status', 'Вы вышли из аккаунта.', 'success');
+      } catch (error) {
+        setStatus('session-status', error.message, 'error');
+      }
+    });
+
+    request('/auth/me')
+      .then(async (user) => {
+        setUser(user);
+        if (user.role === 'student') {
+          await loadTask();
+          await loadTestTaskBank();
+        }
+      })
+      .catch(() => setUser(null));
+  </script>
+</body>
+</html>

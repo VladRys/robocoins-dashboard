@@ -1,0 +1,271 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>RoboCoins — прогресс награды</title>
+  <style>
+    :root { color-scheme: light; --blue:#1769ff; --bg:#f3f6fb; --text:#172033; --muted:#637089; --line:#e1e7f0; }
+    * { box-sizing:border-box; }
+    body { margin:0; min-height:100vh; padding:32px 16px; background:radial-gradient(circle at 15% 0,#1769ff12,transparent 32%),var(--bg); color:var(--text); font:16px/1.5 system-ui,sans-serif; }
+    main { width:min(100%,620px); margin:auto; }
+    h1 { margin:0 0 8px; font-size:clamp(27px,5vw,38px); letter-spacing:-.8px; }
+    h2 { margin:0 0 14px; font-size:19px; }
+    p { color:var(--muted); }
+    .panel { margin-top:16px; padding:22px; border:1px solid var(--line); border-radius:18px; background:white; box-shadow:0 12px 34px #243b5a0b; }
+    label { display:block; margin:12px 0 6px; font-weight:700; }
+    input,button { width:100%; min-height:44px; padding:9px 12px; border:1px solid #ccd5e2; border-radius:10px; font:inherit; }
+    button { margin-top:14px; border:0; background:var(--blue); color:white; font-weight:750; cursor:pointer; }
+    button:disabled { opacity:.6; cursor:wait; }
+    .row { display:grid; grid-template-columns:1fr auto; gap:10px; align-items:end; }
+    .row button { min-width:120px; }
+    .reward { margin-top:20px; padding:18px; border-radius:14px; background:#f7f9fc; }
+    .reward[hidden] { display:none; }
+    .reward-name { margin:0; font-size:21px; font-weight:800; }
+    .numbers { display:flex; justify-content:space-between; gap:12px; margin:10px 0; color:var(--muted); }
+    progress { display:block; width:100%; height:18px; accent-color:var(--blue); }
+    .status { margin:12px 0 0; color:var(--muted); overflow-wrap:anywhere; }
+    .status:empty { display:none; }
+    .status.error { color:#b42318; }
+    .hint { margin-bottom:0; font-size:14px; }
+    select,textarea { width:100%; min-height:44px; padding:9px 12px; border:1px solid #ccd5e2; border-radius:10px; font:inherit; background:white; }
+    textarea { min-height:84px; resize:vertical; }
+    .reward-item { margin-top:10px; padding:14px; border:1px solid var(--line); border-radius:12px; }
+    .reward-item p { margin:4px 0; }
+    .reward-meta { font-size:14px; }
+    @media(max-width:520px) { body { padding:20px 12px; } .panel { padding:18px; } .row { grid-template-columns:1fr; } }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <h1>Прогресс до награды</h1>
+      <p>Например, при балансе 5 монет и награде за 10 монет прогресс составит 50%.</p>
+    </header>
+
+    <section class="panel" aria-labelledby="demo-title">
+      <h2 id="demo-title">Пример — попробуйте сами</h2>
+      <label for="demo-balance">Баланс, монет</label>
+      <input id="demo-balance" type="number" min="0" value="5">
+      <label for="demo-price">Стоимость награды, монет</label>
+      <input id="demo-price" type="number" min="1" value="10">
+      <div class="reward">
+        <p class="reward-name">Подарочная награда 🎁</p>
+        <div class="numbers"><span id="demo-percent">50%</span><span id="demo-remaining">Осталось 5 монет</span></div>
+        <progress id="demo-progress" max="100" value="50">50%</progress>
+      </div>
+    </section>
+
+    <section class="panel" aria-labelledby="live-title">
+      <h2 id="live-title">Посмотреть данные ученика</h2>
+      <form id="login-form">
+        <label for="access-code">Код доступа</label>
+        <div class="row"><input id="access-code" autocomplete="one-time-code" required><button id="login-button">Войти</button></div>
+      </form>
+      <p id="identity" class="hint"></p>
+      <label for="student-id">ID ученика</label>
+      <div class="row"><input id="student-id" type="number" min="1" placeholder="Например, 12"><button id="load-button" type="button">Загрузить</button></div>
+      <div id="live-result" class="reward" hidden>
+        <p id="live-reward" class="reward-name"></p>
+        <div class="numbers"><span id="live-percent"></span><span id="live-remaining"></span></div>
+        <progress id="live-progress" max="100" value="0"></progress>
+      </div>
+      <p id="status" class="status" role="status" aria-live="polite"></p>
+      <p class="hint">Для загрузки нужен вход. У ученика ID подставится автоматически. Для учителя укажите ID ученика.</p>
+    </section>
+
+    <section class="panel" aria-labelledby="catalog-title">
+      <h2 id="catalog-title">Каталог наград</h2>
+      <p class="hint">Награды можно привязать к категории курса. Если категорию оставить пустой, награда будет доступна для всех курсов. Привилегии всегда общие.</p>
+      <label for="catalog-category">Показать награды для категории</label>
+      <select id="catalog-category"></select>
+      <button id="refresh-rewards" type="button">Обновить каталог</button>
+      <div id="reward-list" aria-live="polite"></div>
+      <p id="catalog-status" class="status" role="status" aria-live="polite"></p>
+
+      <h2 style="margin-top:24px">Добавить награду</h2>
+      <form id="create-reward-form">
+        <label for="reward-name">Название</label>
+        <input id="reward-name" required maxlength="200">
+        <label for="reward-price">Стоимость, монет</label>
+        <input id="reward-price" type="number" min="0" required>
+        <label for="reward-description">Описание</label>
+        <textarea id="reward-description"></textarea>
+        <label for="reward-type">Тип</label>
+        <select id="reward-type">
+          <option value="reward">Награда</option>
+          <option value="privilege">Привилегия</option>
+        </select>
+        <div id="reward-category-field">
+          <label for="reward-category">Категория курса</label>
+          <select id="reward-category"></select>
+        </div>
+        <button id="create-reward-button">Создать награду</button>
+      </form>
+      <p id="create-status" class="status" role="status" aria-live="polite"></p>
+    </section>
+  </main>
+  <script>
+    const local = ['localhost', '127.0.0.1', '::1'].includes(location.hostname);
+    const apiBase = local ? (location.port === '8000' ? '' : `${location.protocol}//${location.hostname}:8000`) : '/api';
+    const $ = (id) => document.getElementById(id);
+    let currentUser = null;
+    const courseCategories = [
+      ['embedded', 'Встроенные системы'],
+      ['game dev', 'Разработка игр'],
+      ['web', 'Веб-разработка'],
+      ['primary', 'Начальная школа'],
+      ['python', 'Python'],
+      ['no category', 'Без категории'],
+    ];
+
+    function setupCategorySelect(select, allLabel) {
+      select.replaceChildren();
+      const all = document.createElement('option');
+      all.value = '';
+      all.textContent = allLabel;
+      select.append(all);
+      for (const [value, label] of courseCategories) {
+        const option = document.createElement('option');
+        option.value = value;
+        option.textContent = label;
+        select.append(option);
+      }
+    }
+    setupCategorySelect($('catalog-category'), 'Все курсы');
+    setupCategorySelect($('reward-category'), 'Все курсы (без категории)');
+
+    function renderDemo() {
+      const balance = Math.max(0, Number($('demo-balance').value) || 0);
+      const price = Math.max(1, Number($('demo-price').value) || 1);
+      const percent = Math.min(100, Math.round(balance / price * 100));
+      $('demo-percent').textContent = `${percent}%`;
+      $('demo-remaining').textContent = balance >= price ? 'Награда доступна!' : `Осталось ${price - balance} монет`;
+      $('demo-progress').value = percent;
+    }
+    $('demo-balance').addEventListener('input', renderDemo);
+    $('demo-price').addEventListener('input', renderDemo);
+
+    async function request(path, options = {}) {
+      const response = await fetch(`${apiBase}${path}`, { credentials:'include', ...options });
+      const body = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(body.detail || `HTTP ${response.status}`);
+      return body;
+    }
+    function setStatus(message, error = false) {
+      $('status').textContent = message;
+      $('status').classList.toggle('error', error);
+    }
+    function setCatalogStatus(message, error = false) {
+      $('catalog-status').textContent = message;
+      $('catalog-status').classList.toggle('error', error);
+    }
+    function setCreateStatus(message, error = false) {
+      $('create-status').textContent = message;
+      $('create-status').classList.toggle('error', error);
+    }
+    function categoryLabel(value) {
+      return courseCategories.find(([category]) => category === value)?.[1] || value || 'Все курсы';
+    }
+    function setUser(user) {
+      currentUser = user;
+      $('identity').textContent = user ? `Вошли: ${user.name} · ${user.role === 'teacher' ? 'учитель' : 'ученик'} (ID ${user.id})` : 'Войдите по коду доступа, чтобы загрузить прогресс.';
+      if (user?.role === 'student') $('student-id').value = user.id;
+      if (user) loadRewards().catch((error) => setCatalogStatus(error.message, true));
+    }
+    async function loadRewards() {
+      if (!currentUser) throw new Error('Сначала войдите по коду доступа.');
+      const category = $('catalog-category').value;
+      const query = category ? `?course_category=${encodeURIComponent(category)}` : '';
+      setCatalogStatus('Загружаю каталог…');
+      const rewards = await request(`/shop${query}`);
+      const list = $('reward-list');
+      list.replaceChildren();
+      if (!rewards.length) {
+        setCatalogStatus('В этой категории пока нет наград.');
+        return;
+      }
+      for (const reward of rewards) {
+        const item = document.createElement('article');
+        item.className = 'reward-item';
+        const name = document.createElement('strong');
+        name.textContent = reward.name;
+        const description = document.createElement('p');
+        description.textContent = reward.description || 'Без описания';
+        const meta = document.createElement('p');
+        meta.className = 'reward-meta';
+        const typeLabel = reward.type === 'privilege' ? 'Привилегия' : 'Награда';
+        const scope = reward.type === 'privilege' ? 'Все курсы' : categoryLabel(reward.course_category);
+        meta.textContent = `${typeLabel} · ${reward.price} монет · ${scope}`;
+        item.append(name, description, meta);
+        list.append(item);
+      }
+      setCatalogStatus(`Найдено наград: ${rewards.length}.`);
+    }
+    async function loadProgress() {
+      if (!currentUser) throw new Error('Сначала войдите по коду доступа.');
+      const id = Number($('student-id').value);
+      if (!Number.isInteger(id) || id < 1) throw new Error('Укажите корректный ID ученика.');
+      setStatus('Загружаю баланс и награду…');
+      const data = await request(`/student/${id}/reward-progress`);
+      if (!data.reward) {
+        $('live-result').hidden = true;
+        setStatus(`Баланс: ${data.balance} монет. Пока нет награды дороже этого баланса.`);
+        return;
+      }
+      $('live-result').hidden = false;
+      $('live-reward').textContent = data.reward.name;
+      $('live-percent').textContent = `${data.progress_percent}% · ${data.balance} из ${data.reward.price} монет`;
+      $('live-remaining').textContent = `Осталось ${data.coins_remaining} монет`;
+      $('live-progress').value = data.progress_percent;
+      setStatus('Прогресс обновлён.');
+    }
+    $('login-form').addEventListener('submit', async (event) => {
+      event.preventDefault();
+      $('login-button').disabled = true;
+      setStatus('Выполняется вход…');
+      try {
+        await request('/auth/login', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({code:$('access-code').value.trim()}) });
+        setUser(await request('/auth/me'));
+        setStatus('Вход выполнен.');
+        if ($('student-id').value) await loadProgress();
+      } catch (error) { setStatus(error.message, true); }
+      finally { $('login-button').disabled = false; }
+    });
+    $('load-button').addEventListener('click', async () => {
+      try { await loadProgress(); } catch (error) { setStatus(error.message, true); }
+    });
+    $('catalog-category').addEventListener('change', () => loadRewards().catch((error) => setCatalogStatus(error.message, true)));
+    $('refresh-rewards').addEventListener('click', () => loadRewards().catch((error) => setCatalogStatus(error.message, true)));
+    $('reward-type').addEventListener('change', () => {
+      const isPrivilege = $('reward-type').value === 'privilege';
+      $('reward-category-field').hidden = isPrivilege;
+      $('reward-category').value = '';
+    });
+    $('create-reward-form').addEventListener('submit', async (event) => {
+      event.preventDefault();
+      if (!currentUser) { setCreateStatus('Сначала войдите по коду доступа.', true); return; }
+      const type = $('reward-type').value;
+      const payload = {
+        name: $('reward-name').value.trim(),
+        price: Number($('reward-price').value),
+        description: $('reward-description').value.trim() || null,
+        type,
+        course_category: type === 'privilege' ? null : ($('reward-category').value || null),
+      };
+      $('create-reward-button').disabled = true;
+      setCreateStatus('Создаю награду…');
+      try {
+        await request('/rewards', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload) });
+        $('create-reward-form').reset();
+        $('reward-category-field').hidden = false;
+        setCreateStatus('Награда создана.');
+        await loadRewards();
+      } catch (error) { setCreateStatus(error.message, true); }
+      finally { $('create-reward-button').disabled = false; }
+    });
+    request('/auth/me').then(setUser).catch(() => setUser(null));
+    renderDemo();
+  </script>
+</body>
+</html>

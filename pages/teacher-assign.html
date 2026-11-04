@@ -1,0 +1,225 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f6f8fc">
+  <title>Назначение учителей — RoboCoins</title>
+  <style>
+    :root { color-scheme: light; --ink:#18233b; --muted:#748099; --line:#e6eaf2; --blue:#315efb; --blue-dark:#244bd5; --bg:#f6f8fc; --green:#16794d; --red:#b83a45; }
+    * { box-sizing:border-box; }
+    body { margin:0; min-height:100vh; color:var(--ink); background:var(--bg); font:15px/1.5 Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif; }
+    button,input { font:inherit; }
+    .topbar { height:72px; display:flex; align-items:center; justify-content:space-between; padding:0 max(24px,calc((100vw - 1160px)/2)); background:#fff; border-bottom:1px solid var(--line); }
+    .brand { display:flex; align-items:center; gap:11px; font-weight:800; letter-spacing:-.3px; }
+    .brand-mark { display:grid; place-items:center; width:36px; height:36px; border-radius:12px; background:#eaf0ff; color:var(--blue); font-size:20px; }
+    .top-actions { display:flex; align-items:center; gap:14px; }
+    .who { color:var(--muted); font-size:13px; }
+    main { width:min(100% - 40px,1120px); margin:42px auto 64px; }
+    .intro { display:flex; justify-content:space-between; align-items:end; gap:24px; margin-bottom:28px; }
+    .eyebrow { margin:0 0 8px; color:var(--blue); font-size:12px; font-weight:800; letter-spacing:1.2px; text-transform:uppercase; }
+    h1 { margin:0; font-size:clamp(28px,4vw,38px); line-height:1.15; letter-spacing:-1.2px; }
+    .intro-copy { max-width:590px; margin:10px 0 0; color:var(--muted); }
+    .toolbar { display:flex; gap:10px; align-items:center; }
+    .button { min-height:42px; padding:9px 15px; border:0; border-radius:11px; background:var(--blue); color:#fff; font-weight:700; cursor:pointer; transition:background .15s,transform .15s; }
+    .button:hover { background:var(--blue-dark); transform:translateY(-1px); }
+    .button:disabled { opacity:.55; cursor:wait; transform:none; }
+    .button.light { border:1px solid var(--line); background:#fff; color:var(--ink); }
+    .button.light:hover { background:#f8faff; }
+    .button.small { min-height:36px; padding:7px 12px; font-size:13px; }
+    .login-card,.panel { border:1px solid var(--line); border-radius:18px; background:#fff; box-shadow:0 8px 28px #25385a0a; }
+    .login-card { max-width:480px; margin:54px auto; padding:28px; }
+    h2 { margin:0; font-size:18px; letter-spacing:-.3px; }
+    .login-card p { color:var(--muted); }
+    label { display:block; margin:14px 0 7px; font-size:13px; font-weight:700; }
+    input[type=password],input[type=search] { width:100%; min-height:44px; padding:0 13px; border:1px solid #d8deea; border-radius:11px; outline:none; background:#fff; color:var(--ink); }
+    input:focus { border-color:var(--blue); box-shadow:0 0 0 3px #315efb1c; }
+    .login-row { display:grid; grid-template-columns:1fr auto; gap:10px; align-items:end; }
+    .login-row label { grid-column:1/-1; margin-bottom:-5px; }
+    .notice { display:flex; align-items:center; gap:14px; padding:16px 18px; margin-bottom:22px; border:1px solid #dfe7ff; border-radius:14px; background:linear-gradient(100deg,#f3f6ff,#fff); }
+    .notice-icon { display:grid; flex:none; place-items:center; width:38px; height:38px; border-radius:12px; background:#e5ecff; color:var(--blue); font-size:19px; }
+    .notice strong { display:block; font-size:14px; }
+    .notice span { color:var(--muted); font-size:13px; }
+    .stats { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-bottom:22px; }
+    .stat { padding:18px 20px; border:1px solid var(--line); border-radius:15px; background:#fff; }
+    .stat-label { color:var(--muted); font-size:13px; }
+    .stat-value { margin-top:4px; font-size:26px; font-weight:800; letter-spacing:-.8px; }
+    .panel-head { display:flex; justify-content:space-between; align-items:center; gap:16px; padding:20px 22px; border-bottom:1px solid var(--line); }
+    .panel-head p { margin:4px 0 0; color:var(--muted); font-size:13px; }
+    .search { width:min(100%,280px) !important; min-height:40px !important; background:#fafbfe !important; }
+    .group-list { display:grid; gap:12px; padding:18px; }
+    .group-card { padding:18px; border:1px solid var(--line); border-radius:14px; transition:border-color .15s,box-shadow .15s; }
+    .group-card:hover { border-color:#cfd8f2; box-shadow:0 4px 16px #25385a09; }
+    .group-top { display:flex; justify-content:space-between; gap:12px; align-items:start; }
+    .group-name { margin:0; font-size:16px; font-weight:750; }
+    .group-meta { display:flex; gap:8px; margin-top:5px; color:var(--muted); font-size:12px; }
+    .tag { display:inline-flex; align-items:center; padding:3px 8px; border-radius:999px; background:#f0f3f8; color:#59647a; font-size:11px; font-weight:700; }
+    .assigned-label { margin:16px 0 8px; color:var(--muted); font-size:12px; font-weight:700; }
+    .teacher-list { display:flex; flex-wrap:wrap; gap:8px; }
+    .teacher-chip { display:flex; align-items:center; gap:8px; min-height:38px; padding:7px 11px; border:1px solid var(--line); border-radius:10px; background:#fff; cursor:pointer; font-size:13px; transition:all .12s; }
+    .teacher-chip:hover { border-color:#b9c8ff; background:#f8faff; }
+    .teacher-chip.selected { border-color:#b8c7ff; background:#f0f4ff; color:#294fd2; }
+    .teacher-chip input { width:15px; height:15px; margin:0; accent-color:var(--blue); }
+    .avatar { display:grid; place-items:center; width:24px; height:24px; border-radius:8px; background:#e8edff; color:#315efb; font-size:11px; font-weight:800; }
+    .group-footer { display:flex; justify-content:space-between; align-items:center; gap:12px; margin-top:14px; padding-top:13px; border-top:1px solid #f0f2f6; }
+    .save-state { color:var(--muted); font-size:12px; }
+    .save-state.changed { color:#9a6500; }
+    .save-state.saved { color:var(--green); }
+    .empty { padding:46px 20px; color:var(--muted); text-align:center; }
+    .empty-icon { display:grid; place-items:center; width:48px; height:48px; margin:0 auto 12px; border-radius:15px; background:#f0f3f8; font-size:22px; }
+    .status { margin-top:12px; color:var(--muted); font-size:13px; }
+    .status.error { color:var(--red); }
+    .status.success { color:var(--green); }
+    [hidden] { display:none !important; }
+    @media(max-width:700px) { .topbar { height:62px; padding:0 16px; } main { width:calc(100% - 28px); margin:28px auto 44px; } .intro { align-items:start; flex-direction:column; } .toolbar { width:100%; } .toolbar .button { flex:1; } .stats { gap:8px; } .stat { padding:13px; } .stat-value { font-size:22px; } .stat-label { font-size:11px; } .panel-head { align-items:flex-start; flex-direction:column; padding:17px; } .search { width:100% !important; } .group-list { padding:12px; } .group-card { padding:14px; } .login-card { margin:35px auto; padding:22px; } }
+    @media(max-width:390px) { .login-row { grid-template-columns:1fr; } .login-row label { grid-column:auto; } }
+  </style>
+</head>
+<body>
+  <nav class="topbar" aria-label="Главная навигация">
+    <div class="brand"><span class="brand-mark">✦</span> RoboCoins</div>
+    <div class="top-actions"><span id="user-name" class="who"></span><button id="logout-button" class="button light small" type="button" hidden>Выйти</button></div>
+  </nav>
+  <main>
+    <header class="intro">
+      <div><p class="eyebrow">Управление школой</p><h1>Назначение учителей</h1><p class="intro-copy">Выберите, кто ведёт каждую группу. Для одной группы можно назначить до двух учителей.</p></div>
+      <div id="toolbar" class="toolbar" hidden><button id="refresh-button" class="button light" type="button">↻ &nbsp;Обновить</button></div>
+    </header>
+
+    <section id="login-card" class="login-card">
+      <h2>Войдите как учитель</h2><p>Введите код доступа, чтобы управлять назначениями.</p>
+      <form id="login-form" class="login-row"><label for="access-code">Код доступа</label><input id="access-code" type="password" autocomplete="one-time-code" required><button id="login-button" class="button" type="submit">Войти</button></form>
+      <div id="login-status" class="status" role="status" aria-live="polite"></div>
+    </section>
+
+    <section id="dashboard" hidden>
+      <div class="notice"><div class="notice-icon">✓</div><div><strong>Назначения сохраняются отдельно для каждой группы</strong><span>Отметьте одного или двух учителей и нажмите «Сохранить».</span></div></div>
+      <div class="stats" aria-label="Сводка">
+        <div class="stat"><div class="stat-label">Курсы</div><div id="course-count" class="stat-value">—</div></div>
+        <div class="stat"><div class="stat-label">Группы</div><div id="group-count" class="stat-value">—</div></div>
+        <div class="stat"><div class="stat-label">Учителя</div><div id="teacher-count" class="stat-value">—</div></div>
+      </div>
+      <section class="panel">
+        <div class="panel-head"><div><h2>Группы и учителя</h2><p>Изменения вступят в силу после сохранения.</p></div><input id="search" class="search" type="search" placeholder="Найти группу или курс…" aria-label="Поиск по группам"></div>
+        <div id="group-list" class="group-list" aria-live="polite"></div>
+      </section>
+      <div id="data-status" class="status" role="status" aria-live="polite"></div>
+    </section>
+  </main>
+  <script>
+    const isLocal = ['localhost', '127.0.0.1', '::1'].includes(location.hostname);
+    const apiBase = isLocal ? (location.port === '8000' ? '' : `${location.protocol}//${location.hostname}:8000`) : '/api';
+    const $ = (id) => document.getElementById(id);
+    const state = { user:null, teachers:[], courses:[], drafts:new Map(), saving:new Set() };
+
+    async function request(path, options = {}) {
+      const response = await fetch(`${apiBase}${path}`, { credentials:'include', ...options });
+      const raw = await response.text();
+      let body = null;
+      if (raw) { try { body = JSON.parse(raw); } catch { body = raw; } }
+      if (!response.ok) {
+        const detail = body && typeof body === 'object' && 'detail' in body ? body.detail : typeof body === 'string' ? body : response.statusText;
+        throw new Error(`Ошибка ${response.status}: ${detail}`);
+      }
+      return body;
+    }
+    function status(el, message, kind='') { el.textContent = message; el.className = `status${kind ? ` ${kind}` : ''}`; }
+    function initials(name) { return (name || '?').trim().split(/\s+/).slice(0,2).map(part => part[0] || '').join('').toLocaleUpperCase('ru'); }
+    function allGroups() { return state.courses.flatMap(course => (course.groups || []).map(group => ({...group, courseName:course.name, courseId:course.id}))); }
+    function currentTeacherIds(group) { return state.drafts.has(group.id) ? state.drafts.get(group.id) : (group.teacher_ids || []); }
+    function isChanged(group) {
+      const draft = state.drafts.get(group.id);
+      if (!draft) return false;
+      const original = [...(group.teacher_ids || [])].sort((a,b)=>a-b);
+      return JSON.stringify([...draft].sort((a,b)=>a-b)) !== JSON.stringify(original);
+    }
+    function render() {
+      const query = $('search').value.trim().toLocaleLowerCase('ru');
+      const groups = allGroups().filter(g => `${g.name} ${g.courseName}`.toLocaleLowerCase('ru').includes(query));
+      const list = $('group-list'); list.replaceChildren();
+      if (!groups.length) {
+        const empty = document.createElement('div'); empty.className='empty';
+        const icon=document.createElement('div'); icon.className='empty-icon'; icon.textContent=query?'⌕':'▤';
+        const title=document.createElement('strong'); title.textContent=query?'Ничего не найдено':'Групп пока нет';
+        const hint=document.createElement('div'); hint.textContent=query?'Измените запрос и попробуйте ещё раз.':'Создайте группы в курсах, чтобы назначить учителей.';
+        empty.append(icon,title,hint); list.append(empty); return;
+      }
+      for (const group of groups) {
+        const card=document.createElement('article'); card.className='group-card';
+        const top=document.createElement('div'); top.className='group-top';
+        const info=document.createElement('div');
+        const name=document.createElement('h3'); name.className='group-name'; name.textContent=group.name;
+        const meta=document.createElement('div'); meta.className='group-meta';
+        const course=document.createElement('span'); course.textContent=group.courseName;
+        const students=document.createElement('span'); students.className='tag'; students.textContent=`${group.students_count ?? (group.students||[]).length} учен.`;
+        meta.append(course,students); info.append(name,meta);
+        const groupTag=document.createElement('span'); groupTag.className='tag'; groupTag.textContent=`Группа #${group.id}`;
+        top.append(info,groupTag); card.append(top);
+        const assigned=document.createElement('div'); assigned.className='assigned-label'; assigned.textContent='Назначенные учителя'; card.append(assigned);
+        const teacherList=document.createElement('div'); teacherList.className='teacher-list';
+        const selected=currentTeacherIds(group);
+        for (const teacher of state.teachers) {
+          const label=document.createElement('label'); label.className=`teacher-chip${selected.includes(teacher.id)?' selected':''}`;
+          const checkbox=document.createElement('input'); checkbox.type='checkbox'; checkbox.checked=selected.includes(teacher.id); checkbox.disabled=state.saving.has(group.id); checkbox.setAttribute('aria-label',`Назначить ${teacher.name} в группу ${group.name}`);
+          checkbox.addEventListener('change',()=>{
+            const next=[...currentTeacherIds(group)];
+            if (checkbox.checked && next.length >= 2) { checkbox.checked=false; status($('data-status'),'Для одной группы можно выбрать не больше двух учителей.','error'); return; }
+            const updated=checkbox.checked ? [...next,teacher.id] : next.filter(id=>id!==teacher.id);
+            state.drafts.set(group.id,updated); status($('data-status'),''); render();
+          });
+          const avatar=document.createElement('span'); avatar.className='avatar'; avatar.textContent=initials(teacher.name);
+          const text=document.createElement('span'); text.textContent=teacher.name;
+          label.append(checkbox,avatar,text); teacherList.append(label);
+        }
+        if (!state.teachers.length) { const none=document.createElement('span'); none.className='tag'; none.textContent='В системе нет учителей'; teacherList.append(none); }
+        card.append(teacherList);
+        const footer=document.createElement('div'); footer.className='group-footer';
+        const saveState=document.createElement('span'); saveState.className=`save-state${isChanged(group)?' changed':''}`;
+        saveState.textContent=state.saving.has(group.id)?'Сохраняем…':isChanged(group)?'Есть несохранённые изменения':'✓ Сохранено';
+        const save=document.createElement('button'); save.className='button small'; save.type='button'; save.textContent='Сохранить'; save.disabled=!isChanged(group)||state.saving.has(group.id)||state.teachers.length===0;
+        save.addEventListener('click',()=>saveGroup(group)); footer.append(saveState,save); card.append(footer); list.append(card);
+      }
+    }
+    async function loadData() {
+      $('refresh-button').disabled=true; status($('data-status'),'Загружаем курсы и список учителей…');
+      try {
+        const [users,courses]=await Promise.all([request('/users'),request('/course')]);
+        state.teachers=users.filter(user=>user.role==='teacher'); state.courses=courses;
+        const groups=allGroups(); $('course-count').textContent=courses.length; $('group-count').textContent=groups.length; $('teacher-count').textContent=state.teachers.length;
+        state.drafts.clear(); render(); status($('data-status'),'Данные обновлены.','success');
+      } catch(error) { status($('data-status'),error.message,'error'); }
+      finally { $('refresh-button').disabled=false; }
+    }
+    async function saveGroup(group) {
+      state.saving.add(group.id); render(); status($('data-status'),'Сохраняем назначения…');
+      try {
+        const updated=await request(`/group/id/${group.id}/teachers`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({teacher_ids:currentTeacherIds(group)})});
+        for (const course of state.courses) { const index=(course.groups||[]).findIndex(item=>item.id===group.id); if(index>=0) course.groups[index]=updated; }
+        state.drafts.delete(group.id); status($('data-status'),`Назначения для группы «${group.name}» сохранены.`,'success');
+      } catch(error) { status($('data-status'),error.message,'error'); }
+      finally { state.saving.delete(group.id); render(); }
+    }
+    function signedIn(user) {
+      state.user=user; $('user-name').textContent=user.name; $('logout-button').hidden=false;
+      $('login-card').hidden=true; $('dashboard').hidden=false; $('toolbar').hidden=false; loadData();
+    }
+    $('login-form').addEventListener('submit',async event=>{
+      event.preventDefault(); $('login-button').disabled=true; status($('login-status'),'Проверяем код доступа…');
+      try {
+        await request('/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({code:$('access-code').value.trim()})});
+        const user=await request('/auth/me');
+        if(user.role!=='teacher') { await request('/auth/logout',{method:'POST'}); throw new Error('Войдите с кодом учителя.'); }
+        signedIn(user);
+      } catch(error) { status($('login-status'),error.message,'error'); }
+      finally { $('login-button').disabled=false; }
+    });
+    $('logout-button').addEventListener('click',async()=>{
+      try { await request('/auth/logout',{method:'POST'}); state.user=null; $('dashboard').hidden=true; $('toolbar').hidden=true; $('login-card').hidden=false; $('user-name').textContent=''; $('access-code').value=''; status($('login-status'),'Вы вышли из аккаунта.','success'); }
+      catch(error) { status($('data-status'),error.message,'error'); }
+    });
+    $('refresh-button').addEventListener('click',loadData);
+    $('search').addEventListener('input',render);
+    request('/auth/me').then(user=>{ if(user.role==='teacher') signedIn(user); }).catch(()=>{});
+  </script>
+</body>
+</html>

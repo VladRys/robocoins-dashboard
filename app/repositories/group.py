@@ -1,0 +1,163 @@
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
+
+from app.models.group import Group
+from app.models.student import Student
+from app.models.teacher import Teacher
+from app.schemas.group import GroupCreateRequest
+
+class GroupRepository:
+    def __init__(self, session: AsyncSession):
+        self.session = session
+
+    async def get_group_by_id(self, group_id: int) -> Group | None:
+        """Fetch a group by its ID."""
+        result = await self.session.execute(
+            select(Group)
+            .options(
+                selectinload(Group.students)
+                .selectinload(Student.groups)
+                .selectinload(Group.course)
+            )
+            .where(Group.id == group_id)
+        )
+        return result.scalar_one_or_none()
+    
+    async def create_group(self, group: GroupCreateRequest) -> Group:
+        """Create a new group record."""
+        db_group = Group(
+            name=group.name,
+            course_id=group.course_id,
+            teacher_1_id=group.teacher_ids[0] if group.teacher_ids else None,
+            teacher_2_id=group.teacher_ids[1] if len(group.teacher_ids) > 1 else None,
+        )
+        self.session.add(db_group)
+        await self.session.commit()
+        created_group = await self.get_group_by_id(db_group.id)
+        if created_group is None:
+            raise RuntimeError("Created group could not be loaded")
+        return created_group
+
+    async def get_existing_teacher_ids(self, teacher_ids: list[int]) -> set[int]:
+        if not teacher_ids:
+            return set()
+        result = await self.session.execute(
+            select(Teacher.user_id).where(Teacher.user_id.in_(teacher_ids))
+        )
+        return set(result.scalars().all())
+
+    async def is_teacher_assigned_to_group(
+        self,
+        group_id: int,
+        teacher_id: int,
+    ) -> bool:
+        result = await self.session.scalar(
+            select(Group.id)
+            .where(
+                Group.id == group_id,
+                (Group.teacher_1_id == teacher_id)
+                | (Group.teacher_2_id == teacher_id),
+            )
+            .limit(1)
+        )
+        return result is not None
+
+    async def assign_group_teachers(
+        self,
+        group_id: int,
+        teacher_ids: list[int],
+    ) -> Group | None:
+        group = await self.get_group_by_id(group_id)
+        if group is None:
+            return None
+        group.teacher_1_id = teacher_ids[0] if teacher_ids else None
+        group.teacher_2_id = teacher_ids[1] if len(teacher_ids) > 1 else None
+        await self.session.commit()
+        return group
+
+    async def assign_group_student(
+        self,
+        group_id: int,
+        student_id: int,
+    ) -> Group | None:
+        group = await self.get_group_by_id(group_id)
+        if group is None:
+            return None
+        student = await self.session.get(Student, student_id)
+        if student is None:
+            raise ValueError("Student was not found")
+        if all(existing.id != student_id for existing in group.students):
+            group.students.append(student)
+        await self.session.commit()
+        return await self.get_group_by_id(group_id)
+
+    async def remove_group_student(
+        self,
+        group_id: int,
+        student_id: int,
+    ) -> Group | None:
+        group = await self.get_group_by_id(group_id)
+        if group is None:
+            return None
+        student = await self.session.get(Student, student_id)
+        if student is None:
+            raise ValueError("Student was not found")
+        if any(existing.id == student_id for existing in group.students):
+            group.students.remove(student)
+            await self.session.commit()
+        return await self.get_group_by_id(group_id)
+
+    async def get_groups_by_course_id(self, course_id: int) -> list[Group]:
+        """Fetch all groups associated with a specific course ID."""
+        result = await self.session.execute(
+            select(Group)
+            .options(
+                selectinload(Group.students)
+                .selectinload(Student.groups)
+                .selectinload(Group.course)
+            )
+            .where(Group.course_id == course_id)
+        )
+        return result.scalars().all()
+
+    async def get_groups_by_teacher_and_course(
+        self,
+        teacher_id: int,
+        course_id: int,
+    ) -> list[Group]:
+        result = await self.session.execute(
+            select(Group)
+            .options(selectinload(Group.students))
+            .where(
+                Group.course_id == course_id,
+                (Group.teacher_1_id == teacher_id)
+                | (Group.teacher_2_id == teacher_id),
+            )
+            .order_by(Group.id)
+        )
+        return list(result.scalars().all())
+
+    async def get_groups_by_teacher(self, teacher_id: int) -> list[Group]:
+        result = await self.session.execute(
+            select(Group)
+            .options(selectinload(Group.students))
+            .where(
+                (Group.teacher_1_id == teacher_id)
+                | (Group.teacher_2_id == teacher_id),
+            )
+        )
+        return list(result.scalars().all())
+    
+    async def get_group_by_name(self, name: str) -> Group | None:
+        """Fetch a group by its name."""
+        result = await self.session.execute(
+            select(Group)
+            .options(
+                selectinload(Group.students)
+                .selectinload(Student.groups)
+                .selectinload(Group.course)
+            )
+            .where(Group.name == name)
+        )
+        return result.scalar_one_or_none()
