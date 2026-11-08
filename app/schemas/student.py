@@ -24,6 +24,7 @@ class StudentResponse(APIResponse):
     course_names: list[str]
     group_ids: list[int]
     avatar: str | None = None
+    avatar_ring: str | None = None
     balance: float
     hash_access_key: str
 
@@ -45,6 +46,7 @@ class StudentProfileResponse(APIResponse):
     course_names: list[str]
     group_ids: list[int]
     avatar: str | None = None
+    avatar_ring: str | None = None
     balance: float
     current_goal: str | None = None
 
@@ -66,6 +68,7 @@ class StudentProfileResponse(APIResponse):
                 group.course.name for group in value.groups
             )),
             "avatar": value.avatar,
+            "avatar_ring": value.avatar_ring,
             "balance": value.balance,
             "current_goal": getattr(value, "current_goal", None),
         }

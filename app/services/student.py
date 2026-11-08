@@ -75,3 +75,8 @@ class StudentService:
     async def update_student_access_code(self, student_id: int) -> Student | None:
         new_access_code = await self.generate_unique_access_code()
         return await self.repository.update_access_code(student_id, new_access_code)
+
+    async def update_student_avatar_ring(
+        self, student_id: int, avatar_ring: str
+    ) -> Student | None:
+        return await self.repository.update_avatar_ring(student_id, avatar_ring)

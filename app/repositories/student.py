@@ -239,3 +239,11 @@ class StudentRepository:
         student.groups = groups
         await self.session.commit()
         return await self.get_student_by_id(student_id)
+
+    async def update_avatar_ring(self, student_id: int, avatar_ring: str) -> Student | None:
+        student = await self.session.get(Student, student_id)
+        if student is None:
+            return None
+        student.avatar_ring = avatar_ring
+        await self.session.commit()
+        return await self.get_student_by_id(student_id)

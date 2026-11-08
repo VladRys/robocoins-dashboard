@@ -37,6 +37,7 @@ student_router = APIRouter(
     tags=["students"],
 )
 
+
 @student_router.patch("/{student_id}/change-goal", response_model=StudentGoalChangeResponse)
 async def change_goal(
     student_id: int,
@@ -285,6 +286,30 @@ async def edit_student_nickname(
     if updated_student is None:
         raise HTTPException(status_code=404, detail=HttpErrorMessage.STUDENT_NOT_FOUND)
     return StudentProfileResponse.model_validate(updated_student)
+
+@student_router.patch("/{student_id}/avatar-ring", response_model=StudentProfileResponse)
+async def edit_student_avatar_ring(
+    student_id: int,
+    request: StudentAvatarEditRequest,
+    service: StudentService = Depends(get_student_service),
+    user: User = Depends(get_authenticated_user),
+    authorization: AuthorizationService = Depends(get_authorization_service),
+) -> StudentProfileResponse:
+    student = await service.get_student_by_id(student_id)
+    if student is None:
+        raise HTTPException(status_code=404, detail=HttpErrorMessage.STUDENT_NOT_FOUND)
+
+    can_edit_avatar_ring = await authorization.is_allowed(
+        AuthorizationAction.EDIT_STUDENT_AVATAR, user, student_id
+    )
+    if not can_edit_avatar_ring:
+        raise HTTPException(status_code=403, detail="You cannot change this student's avatar ring")
+
+    updated_student = await service.update_student_avatar_ring(student_id, request.new_avatar)
+    if updated_student is None:
+        raise HTTPException(status_code=404, detail=HttpErrorMessage.STUDENT_NOT_FOUND)
+    return StudentProfileResponse.model_validate(updated_student)
+
 
 @student_router.get("/{student_id}/credentials", response_model = StudentCredentialsResponse)
 async def show_student_credentials(

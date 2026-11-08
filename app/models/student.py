@@ -45,6 +45,7 @@ class Student(Base):
         cascade="all, delete-orphan",
     )
     avatar: Mapped[str | None] = mapped_column(String, nullable=True)
+    avatar_ring: Mapped[str | None] = mapped_column(String, nullable=True)
     balance: Mapped[float] = mapped_column(Float, nullable=False, default=0.0)
     hash_access_key: Mapped[str] = mapped_column(String, nullable=False, unique=True)
 
@@ -55,3 +56,4 @@ class Student(Base):
         back_populates="student", cascade="all, delete-orphan"
     )
     current_goal: Mapped[str | None] = mapped_column(String, nullable=True)
+    
