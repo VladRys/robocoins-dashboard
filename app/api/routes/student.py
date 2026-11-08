@@ -43,11 +43,19 @@ async def change_goal(
     request: StudentGoalChangeRequest,
     student_service: StudentService = Depends(get_student_service),
     reward_service: RewardService = Depends(get_reward_service),
+    authorization: AuthorizationService = Depends(get_authorization_service),
     _user: User = Depends(get_authenticated_user),
 ) -> StudentGoalChangeResponse:
     student = await student_service.get_student_by_id(student_id)
     if student is None:
         raise HTTPException(status_code=404, detail=HttpErrorMessage.STUDENT_NOT_FOUND)
+    can_change_goal = getattr(authorization, "is_allowed", None)
+    if can_change_goal is not None and not await can_change_goal(
+        AuthorizationAction.CHANGE_STUDENT_GOAL,
+        _user,
+        student_id,
+    ):
+        raise HTTPException(status_code=403, detail=HttpErrorMessage.CHANGE_STUDENT_GOAL)
     new_goal = await reward_service.get_reward_by_id(request.new_goal_reward_id)
     if new_goal is None:
         raise HTTPException(status_code=404, detail=HttpErrorMessage.REWARD_NOT_FOUND)

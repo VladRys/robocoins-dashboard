@@ -23,6 +23,16 @@ class GroupRepository:
             .where(Group.id == group_id)
         )
         return result.scalar_one_or_none()
+
+    async def get_group_student_ids(self, group_id: int) -> list[int]:
+        from app.models.group import student_groups
+
+        result = await self.session.scalars(
+            select(student_groups.c.student_id)
+            .where(student_groups.c.group_id == group_id)
+            .order_by(student_groups.c.student_id)
+        )
+        return list(result.all())
     
     async def create_group(self, group: GroupCreateRequest) -> Group:
         """Create a new group record."""

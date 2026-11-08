@@ -5,6 +5,7 @@ from app.core.database import get_db
 from app.core.enums import AuthorizationAction, HttpErrorMessage
 from app.models.user import User
 from app.repositories.course import CourseRepository
+from app.repositories.daily_task import DailyTaskRepository
 from app.repositories.group import GroupRepository
 from app.repositories.reward import RewardRepository
 from app.repositories.session import SessionRepository
@@ -49,7 +50,12 @@ async def get_reward_service(db: AsyncSession = Depends(get_db)) -> RewardServic
 
 
 def get_balance_service(db: AsyncSession = Depends(get_db)) -> BalanceService:
-    return BalanceService(db, StudentRepository(db), TransactionRepository(db))
+    return BalanceService(
+        db,
+        StudentRepository(db),
+        TransactionRepository(db),
+        GroupRepository(db),
+    )
 
 
 def get_streak_service(db: AsyncSession = Depends(get_db)) -> StreakService:
@@ -57,7 +63,7 @@ def get_streak_service(db: AsyncSession = Depends(get_db)) -> StreakService:
 
 
 def get_daily_task_service(db: AsyncSession = Depends(get_db)) -> DailyTaskService:
-    return DailyTaskService(db)
+    return DailyTaskService(DailyTaskRepository(db))
 
 
 async def get_authenticated_user(

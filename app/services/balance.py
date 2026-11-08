@@ -1,9 +1,8 @@
 from datetime import datetime, timezone
 
-from sqlalchemy.ext.asyncio import AsyncSession
-
 from app.core.enums import BalanceChangeReasons
 from app.models.group import Group
+from app.repositories.group import GroupRepository
 from app.models.transaction import BalanceTransaction
 from app.repositories.student import StudentRepository
 from app.repositories.transaction import TransactionRepository
@@ -28,13 +27,16 @@ class InsufficientBalanceToCancelError(Exception):
 class BalanceService:
     def __init__(
         self,
-        session: AsyncSession,
+        session,
         student_repository: StudentRepository,
         transaction_repository: TransactionRepository,
+        group_repository: GroupRepository | None = None,
     ):
-        self.session = session
         self.student_repository = student_repository
         self.transaction_repository = transaction_repository
+        self.group_repository = group_repository or GroupRepository(
+            student_repository.session
+        )
 
     async def get_balance(self, student_id: int) -> float:
         student = await self.student_repository.get_student_by_id(student_id)
@@ -62,31 +64,18 @@ class BalanceService:
             reason=[reason.value for reason in change.reason],
         )
         await self.transaction_repository.create(transaction)
-        await self.session.commit()
+        await self.transaction_repository.commit()
         return balance, transaction
 
     async def award_group_practice_completed(
         self, group_id: int
     ) -> tuple[Group, list[tuple[float, BalanceTransaction]]] | None:
         """Award one practice-completed coin to every current group member."""
-        from sqlalchemy import select
-
-        from app.models.student import Student
-        from app.models.group import student_groups
-
-        group = await self.session.get(Group, group_id)
+        group = await self.group_repository.get_group_by_id(group_id)
         if group is None:
             return None
 
-        student_ids = list(
-            (
-                await self.session.scalars(
-                    select(student_groups.c.student_id)
-                    .where(student_groups.c.group_id == group_id)
-                    .order_by(student_groups.c.student_id)
-                )
-            ).all()
-        )
+        student_ids = await self.group_repository.get_group_student_ids(group_id)
         results: list[tuple[float, BalanceTransaction]] = []
         for student_id in student_ids:
             balance = await self.student_repository.change_balance(student_id, 1.0)
@@ -101,7 +90,7 @@ class BalanceService:
             await self.transaction_repository.create(transaction)
             results.append((balance, transaction))
 
-        await self.session.commit()
+        await self.transaction_repository.commit()
         return group, results
 
     async def get_history(
@@ -138,7 +127,7 @@ class BalanceService:
 
         transaction.cancelled_at = datetime.now(timezone.utc)
         transaction.cancelled_by_user_id = cancelled_by_user_id
-        await self.session.commit()
+        await self.transaction_repository.commit()
         return balance, transaction
 
 

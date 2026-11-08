@@ -1,11 +1,8 @@
-from sqlalchemy.ext.asyncio import AsyncSession
-
 from app.repositories.group import GroupRepository
 from app.schemas.group import GroupCreateRequest
 
 class GroupService:
-    def __init__(self, db: AsyncSession, repository: GroupRepository):
-        self.db = db
+    def __init__(self, db, repository: GroupRepository):
         self.repository = repository
 
     async def get_group_by_id(self, group_id: int):

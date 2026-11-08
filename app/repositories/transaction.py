@@ -8,6 +8,9 @@ class TransactionRepository:
     def __init__(self, session: AsyncSession):
         self.session = session
 
+    async def commit(self) -> None:
+        await self.session.commit()
+
     async def create(self, transaction: BalanceTransaction) -> BalanceTransaction:
         self.session.add(transaction)
         await self.session.flush()

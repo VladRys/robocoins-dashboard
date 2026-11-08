@@ -34,6 +34,7 @@ class HttpErrorMessage(str, Enum):
     SOMETHING_WENT_WRONG = "Something went wrong"
     FORBIDDEN = "Forbidden"
     REWARD_NOT_FOUND = "Reward not found"
+    CHANGE_STUDENT_GOAL = "Only student's teacher or admin can change student's goal"
 
 
 class StatusEnum(str, Enum):
@@ -62,6 +63,7 @@ class AuthorizationAction(StrEnum):
     REMOVE_STUDENT_FROM_GROUP = "remove_student_from_group"
     SHOW_STUDENT_CREDENTIALS = "show_student_credentials"
     TEACHER_AND_ADMIN_OPERATION = "teacher_and_admin_operation"
+    CHANGE_STUDENT_GOAL = "change_student_goal"
 
 
 class CourseCategory(StrEnum):
