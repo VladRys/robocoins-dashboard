@@ -25,6 +25,7 @@ All accounts use `POST /auth/login` with `{"code":"..."}`. Successful login sets
 Set a unique `ADMIN_PASSWORD` per environment. When it is not configured, the server generates a 12-character password at startup and writes it to the application log. The administrator account is created the first time that password successfully logs in. Keep the password and logs private.
 
 The admin testing page is available at `/admin`.
+The student dashboard test page is available at `/student-dashboard`.
 
 ## API overview
 

@@ -1,6 +1,7 @@
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 from app.core.enums import UserRole
 from app.schemas.base import APIResponse
+from app.schemas.reward import RewardResponse
 
 class StudentCreateRequest(BaseModel):
     name: str
@@ -29,6 +30,12 @@ class StudentResponse(APIResponse):
     # Access code - keyword for auth.
     access_code: str
 
+class StudentGoalChangeResponse(APIResponse):
+    new_goal: RewardResponse
+
+class StudentGoalChangeRequest(BaseModel):
+    new_goal_reward_id: int
+
 class StudentProfileResponse(APIResponse):
     model_config = ConfigDict(from_attributes=True)
     id: int
@@ -39,6 +46,7 @@ class StudentProfileResponse(APIResponse):
     group_ids: list[int]
     avatar: str | None = None
     balance: float
+    current_goal: str | None = None
 
     @model_validator(mode="before")
     @classmethod
@@ -59,6 +67,7 @@ class StudentProfileResponse(APIResponse):
             )),
             "avatar": value.avatar,
             "balance": value.balance,
+            "current_goal": getattr(value, "current_goal", None),
         }
 
 

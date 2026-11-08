@@ -9,18 +9,56 @@ from fastapi import HTTPException
 from sqlalchemy.engine import URL
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
-from app.api.routes.student import get_student_by_id as get_student_endpoint
+from app.api.routes.student import (
+    change_goal as change_goal_endpoint,
+    get_student_by_id as get_student_endpoint,
+)
 from app.core.database import Base
 from app.core.enums import HttpErrorMessage
 from app.models.course import Course
 from app.models.group import Group
 from app.models.user import User
 from app.repositories.student import StudentRepository
-from app.schemas.student import StudentCreateRequest
+from app.schemas.student import StudentCreateRequest, StudentGoalChangeRequest
 from app.services.student import StudentService
 from tests.conftest import student_with_groups
 
 logger = logging.getLogger(__name__)
+
+
+def test_change_goal_endpoint_saves_selected_reward_name():
+    student = SimpleNamespace(id=123456)
+    reward = SimpleNamespace(
+        id=987,
+        name="Новая цель",
+        price=100,
+        description=None,
+        type="reward",
+        course_category=None,
+    )
+    student_service = SimpleNamespace(
+        get_student_by_id=AsyncMock(return_value=student),
+        change_student_goal=AsyncMock(return_value=student),
+    )
+    reward_service = SimpleNamespace(
+        get_reward_by_id=AsyncMock(return_value=reward),
+    )
+
+    response = asyncio.run(
+        change_goal_endpoint(
+            123456,
+            StudentGoalChangeRequest(new_goal_reward_id=987),
+            student_service,
+            reward_service,
+            SimpleNamespace(),
+        )
+    )
+
+    assert response.new_goal.id == 987
+    student_service.change_student_goal.assert_awaited_once_with(
+        123456,
+        "Новая цель",
+    )
 
 
 def test_get_student_by_id_returns_student():
@@ -30,6 +68,7 @@ def test_get_student_by_id_returns_student():
         name="Макс",
         avatar="🐯",
     )
+    student.current_goal = "Новая цель"
     service = SimpleNamespace(
         get_student_by_id=AsyncMock(return_value=student)
     )
@@ -44,6 +83,7 @@ def test_get_student_by_id_returns_student():
     assert response.group_ids == [1]
     assert response.avatar == "🐯"
     assert response.balance == 0.0
+    assert response.current_goal == "Новая цель"
     assert not hasattr(response, "hash_access_key")
     service.get_student_by_id.assert_awaited_once_with(123456)
     logger.info("Student id=%s returned the expected response", response.id)
@@ -79,10 +119,7 @@ def test_create_student_generates_unique_hash(tmp_path: Path):
                 await connection.run_sync(Base.metadata.create_all)
 
             async with session_factory() as session:
-                service = StudentService(
-                    db=session,
-                    repository=StudentRepository(session),
-                )
+                service = StudentService(repository=StudentRepository(session))
                 course = Course(name="Python")
                 session.add(course)
                 await session.flush()
@@ -108,6 +145,12 @@ def test_create_student_generates_unique_hash(tmp_path: Path):
                 logger.info("Created second student id=%s", second_student.id)
 
                 first_student_id = first_student.id
+                updated_student = await service.change_student_goal(
+                    first_student_id,
+                    "Python course",
+                )
+                assert updated_student is not None
+                assert updated_student.current_goal == "Python course"
 
             async with session_factory() as verification_session:
                 saved_student = await StudentRepository(
@@ -117,6 +160,7 @@ def test_create_student_generates_unique_hash(tmp_path: Path):
                 assert saved_student.name == "Макс"
                 assert saved_student.avatar == "🐯"
                 assert saved_student.balance == 0.0
+                assert saved_student.current_goal == "Python course"
                 assert [group.id for group in saved_student.groups] == [1]
                 saved_user = await verification_session.get(User, saved_student.user_id)
                 assert saved_user is not None

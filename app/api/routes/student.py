@@ -5,15 +5,19 @@ from app.api.dependencies import (
     get_authenticated_user,
     get_authenticated_teacher,
     get_authorization_service,
+    get_reward_service,
     get_streak_service,
     get_student_service,
 )
 from app.api.errors import validation_error_message
 from app.core.enums import AuthorizationAction, HttpErrorMessage, StatusEnum
 from app.models.user import User
+from app.schemas.reward import RewardResponse
 from app.schemas.student import (
     StudentAvatarEditRequest,
     StudentCreateRequest,
+    StudentGoalChangeRequest,
+    StudentGoalChangeResponse,
     StudentNicknameEditRequest,
     StudentProfileResponse,
     StudentResponse,
@@ -23,6 +27,7 @@ from app.schemas.student import (
 )
 from app.schemas.auth import StudentCredentialsResponse
 from app.services.authorization import AuthorizationService
+from app.services.reward import RewardService
 from app.services.student import StudentService
 from app.services.streak import StreakService
 from app.schemas.streak import StreakResponse, LongestStreakResponse, StreakDaysUpdate
@@ -32,6 +37,24 @@ student_router = APIRouter(
     tags=["students"],
 )
 
+@student_router.patch("/{student_id}/change-goal", response_model=StudentGoalChangeResponse)
+async def change_goal(
+    student_id: int,
+    request: StudentGoalChangeRequest,
+    student_service: StudentService = Depends(get_student_service),
+    reward_service: RewardService = Depends(get_reward_service),
+    _user: User = Depends(get_authenticated_user),
+) -> StudentGoalChangeResponse:
+    student = await student_service.get_student_by_id(student_id)
+    if student is None:
+        raise HTTPException(status_code=404, detail=HttpErrorMessage.STUDENT_NOT_FOUND)
+    new_goal = await reward_service.get_reward_by_id(request.new_goal_reward_id)
+    if new_goal is None:
+        raise HTTPException(status_code=404, detail=HttpErrorMessage.REWARD_NOT_FOUND)
+    updated_student = await student_service.change_student_goal(student_id, new_goal.name)
+    if updated_student is None:
+        raise HTTPException(status_code=404, detail=HttpErrorMessage.STUDENT_NOT_FOUND)
+    return StudentGoalChangeResponse(new_goal=RewardResponse.model_validate(new_goal))
 
 @student_router.get("/{student_id}/streak", response_model=StreakResponse)
 async def get_student_streak(

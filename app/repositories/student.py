@@ -2,6 +2,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import case, func, or_, select, update
 from sqlalchemy.orm import selectinload
 
+from app.core.enums import UserRole
 from app.models.student import Student
 from app.models.group import Group, student_groups
 from app.models.user import User
@@ -97,6 +98,19 @@ class StudentRepository:
         await self.session.commit()
         return await self.get_student_by_id(student_id)
 
+    async def change_student_goal(self, student_id: int, goal: str) -> Student | None:
+        result = await self.session.execute(
+            update(Student)
+            .where(Student.id == student_id)
+            .values(current_goal=goal)
+            .returning(Student.id)
+        )
+        updated_id = result.scalar_one_or_none()
+        if updated_id is None:
+            return None
+        await self.session.commit()
+        return await self.get_student_by_id(updated_id)
+
     async def update_access_code(self, student_id: int, new_access_code: str) -> Student | None:
         student = await self.session.get(Student, student_id)
         if student is None:
@@ -160,8 +174,49 @@ class StudentRepository:
         )
         return result.scalar_one_or_none()
     
-    async def create_student(self, student: Student) -> Student:
-        """Create a new student record."""
+    async def has_access_code(self, access_code: str) -> bool:
+        result = await self.session.scalar(
+            select(User.id).where(User.access_code == access_code)
+        )
+        return result is not None
+
+    async def create_student(
+        self,
+        *,
+        name: str,
+        avatar: str,
+        group_ids: list[int],
+        access_code: str,
+        hash_access_key: str,
+    ) -> Student:
+        """Create a student and its associated user record."""
+        result = await self.session.execute(
+            select(Group)
+            .options(selectinload(Group.course))
+            .where(Group.id.in_(group_ids))
+        )
+        groups = list(result.scalars().all())
+        if len(groups) != len(group_ids):
+            raise ValueError("One or more groups were not found")
+
+        user = User(
+            name=name,
+            role=UserRole.STUDENT.value,
+            access_code=access_code,
+        )
+        self.session.add(user)
+        await self.session.flush()
+
+        student = Student(
+            id=user.id,
+            user_id=user.id,
+            name=name,
+            avatar=avatar,
+            balance=0.0,
+            groups=groups,
+            hash_access_key=hash_access_key,
+            access_code=access_code,
+        )
         self.session.add(student)
         await self.session.commit()
         # Reload relationships explicitly before the API builds its response.

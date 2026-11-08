@@ -93,7 +93,7 @@ def test_authorization_policies_and_scoped_avatar_and_group_actions(tmp_path: Pa
                 session.add_all([teacher_group, other_group])
                 await session.commit()
 
-                student_service = StudentService(session, StudentRepository(session))
+                student_service = StudentService(StudentRepository(session))
                 group_service = GroupService(session, GroupRepository(session))
                 authorization = AuthorizationService(student_service, group_service)
 

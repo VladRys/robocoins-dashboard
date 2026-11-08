@@ -32,6 +32,8 @@ class HttpErrorMessage(str, Enum):
     COURSE_ALREADY_EXISTS = "A course with this name already exists"
     COURSE_CREATION_FAILED = "Course creation failed"
     SOMETHING_WENT_WRONG = "Something went wrong"
+    FORBIDDEN = "Forbidden"
+    REWARD_NOT_FOUND = "Reward not found"
 
 
 class StatusEnum(str, Enum):
@@ -59,6 +61,7 @@ class AuthorizationAction(StrEnum):
     ASSIGN_STUDENT_TO_GROUP = "assign_student_to_group"
     REMOVE_STUDENT_FROM_GROUP = "remove_student_from_group"
     SHOW_STUDENT_CREDENTIALS = "show_student_credentials"
+    TEACHER_AND_ADMIN_OPERATION = "teacher_and_admin_operation"
 
 
 class CourseCategory(StrEnum):

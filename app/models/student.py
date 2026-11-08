@@ -51,7 +51,7 @@ class Student(Base):
     # Access code - keyword for auth.
     access_code: Mapped[str] = mapped_column(String, nullable=False, unique=True)
 
-    # TODO: Add achievements and streak system
     current_streak: Mapped[list["Streak"]] = relationship(
         back_populates="student", cascade="all, delete-orphan"
     )
+    current_goal: Mapped[str | None] = mapped_column(String, nullable=True)

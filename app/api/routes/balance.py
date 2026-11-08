@@ -1,14 +1,17 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from app.schemas.reward import RewardProgressResponse, RewardResponse
+from app.services import authorization
+from app.services.authorization import AuthorizationService
 from app.services.reward import RewardService
 
 from app.api.dependencies import (
     get_authenticated_teacher,
     get_authenticated_user,
+    get_authorization_service,
     get_balance_service,
     get_reward_service,
 )
-from app.core.enums import HttpErrorMessage, BalanceChangeReasons
+from app.core.enums import AuthorizationAction, HttpErrorMessage, BalanceChangeReasons
 from app.models.user import User
 from app.schemas.balance import (
     BalanceChangeRequest,
@@ -83,9 +86,13 @@ async def change_student_balance(
     student_id: int,
     change: BalanceChangeRequest,
     service: BalanceService = Depends(get_balance_service),
-    _user: User = Depends(get_authenticated_teacher),
+    authorization: AuthorizationService = Depends(get_authorization_service),
+    _user: User = Depends(get_authenticated_user),
 ) -> BalanceChangeResponse:
     try:
+        if not await authorization.is_allowed(AuthorizationAction.TEACHER_AND_ADMIN_OPERATION, _user, subject_id=student_id):
+            raise HTTPException(status_code=403, detail=HttpErrorMessage.FORBIDDEN) from None
+        
         balance, transaction = await service.change_balance(student_id, change)
     except StudentNotFoundError:
         raise HTTPException(status_code=404, detail=HttpErrorMessage.STUDENT_NOT_FOUND) from None
@@ -102,12 +109,16 @@ async def change_student_balance(
 async def cancel_student_transaction(
     transaction_id: int,
     service: BalanceService = Depends(get_balance_service),
-    teacher: User = Depends(get_authenticated_teacher),
+    _user: User = Depends(get_authenticated_user),
+    authorization: AuthorizationService = Depends(get_authorization_service),
 ) -> BalanceChangeResponse:
     try:
+        if not await authorization.is_allowed(AuthorizationAction.TEACHER_AND_ADMIN_OPERATION, _user):
+            raise HTTPException(status_code=403, detail=HttpErrorMessage.FORBIDDEN) from None
+        
         balance, transaction = await service.cancel_transaction(
             transaction_id,
-            cancelled_by_user_id=teacher.id,
+            cancelled_by_user_id=_user.id,
         )
     except TransactionNotFoundError:
         raise HTTPException(

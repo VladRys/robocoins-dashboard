@@ -1,22 +1,14 @@
 
 import uuid
 
-from sqlalchemy import select
-from sqlalchemy.orm import selectinload
-from sqlalchemy.ext.asyncio import AsyncSession
-
 from app.core.access_code import generate_access_code
 from app.models.student import Student
-from app.models.group import Group
-from app.models.user import User
 from app.repositories.student import StudentRepository
 from app.schemas.student import StudentCreateRequest
-from app.core.enums import UserRole
 
 
 class StudentService:
-    def __init__(self, db: AsyncSession, repository: StudentRepository):
-        self.db = db
+    def __init__(self, repository: StudentRepository):
         self.repository = repository
 
     @staticmethod
@@ -32,39 +24,18 @@ class StudentService:
         """Generate a unique access code."""
         while True:
             new_code = self.generate_access_code()
-            existing_user = await self.db.scalar(
-                select(User.id).where(User.access_code == new_code)
-            )
-            if existing_user is None:
+            if not await self.repository.has_access_code(new_code):
                 return new_code
 
     async def create_student(self, student: StudentCreateRequest) -> Student:
         access_code = await self.generate_unique_access_code()
-        user = User(
-            name=student.name,
-            role=UserRole.STUDENT.value,
-            access_code=access_code,
-        )
-        self.db.add(user)
-        await self.db.flush()
-        groups = list((await self.db.scalars(
-            select(Group)
-            .options(selectinload(Group.course))
-            .where(Group.id.in_(student.group_ids))
-        )).all())
-        if len(groups) != len(student.group_ids):
-            raise ValueError("One or more groups were not found")
-        new_student = Student(
-            id=user.id,
-            user_id=user.id,
+        return await self.repository.create_student(
             name=student.name,
             avatar=student.avatar,
-            balance=0.0,
-            groups=groups,
-            hash_access_key=self.generate_hash_access_key(),
+            group_ids=student.group_ids,
             access_code=access_code,
+            hash_access_key=self.generate_hash_access_key(),
         )
-        return await self.repository.create_student(new_student)
 
     async def get_student_by_id(self, student_id: int) -> Student | None:
         return await self.repository.get_student_by_id(student_id)
@@ -95,10 +66,12 @@ class StudentService:
     async def update_nickname(self, student_id: int, nickname: str) -> Student | None:
         return await self.repository.update_nickname(student_id, nickname)
 
+    async def change_student_goal(self, student_id: int, goal: str) -> Student | None:
+        return await self.repository.change_student_goal(student_id, goal)
+
     async def get_student_by_access_code(self, access_code: str) -> Student | None:
         return await self.repository.get_student_by_access_code(access_code)
 
     async def update_student_access_code(self, student_id: int) -> Student | None:
         new_access_code = await self.generate_unique_access_code()
         return await self.repository.update_access_code(student_id, new_access_code)
-

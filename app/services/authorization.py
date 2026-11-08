@@ -82,6 +82,10 @@ class AuthorizationService:
         )
         self._policies: dict[AuthorizationAction, AuthorizationPolicy] = {
             AuthorizationAction.ADMINISTRATOR_OPERATION: RolePolicy(UserRole.ADMIN),
+            AuthorizationAction.TEACHER_AND_ADMIN_OPERATION: AnyPolicy(
+                RolePolicy(UserRole.TEACHER),
+                RolePolicy(UserRole.ADMIN)
+            ),
             AuthorizationAction.TEACHER_OPERATION: RolePolicy(UserRole.TEACHER),
             AuthorizationAction.VIEW_STUDENT_CREDENTIALS: OwnStudentResourcePolicy(),
             AuthorizationAction.ACCESS_DAILY_TASK: OwnStudentResourcePolicy(),

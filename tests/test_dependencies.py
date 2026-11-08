@@ -27,7 +27,7 @@ def test_service_dependencies_build_services_from_the_supplied_session():
         assert isinstance(get_user_service(db), UserService)
         student_service = await get_student_service(db)
         assert isinstance(student_service, StudentService)
-        assert student_service.db is db
+        assert student_service.repository.session is db
 
         session_service = get_session_service(db)
         assert isinstance(session_service, SessionService)

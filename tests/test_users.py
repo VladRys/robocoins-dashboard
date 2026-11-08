@@ -73,6 +73,7 @@ def test_auth_me_returns_user_profile_fields():
             hash_access_key="hash",
             access_code="CODE1234",
         )
+        student.current_goal = "Награда"
 
         class ActiveSession:
             user_id = student.user_id
@@ -99,6 +100,7 @@ def test_auth_me_returns_user_profile_fields():
 
         assert profile.user_id == profile.id == student.user_id
         assert profile.role == "student"
+        assert profile.current_goal == "Награда"
         assert profile.model_dump(mode="json")["user_id"] == profile.id
         student_service.get_student_by_id.assert_awaited_once_with(student.id)
         user_service.get_user_by_id.assert_awaited_once_with(student.user_id)
@@ -184,7 +186,6 @@ def test_student_and_teacher_registration_and_group_assignments(tmp_path: Path):
                     ]
 
                 student_service = StudentService(
-                    session,
                     StudentRepository(session),
                 )
                 student_response = await create_student(

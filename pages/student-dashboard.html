@@ -1,0 +1,925 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f3f6fb">
+  <meta name="referrer" content="no-referrer">
+  <title>RoboCoins — кабинет ученика</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --blue: #1769ff;
+      --blue-dark: #0d55d9;
+      --ink: #172033;
+      --muted: #637089;
+      --line: #e1e7f0;
+      --bg: #f3f6fb;
+      --green: #067647;
+      --red: #b42318;
+      --gold: #f3a712;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: radial-gradient(circle at 12% 0, #1769ff13, transparent 30%), var(--bg);
+      color: var(--ink);
+      font: 15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif;
+    }
+    button, input, select { font: inherit; }
+    button { cursor: pointer; }
+    button:disabled { cursor: wait; opacity: .55; }
+    [hidden] { display: none !important; }
+    .topbar {
+      min-height: 66px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 10px max(18px, calc((100vw - 1120px) / 2));
+      background: #ffffffeb;
+      border-bottom: 1px solid var(--line);
+    }
+    .brand { display: flex; align-items: center; gap: 10px; font-weight: 850; }
+    .brand-mark {
+      display: grid;
+      place-items: center;
+      width: 38px;
+      height: 38px;
+      border-radius: 13px;
+      background: #eaf0ff;
+      color: var(--blue);
+      font-size: 20px;
+    }
+    .top-actions { display: flex; align-items: center; gap: 10px; }
+    .who { color: var(--muted); font-size: 13px; }
+    main { width: min(1120px, calc(100% - 32px)); margin: 28px auto 60px; }
+    h1 { margin: 0; font-size: clamp(28px, 4vw, 38px); line-height: 1.15; letter-spacing: -.8px; }
+    h2 { margin: 0; font-size: 18px; letter-spacing: -.2px; }
+    p { margin: 8px 0 0; color: var(--muted); }
+    .panel, .login-card {
+      border: 1px solid var(--line);
+      border-radius: 17px;
+      background: #fff;
+      box-shadow: 0 9px 28px #243b5a0a;
+    }
+    .panel { min-width: 0; padding: 20px; }
+    .login-card { width: min(100%, 470px); margin: 8vh auto; padding: 26px; }
+    .login-card p { margin-bottom: 14px; }
+    .intro { margin-bottom: 19px; }
+    .intro p { margin-top: 7px; }
+    label { display: block; margin: 12px 0 6px; font-size: 13px; font-weight: 750; }
+    input, select {
+      width: 100%;
+      min-height: 43px;
+      padding: 8px 11px;
+      border: 1px solid #ccd5e2;
+      border-radius: 10px;
+      background: #fff;
+      color: var(--ink);
+    }
+    input:focus, select:focus { outline: 3px solid #1769ff25; border-color: var(--blue); }
+    .button {
+      min-height: 40px;
+      padding: 8px 13px;
+      border: 0;
+      border-radius: 10px;
+      background: var(--blue);
+      color: white;
+      font-weight: 750;
+    }
+    .button:hover { background: var(--blue-dark); }
+    .button.light { border: 1px solid var(--line); background: #fff; color: var(--ink); }
+    .button.light:hover { background: #f7f9fc; }
+    .button.small { min-height: 34px; padding: 6px 10px; font-size: 13px; }
+    .button.full { width: 100%; margin-top: 14px; }
+    .row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 9px; align-items: end; }
+    .row .button { min-width: 95px; }
+    .status {
+      min-height: 20px;
+      margin-top: 10px;
+      padding: 0;
+      color: var(--muted);
+      font-size: 13px;
+      overflow-wrap: anywhere;
+    }
+    .status.error, .status.success { padding: 9px 11px; border-radius: 9px; }
+    .status.error { background: #fff1f0; color: var(--red); }
+    .status.success { background: #ecfdf3; color: var(--green); }
+    .hero {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      margin-bottom: 18px;
+    }
+    .student-heading { display: flex; align-items: center; gap: 14px; min-width: 0; }
+    .avatar {
+      display: grid;
+      place-items: center;
+      flex: 0 0 auto;
+      width: 62px;
+      height: 62px;
+      border: 1px solid #dfe7fb;
+      border-radius: 20px;
+      background: linear-gradient(145deg, #f1f5ff, #e6edff);
+      font-size: 31px;
+    }
+    .hero-copy { min-width: 0; }
+    .hero-copy p { overflow-wrap: anywhere; }
+    .stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-bottom: 15px; }
+    .stat {
+      padding: 15px 17px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: #fff;
+      box-shadow: 0 6px 20px #243b5a08;
+    }
+    .stat-label { color: var(--muted); font-size: 12px; font-weight: 700; }
+    .stat-value { display: block; margin-top: 3px; font-size: 25px; font-weight: 850; letter-spacing: -.5px; }
+    .layout { display: grid; grid-template-columns: 1.05fr .95fr; gap: 14px; align-items: start; }
+    .column { display: grid; gap: 14px; min-width: 0; }
+    .panel-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 13px; }
+    .panel-head p { margin-top: 4px; font-size: 13px; }
+    .goal-box {
+      padding: 15px;
+      border: 1px solid #e6ebf5;
+      border-radius: 12px;
+      background: linear-gradient(130deg, #f8faff, #f3f7ff);
+    }
+    .goal-kicker { color: var(--muted); font-size: 12px; font-weight: 750; text-transform: uppercase; letter-spacing: .5px; }
+    .goal-name { margin-top: 5px; font-size: 20px; font-weight: 850; }
+    .goal-description { margin-top: 3px; font-size: 13px; }
+    .progress-meta { display: flex; justify-content: space-between; gap: 10px; margin: 12px 0 6px; color: var(--muted); font-size: 13px; }
+    progress { width: 100%; height: 12px; accent-color: var(--blue); }
+    .inline-form { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 9px; align-items: end; margin-top: 12px; }
+    .inline-form label { grid-column: 1 / -1; margin: 0 0 -4px; }
+    .profile-form { display: grid; grid-template-columns: 100px minmax(0, 1fr); gap: 0 12px; align-items: end; }
+    .profile-form .avatar-field { grid-row: span 2; }
+    .profile-form .avatar-field input { text-align: center; font-size: 22px; }
+    .profile-form .button.full { grid-column: 1 / -1; }
+    .credential {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-top: 13px;
+      padding: 11px 12px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: #f9fbfe;
+    }
+    .credential code { font-size: 15px; font-weight: 800; overflow-wrap: anywhere; }
+    .muted { color: var(--muted); font-size: 12px; }
+    .streak-controls { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+    .task-list, .reward-list, .history-list { display: grid; gap: 10px; }
+    .task-card, .reward-card {
+      padding: 13px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: #fff;
+    }
+    .task-top, .reward-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+    .task-question, .reward-name { font-weight: 800; }
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      flex: 0 0 auto;
+      padding: 3px 8px;
+      border-radius: 999px;
+      background: #edf2ff;
+      color: #3156b8;
+      font-size: 12px;
+      font-weight: 750;
+    }
+    .task-answer { margin-top: 11px; }
+    .answer-options { display: grid; gap: 7px; margin-top: 10px; }
+    .answer-option {
+      width: 100%;
+      min-height: 40px;
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      padding: 7px 10px;
+      border: 1px solid var(--line);
+      border-radius: 9px;
+      background: #fff;
+      color: var(--ink);
+      text-align: left;
+    }
+    .answer-option.selected { border-color: var(--blue); background: #f2f6ff; }
+    .answer-option img { width: 76px; height: 55px; object-fit: contain; }
+    .task-actions { display: flex; align-items: center; gap: 9px; margin-top: 10px; }
+    .task-result { min-height: 0; margin-top: 8px; font-size: 13px; }
+    .reward-description { margin-top: 4px; color: var(--muted); font-size: 13px; }
+    .reward-actions { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 10px; }
+    .history-item {
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr) auto;
+      gap: 10px;
+      align-items: center;
+      padding: 10px 11px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+    }
+    .history-item.cancelled { opacity: .58; }
+    .amount { font-weight: 850; white-space: nowrap; }
+    .amount.deposit { color: var(--green); }
+    .amount.deduct { color: var(--red); }
+    .empty { padding: 16px; border: 1px dashed #ccd5e2; border-radius: 10px; color: var(--muted); text-align: center; font-size: 13px; }
+    .wide { grid-column: 1 / -1; }
+    @media (max-width: 780px) {
+      main { width: min(100% - 24px, 620px); margin-top: 20px; }
+      .layout { grid-template-columns: 1fr; }
+      .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .topbar { padding: 9px 13px; }
+    }
+    @media (max-width: 480px) {
+      main { width: calc(100% - 20px); }
+      .panel { padding: 16px; }
+      .hero { align-items: flex-start; }
+      .hero > .button { flex: 0 0 auto; }
+      .avatar { width: 52px; height: 52px; border-radius: 16px; font-size: 26px; }
+      .student-heading { gap: 10px; }
+      .stat { padding: 12px; }
+      .stat-value { font-size: 22px; }
+      .row, .inline-form { grid-template-columns: 1fr; }
+      .inline-form label { grid-column: auto; }
+      .profile-form { grid-template-columns: 76px minmax(0, 1fr); gap: 0 9px; }
+      .history-item { grid-template-columns: auto 1fr; }
+      .history-item time { grid-column: 2; }
+      .who { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <nav class="topbar" aria-label="Главная навигация">
+    <div class="brand"><span class="brand-mark">✦</span> RoboCoins · Кабинет ученика</div>
+    <div class="top-actions">
+      <span id="top-name" class="who"></span>
+      <button id="logout-button" class="button light small" type="button" hidden>Выйти</button>
+    </div>
+  </nav>
+
+  <main>
+    <section id="login-card" class="login-card">
+      <h1>Твой кабинет</h1>
+      <p>Войди по коду доступа, чтобы посмотреть баланс, цель, задания и свой прогресс.</p>
+      <form id="login-form">
+        <label for="access-code">Код доступа</label>
+        <div class="row">
+          <input id="access-code" autocomplete="one-time-code" required>
+          <button id="login-button" class="button" type="submit">Войти</button>
+        </div>
+      </form>
+      <p id="session-status" class="status" role="status" aria-live="polite"></p>
+    </section>
+
+    <section id="dashboard" hidden>
+      <header class="hero">
+        <div class="student-heading">
+          <div id="hero-avatar" class="avatar" aria-hidden="true">🙂</div>
+          <div class="hero-copy">
+            <h1>Привет, <span id="hero-name">ученик</span>!</h1>
+            <p id="hero-courses"></p>
+          </div>
+        </div>
+        <button id="refresh-button" class="button light" type="button">Обновить</button>
+      </header>
+
+      <div class="stats" aria-label="Сводка ученика">
+        <div class="stat"><span class="stat-label">Баланс</span><strong id="stat-balance" class="stat-value">— 🪙</strong></div>
+        <div class="stat"><span class="stat-label">Текущий streak</span><strong id="stat-streak" class="stat-value">— 🔥</strong></div>
+        <div class="stat"><span class="stat-label">Лучший streak</span><strong id="stat-longest" class="stat-value">— 🏆</strong></div>
+        <div class="stat"><span class="stat-label">Мои курсы</span><strong id="stat-courses" class="stat-value">—</strong></div>
+      </div>
+
+      <div class="layout">
+        <div class="column">
+          <section class="panel">
+            <div class="panel-head">
+              <div><h2>Моя цель 🎯</h2><p>Выбери награду, к которой хочешь накопить.</p></div>
+            </div>
+            <div id="goal-box" class="goal-box"></div>
+            <form id="goal-form" class="inline-form">
+              <label for="goal-select">Выбрать цель</label>
+              <select id="goal-select" required disabled><option value="">Загружаю награды…</option></select>
+              <button id="goal-button" class="button" type="submit" disabled>Сохранить цель</button>
+            </form>
+            <p id="goal-status" class="status" role="status" aria-live="polite"></p>
+          </section>
+
+          <section class="panel">
+            <div class="panel-head">
+              <div><h2>Ежедневные задания ✏️</h2><p>За правильный ответ начисляются монеты.</p></div>
+              <button id="tasks-refresh" class="button light small" type="button">Обновить</button>
+            </div>
+            <div id="tasks-list" class="task-list"><div class="empty">Загружаю задания…</div></div>
+            <p id="tasks-status" class="status" role="status" aria-live="polite"></p>
+          </section>
+
+          <section class="panel">
+            <div class="panel-head">
+              <div><h2>Магазин наград 🎁</h2><p>Просматривай награды и ставь новые цели.</p></div>
+              <button id="shop-refresh" class="button light small" type="button">Обновить</button>
+            </div>
+            <div id="rewards-list" class="reward-list"><div class="empty">Загружаю награды…</div></div>
+            <p id="shop-status" class="status" role="status" aria-live="polite"></p>
+          </section>
+        </div>
+
+        <div class="column">
+          <section class="panel">
+            <div class="panel-head"><div><h2>Мой профиль 👤</h2><p>Измени имя или аватар.</p></div></div>
+            <form id="profile-form" class="profile-form">
+              <div class="avatar-field">
+                <label for="avatar-input">Аватар</label>
+                <input id="avatar-input" maxlength="16" aria-label="Аватар">
+              </div>
+              <div>
+                <label for="nickname-input">Имя</label>
+                <input id="nickname-input" maxlength="200" required>
+              </div>
+              <button id="profile-button" class="button full" type="submit">Сохранить профиль</button>
+            </form>
+            <div class="credential">
+              <div><div class="muted">Твой код доступа</div><code id="credential-code">Загружаю…</code></div>
+              <button id="copy-code" class="button light small" type="button" disabled>Копировать</button>
+            </div>
+            <p id="profile-status" class="status" role="status" aria-live="polite"></p>
+          </section>
+
+          <section class="panel">
+            <div class="panel-head"><div><h2>Серия занятий 🔥</h2><p>Отслеживай свою текущую и лучшую серию.</p></div></div>
+            <div id="streak-detail" class="muted">Загружаю данные…</div>
+            <div class="streak-controls">
+              <button id="start-streak" class="button" type="button">Начать streak</button>
+              <button id="end-streak" class="button light" type="button">Завершить streak</button>
+            </div>
+            <p id="streak-status" class="status" role="status" aria-live="polite"></p>
+          </section>
+
+          <section class="panel">
+            <div class="panel-head">
+              <div><h2>История монет 🪙</h2><p>Последние изменения баланса.</p></div>
+              <button id="history-refresh" class="button light small" type="button">Обновить</button>
+            </div>
+            <div id="history-list" class="history-list"><div class="empty">Загружаю историю…</div></div>
+            <p id="history-status" class="status" role="status" aria-live="polite"></p>
+          </section>
+        </div>
+      </div>
+      <p id="dashboard-status" class="status" role="status" aria-live="polite"></p>
+    </section>
+  </main>
+
+  <script>
+    const isLocal = ['localhost', '127.0.0.1', '::1'].includes(location.hostname);
+    const apiBase = isLocal
+      ? (location.port === '8000' ? '' : `${location.protocol}//${location.hostname}:8000`)
+      : '/api';
+    const $ = (id) => document.getElementById(id);
+    let currentUser = null;
+    let currentGoal = null;
+    let rewards = [];
+    let currentStreak = null;
+    let longestStreak = 0;
+    let accessCode = '';
+
+    async function request(path, options = {}) {
+      const response = await fetch(`${apiBase}${path}`, {
+        credentials: 'include',
+        cache: 'no-store',
+        ...options,
+      });
+      const text = await response.text();
+      let body = null;
+      if (text) {
+        try { body = JSON.parse(text); } catch { body = text; }
+      }
+      if (!response.ok) {
+        const detail = body && typeof body === 'object' && 'detail' in body
+          ? body.detail
+          : typeof body === 'string' ? body : response.statusText;
+        throw new Error(`HTTP ${response.status}: ${detail}`);
+      }
+      return body;
+    }
+
+    function setStatus(id, message, kind = '') {
+      const element = $(id);
+      element.textContent = message;
+      element.className = `status${kind ? ` ${kind}` : ''}`;
+    }
+
+    function setUser(user) {
+      currentUser = user;
+      $('login-card').hidden = Boolean(user);
+      $('dashboard').hidden = !user;
+      $('logout-button').hidden = !user;
+      $('top-name').textContent = user ? `${user.name} · ID ${user.id}` : '';
+      if (user) {
+        currentGoal = user.current_goal || null;
+        $('hero-name').textContent = user.name;
+        $('hero-courses').textContent = (user.course_names || []).join(' · ') || 'Пока нет назначенных курсов';
+        $('hero-avatar').textContent = user.avatar || '🙂';
+        $('nickname-input').value = user.name || '';
+        $('avatar-input').value = user.avatar || '';
+        $('stat-courses').textContent = String((user.course_names || []).length);
+        renderGoal();
+      } else {
+        accessCode = '';
+        rewards = [];
+        $('credential-code').textContent = 'Не выполнен вход';
+        $('copy-code').disabled = true;
+      }
+    }
+
+    function renderGoal() {
+      const box = $('goal-box');
+      box.replaceChildren();
+      const reward = rewards.find((item) => item.name === currentGoal);
+      const kicker = document.createElement('div');
+      kicker.className = 'goal-kicker';
+      kicker.textContent = currentGoal ? 'Текущая цель' : 'Цель пока не выбрана';
+      const title = document.createElement('div');
+      title.className = 'goal-name';
+      title.textContent = currentGoal || 'Выбери награду из магазина';
+      box.append(kicker, title);
+      if (reward) {
+        if (reward.description) {
+          const description = document.createElement('div');
+          description.className = 'goal-description';
+          description.textContent = reward.description;
+          box.append(description);
+        }
+        const balance = Number(currentUser.balance) || 0;
+        const percent = reward.price > 0 ? Math.min(100, Math.round(balance / reward.price * 100)) : 100;
+        const meta = document.createElement('div');
+        meta.className = 'progress-meta';
+        const progressText = document.createElement('span');
+        progressText.textContent = `${balance} из ${reward.price} 🪙 · ${percent}%`;
+        const remaining = document.createElement('span');
+        remaining.textContent = balance >= reward.price ? 'Цель достигнута!' : `Ещё ${reward.price - balance}`;
+        const progress = document.createElement('progress');
+        progress.max = 100;
+        progress.value = percent;
+        meta.append(progressText, remaining);
+        box.append(meta, progress);
+      } else if (currentGoal) {
+        const hint = document.createElement('div');
+        hint.className = 'goal-description';
+        hint.textContent = 'Этой награды больше нет в каталоге.';
+        box.append(hint);
+      }
+      const select = $('goal-select');
+      const selectedId = rewards.find((item) => item.name === currentGoal)?.id;
+      select.replaceChildren(new Option('Выбери награду…', ''));
+      for (const item of rewards) {
+        const option = new Option(`${item.name} · ${item.price} 🪙`, String(item.id));
+        if (item.id === selectedId) option.selected = true;
+        select.add(option);
+      }
+      select.disabled = rewards.length === 0;
+      $('goal-button').disabled = rewards.length === 0;
+    }
+
+    function renderRewards() {
+      const list = $('rewards-list');
+      list.replaceChildren();
+      if (!rewards.length) {
+        list.append(emptyMessage('Пока нет доступных наград.'));
+        return;
+      }
+      for (const reward of rewards) {
+        const card = document.createElement('article');
+        card.className = 'reward-card';
+        const top = document.createElement('div');
+        top.className = 'reward-top';
+        const name = document.createElement('div');
+        name.className = 'reward-name';
+        name.textContent = reward.name;
+        const price = document.createElement('span');
+        price.className = 'tag';
+        price.textContent = `${reward.price} 🪙`;
+        top.append(name, price);
+        card.append(top);
+        if (reward.description) {
+          const description = document.createElement('div');
+          description.className = 'reward-description';
+          description.textContent = reward.description;
+          card.append(description);
+        }
+        const actions = document.createElement('div');
+        actions.className = 'reward-actions';
+        const type = document.createElement('span');
+        type.className = 'muted';
+        type.textContent = reward.type === 'privilege' ? 'Привилегия' : 'Награда';
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'button light small';
+        button.textContent = reward.name === currentGoal ? 'Текущая цель' : 'Поставить цель';
+        button.disabled = reward.name === currentGoal;
+        button.addEventListener('click', () => saveGoal(reward.id));
+        actions.append(type, button);
+        card.append(actions);
+        list.append(card);
+      }
+    }
+
+    function emptyMessage(message) {
+      const item = document.createElement('div');
+      item.className = 'empty';
+      item.textContent = message;
+      return item;
+    }
+
+    async function loadProfileAndCredentials() {
+      const [profile, credentials] = await Promise.all([
+        request(`/student/${currentUser.id}`),
+        request('/auth/me/credentials'),
+      ]);
+      currentUser = { ...currentUser, ...profile };
+      accessCode = credentials.access_code;
+      $('credential-code').textContent = accessCode;
+      $('copy-code').disabled = false;
+      setUser(currentUser);
+    }
+
+    async function loadRewards() {
+      rewards = await request('/shop');
+      renderRewards();
+      renderGoal();
+      setStatus('shop-status', `В каталоге наград: ${rewards.length}.`);
+    }
+
+    async function loadBalanceAndHistory() {
+      const [balance, history] = await Promise.all([
+        request(`/student/${currentUser.id}/balance`),
+        request(`/student/${currentUser.id}/transactions?limit=10&offset=0`),
+      ]);
+      currentUser.balance = balance.balance;
+      $('stat-balance').textContent = `${balance.balance} 🪙`;
+      renderGoal();
+      renderHistory(history.transactions || []);
+      setStatus('history-status', '');
+    }
+
+    function renderHistory(transactions) {
+      const list = $('history-list');
+      list.replaceChildren();
+      if (!transactions.length) {
+        list.append(emptyMessage('Транзакций пока нет.'));
+        return;
+      }
+      const reasonLabels = {
+        theory: 'Ответ по теории',
+        practice_completed: 'Практика выполнена',
+        additional_task_completed: 'Дополнительное задание',
+        discipline_breakdown: 'Нарушение дисциплины',
+        middle_level_violation: 'Нарушение среднего уровня',
+        serious_violation: 'Серьёзное нарушение',
+      };
+      for (const transaction of transactions) {
+        const item = document.createElement('article');
+        item.className = 'history-item';
+        if (transaction.cancelled_at) item.classList.add('cancelled');
+        const amount = document.createElement('span');
+        amount.className = `amount ${transaction.operation}`;
+        amount.textContent = `${transaction.operation === 'deposit' ? '+' : '−'}${transaction.amount} 🪙`;
+        const reason = document.createElement('span');
+        const values = Array.isArray(transaction.reason) ? transaction.reason : [];
+        reason.textContent = transaction.cancelled_at
+          ? `Отменена · ${values.map((value) => reasonLabels[value] || value).join(', ') || 'Операция'}`
+          : values.map((value) => reasonLabels[value] || value).join(', ') || 'Операция';
+        const date = document.createElement('time');
+        date.dateTime = transaction.created_at;
+        date.className = 'muted';
+        date.textContent = new Date(transaction.created_at).toLocaleDateString('ru-RU', {
+          day: 'numeric', month: 'short',
+        });
+        item.append(amount, reason, date);
+        list.append(item);
+      }
+    }
+
+    async function loadStreaks() {
+      const [current, longest] = await Promise.all([
+        request(`/student/${currentUser.id}/streak`),
+        request(`/student/${currentUser.id}/longest-streak`),
+      ]);
+      currentStreak = current;
+      longestStreak = longest.days || 0;
+      $('stat-streak').textContent = `${current.days || 0} 🔥`;
+      $('stat-longest').textContent = `${longestStreak} 🏆`;
+      $('streak-detail').textContent = current.start_date
+        ? `Серия началась ${new Date(current.start_date).toLocaleDateString('ru-RU')}. Продолжай заниматься, чтобы она росла!`
+        : 'Активной серии пока нет — начни её сегодня.';
+    }
+
+    function createTaskCard(task) {
+      const card = document.createElement('article');
+      card.className = 'task-card';
+      const top = document.createElement('div');
+      top.className = 'task-top';
+      const question = document.createElement('div');
+      question.className = 'task-question';
+      question.textContent = task.question;
+      const reward = document.createElement('span');
+      reward.className = 'tag';
+      reward.textContent = `+${task.reward} 🪙`;
+      top.append(question, reward);
+      card.append(top);
+      const course = document.createElement('div');
+      course.className = 'muted';
+      course.textContent = task.course_id ? `Курс #${task.course_id}` : 'Задание дня';
+      card.append(course);
+      const answerArea = document.createElement('div');
+      answerArea.className = 'task-answer';
+      let answer = '';
+      if (task.type === 'multiple_choice' || task.type === 'true_false' || (task.type === 'picture' && task.options?.length)) {
+        const options = document.createElement('div');
+        options.className = 'answer-options';
+        for (const [index, value] of (task.options || []).entries()) {
+          const button = document.createElement('button');
+          button.type = 'button';
+          button.className = 'answer-option';
+          if (task.type === 'picture') {
+            const image = document.createElement('img');
+            image.src = value;
+            image.alt = `Вариант ${index + 1}`;
+            button.append(image);
+            button.setAttribute('aria-label', `Выбрать вариант ${index + 1}`);
+            button.addEventListener('click', () => {
+              answer = String(index);
+              options.querySelectorAll('button').forEach((item) => item.classList.toggle('selected', item === button));
+            });
+          } else {
+            button.textContent = value;
+            button.addEventListener('click', () => {
+              answer = value;
+              options.querySelectorAll('button').forEach((item) => item.classList.toggle('selected', item === button));
+            });
+          }
+          options.append(button);
+        }
+        answerArea.append(options);
+      } else {
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.maxLength = 200;
+        input.placeholder = 'Напиши свой ответ';
+        input.setAttribute('aria-label', 'Ответ на задание');
+        input.addEventListener('input', () => { answer = input.value; });
+        answerArea.append(input);
+      }
+      card.append(answerArea);
+      const result = document.createElement('p');
+      result.className = 'task-result';
+      if (task.completed_at) {
+        result.textContent = 'На сегодня попытка уже использована.';
+        card.append(result);
+        return card;
+      }
+      const submit = document.createElement('button');
+      submit.type = 'button';
+      submit.className = 'button small';
+      submit.textContent = 'Ответить';
+      submit.addEventListener('click', async () => {
+        if (!answer.trim()) {
+          result.textContent = 'Сначала выбери или введи ответ.';
+          result.style.color = 'var(--red)';
+          return;
+        }
+        submit.disabled = true;
+        result.textContent = 'Проверяю ответ…';
+        result.style.color = '';
+        try {
+          const query = task.course_id ? `?course_id=${encodeURIComponent(task.course_id)}` : '';
+          const response = await request(
+            `/daily/${currentUser.id}/daily-task/answer${query}`,
+            {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ answer: answer.trim() }),
+            },
+          );
+          result.textContent = response.correct
+            ? `Верно! Начислено ${response.reward} 🪙. Новый баланс: ${response.balance} 🪙.`
+            : 'Ответ неверный. Попытка использована.';
+          result.style.color = response.correct ? 'var(--green)' : 'var(--red)';
+          currentUser.balance = response.balance;
+          $('stat-balance').textContent = `${response.balance} 🪙`;
+          renderGoal();
+          const refreshResults = await Promise.allSettled([
+            loadDailyTasks(),
+            loadBalanceAndHistory(),
+          ]);
+          if (refreshResults[1].status === 'rejected') {
+            setStatus('history-status', refreshResults[1].reason.message, 'error');
+          }
+        } catch (error) {
+          result.textContent = error.message;
+          result.style.color = 'var(--red)';
+          submit.disabled = false;
+        }
+      });
+      const actions = document.createElement('div');
+      actions.className = 'task-actions';
+      actions.append(submit);
+      card.append(actions, result);
+      return card;
+    }
+
+    async function loadDailyTasks() {
+      setStatus('tasks-status', 'Загружаю задания…');
+      try {
+        const tasks = await request(`/daily/${currentUser.id}/daily-tasks`);
+        const list = $('tasks-list');
+        list.replaceChildren();
+        if (!tasks.length) {
+          list.append(emptyMessage('На сегодня заданий нет.'));
+        } else {
+          for (const task of tasks) list.append(createTaskCard(task));
+        }
+        setStatus('tasks-status', `Заданий на сегодня: ${tasks.length}.`);
+      } catch (error) {
+        $('tasks-list').replaceChildren(emptyMessage('Не получилось загрузить задания.'));
+        setStatus('tasks-status', error.message, 'error');
+      }
+    }
+
+    async function loadDashboard() {
+      if (!currentUser || currentUser.role !== 'student') return;
+      setStatus('dashboard-status', 'Обновляю данные кабинета…');
+      const sections = [
+        { statusId: 'profile-status', load: loadProfileAndCredentials },
+        { statusId: 'shop-status', load: loadRewards },
+        { statusId: 'history-status', load: loadBalanceAndHistory },
+        { statusId: 'streak-status', load: loadStreaks },
+        { statusId: 'tasks-status', load: loadDailyTasks },
+      ];
+      const results = await Promise.allSettled(
+        sections.map((section) => section.load()),
+      );
+      results.forEach((result, index) => {
+        if (result.status === 'rejected') {
+          setStatus(sections[index].statusId, result.reason.message, 'error');
+        }
+      });
+      const failures = results.filter((result) => result.status === 'rejected');
+      setStatus(
+        'dashboard-status',
+        failures.length ? `Не удалось обновить некоторые данные (${failures.length}). Проверь сообщения в разделах.` : 'Данные кабинета обновлены.',
+        failures.length ? 'error' : 'success',
+      );
+    }
+
+    async function saveGoal(rewardId) {
+      setStatus('goal-status', 'Сохраняю цель…');
+      $('goal-button').disabled = true;
+      try {
+        const response = await request(`/student/${currentUser.id}/change-goal`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ new_goal_reward_id: Number(rewardId) }),
+        });
+        currentGoal = response.new_goal.name;
+        currentUser.current_goal = currentGoal;
+        renderGoal();
+        renderRewards();
+        setStatus('goal-status', `Новая цель: ${currentGoal}`, 'success');
+      } catch (error) {
+        setStatus('goal-status', error.message, 'error');
+      } finally {
+        $('goal-button').disabled = rewards.length === 0;
+      }
+    }
+
+    $('login-form').addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const button = $('login-button');
+      button.disabled = true;
+      setStatus('session-status', 'Выполняется вход…');
+      try {
+        await request('/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ code: $('access-code').value.trim() }),
+        });
+        const user = await request('/auth/me');
+        if (user.role !== 'student') throw new Error('Этот кабинет доступен только ученикам.');
+        setUser(user);
+        await loadDashboard();
+        setStatus('session-status', '');
+      } catch (error) {
+        setStatus('session-status', error.message, 'error');
+      } finally {
+        button.disabled = false;
+      }
+    });
+
+    $('logout-button').addEventListener('click', async () => {
+      try {
+        await request('/auth/logout', { method: 'POST' });
+        setUser(null);
+        setStatus('session-status', 'Вы вышли из аккаунта.');
+      } catch (error) {
+        setStatus('dashboard-status', error.message, 'error');
+      }
+    });
+
+    $('refresh-button').addEventListener('click', loadDashboard);
+    $('tasks-refresh').addEventListener('click', loadDailyTasks);
+    $('shop-refresh').addEventListener('click', () => loadRewards().catch((error) => setStatus('shop-status', error.message, 'error')));
+    $('history-refresh').addEventListener('click', () => loadBalanceAndHistory().catch((error) => setStatus('history-status', error.message, 'error')));
+    $('goal-select').addEventListener('change', () => {
+      $('goal-button').disabled = !$('goal-select').value;
+    });
+    $('goal-form').addEventListener('submit', async (event) => {
+      event.preventDefault();
+      if ($('goal-select').value) await saveGoal($('goal-select').value);
+    });
+
+    $('profile-form').addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const button = $('profile-button');
+      button.disabled = true;
+      setStatus('profile-status', 'Сохраняю профиль…');
+      try {
+        const nickname = $('nickname-input').value.trim();
+        const avatar = $('avatar-input').value.trim();
+        if (!nickname) throw new Error('Имя не может быть пустым.');
+        if (nickname !== currentUser.name) {
+          await request(`/student/${currentUser.id}/nickname`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ new_nickname: nickname }),
+          });
+        }
+        if (avatar !== (currentUser.avatar || '')) {
+          if (!avatar) throw new Error('Аватар не может быть пустым.');
+          await request(`/student/${currentUser.id}/avatar`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ new_avatar: avatar }),
+          });
+        }
+        currentUser.name = nickname;
+        currentUser.avatar = avatar;
+        setUser(currentUser);
+        setStatus('profile-status', 'Профиль обновлён.', 'success');
+      } catch (error) {
+        setStatus('profile-status', error.message, 'error');
+        try {
+          const profile = await request(`/student/${currentUser.id}`);
+          setUser({ ...currentUser, ...profile });
+        } catch (refreshError) {
+          setStatus(
+            'profile-status',
+            `${error.message}. Не удалось обновить данные профиля: ${refreshError.message}`,
+            'error',
+          );
+        }
+      } finally {
+        button.disabled = false;
+      }
+    });
+
+    $('copy-code').addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText(accessCode);
+        setStatus('profile-status', 'Код доступа скопирован.', 'success');
+      } catch (error) {
+        setStatus('profile-status', `Не удалось скопировать код: ${error.message}`, 'error');
+      }
+    });
+
+    async function updateStreak(action) {
+      const button = $(action === 'start' ? 'start-streak' : 'end-streak');
+      button.disabled = true;
+      setStatus('streak-status', action === 'start' ? 'Начинаю серию…' : 'Завершаю серию…');
+      try {
+        await request(`/student/${currentUser.id}/streak/${action}`, { method: 'POST' });
+        await loadStreaks();
+        setStatus('streak-status', action === 'start' ? 'Серия занятий начата!' : 'Серия занятий завершена.', 'success');
+      } catch (error) {
+        setStatus('streak-status', error.message, 'error');
+      } finally {
+        button.disabled = false;
+      }
+    }
+    $('start-streak').addEventListener('click', () => updateStreak('start'));
+    $('end-streak').addEventListener('click', () => updateStreak('end'));
+
+    request('/auth/me').then((user) => {
+      if (user.role !== 'student') throw new Error('Этот кабинет доступен только ученикам.');
+      setUser(user);
+      return loadDashboard();
+    }).catch(() => {
+      setUser(null);
+    });
+  </script>
+</body>
+</html>

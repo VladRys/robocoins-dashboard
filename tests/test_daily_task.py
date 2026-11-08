@@ -1,5 +1,5 @@
 import asyncio
-from datetime import date
+from datetime import date, timedelta
 from types import SimpleNamespace
 from unittest.mock import AsyncMock
 from urllib.parse import unquote
@@ -20,20 +20,21 @@ from app.api.routes.daily_task import (
 )
 from app.core.database import Base
 from app.core.enums import AuthorizationAction, ProductMode, TaskType, UserRole
-from app.models.course import Course  # noqa: F401
+from app.models.course import Course  
 from app.models.daily_task import (
     CourseDailyTask,
     DailyTask,
     DailyTaskQuestion,
     StudentDailyTask,
 )
-from app.models.group import Group  # noqa: F401
+from app.models.group import Group  
 from app.models.student import Student
-from app.models.streak import Streak  # noqa: F401
-from app.models.teacher import Teacher  # noqa: F401
+from app.models.streak import Streak  
+from app.models.teacher import Teacher
 from app.models.transaction import BalanceTransaction
 from app.models.user import User
 from app.schemas.daily_task import DailyTaskAnswer
+from app.services import daily_task as daily_task_module
 from app.services.daily_task import (
     DailyTaskAlreadyCompletedError,
     DailyTaskService,
@@ -157,7 +158,7 @@ def test_seeded_embedded_questions_are_scoped_to_their_courses():
                 for slug, task_data in TASKS.items()
                 if task_data.get("course_names")
             ]
-            assert len(scoped_tasks) == 82
+            assert len(scoped_tasks) == 98
             for course_name in (
                 "Unity Beginner",
                 "Construct 3",
@@ -169,7 +170,7 @@ def test_seeded_embedded_questions_are_scoped_to_their_courses():
                     for _, task_data in scoped_tasks
                     if task_data["course_names"] == [course_name]
                 ]
-                assert len(course_tasks) == 6
+                assert len(course_tasks) == 8
                 assert {
                     task_data["type"] for task_data in course_tasks
                 } == {"multiple_choice", "true_false", "text"}
@@ -178,7 +179,7 @@ def test_seeded_embedded_questions_are_scoped_to_their_courses():
                 for _, task_data in scoped_tasks
                 if task_data["course_names"] == ["Web Middle"]
             ]
-            assert len(web_middle_tasks) == 30
+            assert len(web_middle_tasks) == 32
             assert {
                 task_data["type"] for task_data in web_middle_tasks
             } == {"multiple_choice", "true_false", "text"}
@@ -250,6 +251,46 @@ def test_seeded_embedded_questions_are_scoped_to_their_courses():
                 assert {
                     TASKS[slug]["type"] for slug in additional_slugs
                 } == {"multiple_choice", "true_false", "text"}
+
+            for course_name, added_slugs in (
+                (
+                    "Arduino Junior",
+                    ("junior_led_resistor", "junior_button_input"),
+                ),
+                (
+                    "Middle Embedded",
+                    ("middle_pwm_brightness", "middle_i2c_bus"),
+                ),
+                (
+                    "Pro Embedded",
+                    ("pro_interrupt_handler", "pro_analog_read"),
+                ),
+                (
+                    "Unity Beginner",
+                    ("unity_beginner_gameobject", "unity_beginner_play_mode"),
+                ),
+                (
+                    "Construct 3",
+                    ("construct3_event_sheet", "construct3_layout_scene"),
+                ),
+                (
+                    "Unity 3D",
+                    ("unity3d_quaternion", "unity3d_prefab"),
+                ),
+                (
+                    "Unity 2D",
+                    ("unity2d_tilemap", "unity2d_orthographic_camera"),
+                ),
+                (
+                    "Web Middle",
+                    ("web_middle_semantic_nav", "web_middle_css_box_model"),
+                ),
+            ):
+                assert all(
+                    TASKS[slug]["course_names"] == [course_name]
+                    for slug in added_slugs
+                )
+                assert len(added_slugs) == 2
 
         await engine.dispose()
 
@@ -439,6 +480,74 @@ def test_daily_task_selection_uses_course_ids_not_categories():
 
             response = await DailyTaskService(session).get_or_create(1)
             assert response.question == "Student course question"
+
+        await engine.dispose()
+
+    asyncio.run(run())
+
+
+def test_daily_tasks_repeat_in_oldest_assignment_order(monkeypatch):
+    async def run():
+        current_date = date(2026, 1, 1)
+        monkeypatch.setattr(
+            daily_task_module,
+            "date",
+            SimpleNamespace(today=lambda: current_date),
+        )
+        engine = create_async_engine("sqlite+aiosqlite:///:memory:")
+        async with engine.begin() as connection:
+            await connection.run_sync(Base.metadata.create_all)
+
+        sessions = async_sessionmaker(engine, expire_on_commit=False)
+        async with sessions() as session:
+            user = User(
+                id=1,
+                name="Student",
+                role=UserRole.STUDENT.value,
+                access_code="ABC12345",
+            )
+            course = Course(name="Course with repeating questions")
+            student = Student(
+                id=1,
+                user_id=1,
+                name="Student",
+                balance=0,
+                hash_access_key="test-key",
+                access_code="ABC12345",
+                groups=[Group(name="Student group", course=course)],
+            )
+            session.add_all([user, student])
+            await session.flush()
+            session.add_all(
+                [
+                    DailyTask(
+                        question=DailyTaskQuestion(
+                            slug=f"repeat-question-{index}",
+                            question=f"Question {index}",
+                            task_type=TaskType.TEXT,
+                            answer=str(index),
+                            course_ids=[course.id],
+                        )
+                    )
+                    for index in (1, 2)
+                ]
+            )
+            await session.commit()
+
+            service = DailyTaskService(session)
+            assigned_questions = []
+            for day in range(5):
+                current_date = date(2026, 1, 1) + timedelta(days=day)
+                assignments = await service.get_or_create_all(1)
+                assigned_questions.append(assignments[0].question)
+
+            assert assigned_questions == [
+                "Question 1",
+                "Question 2",
+                "Question 1",
+                "Question 2",
+                "Question 1",
+            ]
 
         await engine.dispose()
 

@@ -189,6 +189,7 @@ async def get_current_user(
             course_names=list(dict.fromkeys(group.course.name for group in student.groups)),
             avatar=student.avatar,
             balance=student.balance,
+            current_goal=getattr(student, "current_goal", None),
         )
 
     if user.role == UserRole.TEACHER.value:

@@ -29,7 +29,7 @@ def get_user_service(db: AsyncSession = Depends(get_db)) -> UserService:
 
 
 async def get_student_service(db: AsyncSession = Depends(get_db)) -> StudentService:
-    return StudentService(db, StudentRepository(db))
+    return StudentService(StudentRepository(db))
 
 
 def get_session_service(db: AsyncSession = Depends(get_db)) -> SessionService:

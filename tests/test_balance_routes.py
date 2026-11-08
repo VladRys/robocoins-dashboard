@@ -1,5 +1,7 @@
 import asyncio
 from pathlib import Path
+from types import SimpleNamespace
+from unittest.mock import AsyncMock
 
 import pytest
 from fastapi import HTTPException
@@ -62,6 +64,10 @@ def test_balance_changes_are_atomic_and_recorded_in_history(tmp_path: Path):
                     StudentRepository(session),
                     TransactionRepository(session),
                 )
+                authorization = SimpleNamespace(
+                    is_allowed=AsyncMock(return_value=True)
+                )
+                teacher = SimpleNamespace(id=1, role="teacher")
                 empty_history = await get_student_transaction_history(
                     user.id,
                     limit=50,
@@ -78,6 +84,8 @@ def test_balance_changes_are_atomic_and_recorded_in_history(tmp_path: Path):
                         user.id,
                         BalanceChangeRequest(reason=[BalanceChangeReasons.THEORY]),
                         service,
+                        authorization=authorization,
+                        _user=teacher,
                     )
 
                 assert deposit is not None
@@ -94,6 +102,8 @@ def test_balance_changes_are_atomic_and_recorded_in_history(tmp_path: Path):
                         ],
                     ),
                     service,
+                    authorization=authorization,
+                    _user=teacher,
                 )
 
                 assert deduction.balance == 6.0
@@ -124,6 +134,8 @@ def test_balance_changes_are_atomic_and_recorded_in_history(tmp_path: Path):
                         reason=[BalanceChangeReasons.SERIOUS_VIOLATION],
                     ),
                     service,
+                    authorization=authorization,
+                    _user=teacher,
                 )
 
                 saved_student = await StudentRepository(session).get_student_by_id(
