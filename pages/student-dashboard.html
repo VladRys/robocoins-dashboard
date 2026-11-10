@@ -455,13 +455,16 @@
           box.append(description);
         }
         const balance = Number(currentUser.balance) || 0;
+        const formatCoins = (value) => new Intl.NumberFormat('uk-UA', {
+          maximumFractionDigits: 1,
+        }).format(Math.round((value + Number.EPSILON) * 10) / 10);
         const percent = reward.price > 0 ? Math.min(100, Math.round(balance / reward.price * 100)) : 100;
         const meta = document.createElement('div');
         meta.className = 'progress-meta';
         const progressText = document.createElement('span');
-        progressText.textContent = `${balance} из ${reward.price} 🪙 · ${percent}%`;
+        progressText.textContent = `${formatCoins(balance)} из ${formatCoins(reward.price)} 🪙 · ${percent}%`;
         const remaining = document.createElement('span');
-        remaining.textContent = balance >= reward.price ? 'Цель достигнута!' : `Ещё ${reward.price - balance}`;
+        remaining.textContent = balance >= reward.price ? 'Цель достигнута!' : `Ещё ${formatCoins(reward.price - balance)}`;
         const progress = document.createElement('progress');
         progress.max = 100;
         progress.value = percent;

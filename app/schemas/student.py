@@ -31,6 +31,11 @@ class StudentResponse(APIResponse):
     # Access code - keyword for auth.
     access_code: str
 
+    @field_validator("balance")
+    @classmethod
+    def normalize_balance(cls, balance: float) -> float:
+        return round(balance + 1e-9, 1)
+
 class StudentGoalChangeResponse(APIResponse):
     new_goal: RewardResponse
 
@@ -49,6 +54,11 @@ class StudentProfileResponse(APIResponse):
     avatar_ring: str | None = None
     balance: float
     current_goal: str | None = None
+
+    @field_validator("balance")
+    @classmethod
+    def normalize_balance(cls, balance: float) -> float:
+        return round(balance + 1e-9, 1)
 
     @model_validator(mode="before")
     @classmethod
@@ -82,6 +92,11 @@ class BalanceLeaderboardEntry(BaseModel):
     balance: float
     course_names: list[str]
 
+    @field_validator("balance")
+    @classmethod
+    def normalize_balance(cls, balance: float) -> float:
+        return round(balance + 1e-9, 1)
+
 
 class BalanceLeaderboardResponse(BaseModel):
     entries: list[BalanceLeaderboardEntry]
@@ -94,6 +109,11 @@ class BalanceLeaderboardRankResponse(BaseModel):
     student_id: int
     rank: int
     balance: float
+
+    @field_validator("balance")
+    @classmethod
+    def normalize_balance(cls, balance: float) -> float:
+        return round(balance + 1e-9, 1)
 
 class StudentAvatarEditRequest(BaseModel):
     new_avatar: str = Field(min_length=1, max_length=16)

@@ -73,7 +73,7 @@ async def get_student_reward_progress(
     return RewardProgressResponse(
         balance=balance,
         reward=RewardResponse.model_validate(next_reward),
-        coins_remaining=next_reward.price - balance,
+        coins_remaining=round(next_reward.price - balance, 1),
         progress_percent=round(balance / next_reward.price * 100, 2),
     )
 

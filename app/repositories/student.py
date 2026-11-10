@@ -133,7 +133,7 @@ class StudentRepository:
             .values(
                 balance=case(
                     (Student.balance + amount < 0, 0),
-                    else_=Student.balance + amount,
+                    else_=func.round(Student.balance + amount, 1),
                 )
             )
             .returning(Student.balance)
@@ -152,7 +152,9 @@ class StudentRepository:
         if delta < 0:
             statement = statement.where(Student.balance >= amount)
         result = await self.session.execute(
-            statement.values(balance=Student.balance + delta).returning(Student.balance)
+            statement.values(
+                balance=func.round(Student.balance + delta, 1)
+            ).returning(Student.balance)
         )
         return result.scalar_one_or_none()
 
