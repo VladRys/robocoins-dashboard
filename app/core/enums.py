@@ -64,6 +64,7 @@ class AuthorizationAction(StrEnum):
     SHOW_STUDENT_CREDENTIALS = "show_student_credentials"
     TEACHER_AND_ADMIN_OPERATION = "teacher_and_admin_operation"
     CHANGE_STUDENT_GOAL = "change_student_goal"
+    VIEW_STUDENT_ACHIEVEMENTS = "view_student_achievements"
 
 
 class CourseCategory(StrEnum):
@@ -119,3 +120,11 @@ class TaskType(StrEnum):
     TRUE_FALSE = "true_false"
     TEXT = "text"
     PICTURE = "picture"
+
+class AchievementType(StrEnum):
+    BADGE = "badge"
+    TROPHY = "trophy"
+    CERTIFICATE = "certificate"
+
+class AchievementCategory(StrEnum):
+    COINS_EARNING = "coins_earning"

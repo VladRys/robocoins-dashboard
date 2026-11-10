@@ -82,6 +82,7 @@ def test_get_student_by_id_returns_student():
     assert response.course_names == ["Python"]
     assert response.group_ids == [1]
     assert response.avatar == "🐯"
+    assert response.avatar_ring is None
     assert response.balance == 0.0
     assert response.current_goal == "Новая цель"
     assert not hasattr(response, "hash_access_key")

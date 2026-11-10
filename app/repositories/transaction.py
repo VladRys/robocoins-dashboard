@@ -1,4 +1,4 @@
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.transaction import BalanceTransaction
@@ -41,3 +41,13 @@ class TransactionRepository:
             .limit(limit)
         )
         return list(result.scalars().all())
+
+    async def get_total_earned_coins(self, student_id: int) -> float:
+        total = await self.session.scalar(
+            select(func.coalesce(func.sum(BalanceTransaction.amount), 0)).where(
+                BalanceTransaction.student_id == student_id,
+                BalanceTransaction.operation == "deposit",
+                BalanceTransaction.cancelled_at.is_(None),
+            )
+        )
+        return float(total if total is not None else 0)

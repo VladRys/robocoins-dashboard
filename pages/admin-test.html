@@ -56,6 +56,13 @@
     .empty { color:var(--muted); font-size:13px; }
     .student-row { width:100%; padding:9px 10px; border:0; border-radius:9px; background:#f6f8fc; color:var(--ink); text-align:left; cursor:pointer; }
     .student-row:hover { background:#edf2ff; }
+    .transaction-list { display:grid; gap:9px; margin-top:10px; }
+    .transaction-item { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:10px; align-items:center; padding:11px; border:1px solid var(--line); border-radius:10px; background:#fff; }
+    .transaction-item.cancelled { opacity:.65; background:#f6f8fc; }
+    .transaction-detail { color:var(--muted); font-size:12px; }
+    .transaction-amount { font-weight:800; white-space:nowrap; }
+    .transaction-amount.deposit { color:var(--green); }
+    .transaction-amount.deduct { color:var(--red); }
     .leaderboard { width:100%; border-collapse:collapse; margin-top:12px; }
     .leaderboard th,.leaderboard td { padding:9px 8px; border-bottom:1px solid var(--line); text-align:left; }
     .leaderboard th { color:var(--muted); font-size:12px; }
@@ -146,6 +153,22 @@
         </section>
 
         <section class="panel">
+          <div class="panel-head"><h2>Ачивка за монеты 🏅</h2><p>Выдаётся автоматически, когда ученик заработает указанный суммарный порог монет.</p></div>
+          <form id="achievement-form">
+            <label for="achievement-name">Название</label><input id="achievement-name" maxlength="200" required>
+            <label for="achievement-description">Описание</label><textarea id="achievement-description" maxlength="1000" required></textarea>
+            <div class="row">
+              <div><label for="achievement-icon">Иконка</label><input id="achievement-icon" maxlength="32" value="🏅" required></div>
+              <div><label for="achievement-type">Тип</label><select id="achievement-type"><option value="badge">Значок</option><option value="trophy">Трофей</option><option value="certificate">Сертификат</option></select></div>
+            </div>
+            <label for="achievement-threshold">Сколько монет заработать</label><input id="achievement-threshold" type="number" min="1" step="1" required>
+            <button class="button" type="submit">Создать ачивку</button>
+          </form>
+          <p id="achievement-status" class="status" role="status" aria-live="polite"></p>
+          <div id="achievement-list" class="list" aria-live="polite"></div>
+        </section>
+
+        <section class="panel">
           <div class="panel-head"><h2>Обновление списков</h2><p>Проверка доступности курсов, групп и учителей.</p></div>
           <button id="refresh-button" class="button light" type="button">Обновить данные</button>
           <p id="data-status" class="status" role="status" aria-live="polite"></p>
@@ -173,6 +196,17 @@
           <p id="student-streak-status" class="status" role="status" aria-live="polite"></p>
           <pre id="student-streak-result" class="item" hidden style="white-space:pre-wrap"></pre>
           <div id="student-streak-display" class="item" aria-live="polite">Выберите ученика, чтобы загрузить стрики.</div>
+          <h3 style="margin:18px 0 6px">Прогресс ачивок за монеты</h3>
+          <p class="help">Кнопка теста создаёт обычное начисление монеты и позволяет проверить автоматическую выдачу ачивок.</p>
+          <button id="test-achievement-coin" class="button" type="button">Начислить 1 тестовую монету</button>
+          <p id="student-achievements-status" class="status" role="status" aria-live="polite"></p>
+          <div id="student-achievements-display" class="list" aria-live="polite">Выберите ученика, чтобы посмотреть прогресс.</div>
+          <div class="panel-head" style="margin-top:22px">
+            <div><h3 style="margin:0">История транзакций 🪙</h3><p>Последние 100 операций. Активные операции можно отменить.</p></div>
+            <button id="student-transactions-refresh" class="button light small" type="button">Обновить</button>
+          </div>
+          <p id="student-transactions-status" class="status" role="status" aria-live="polite"></p>
+          <div id="student-transactions-display" class="transaction-list" aria-live="polite">Выберите ученика, чтобы посмотреть историю.</div>
         </section>
       </div>
 
@@ -197,7 +231,7 @@
       const local = ['localhost', '127.0.0.1', '::1'].includes(location.hostname);
       const localBase = local ? (location.port === '8000' ? '' : `${location.protocol}//${location.hostname}:8000`) : '';
       const $ = (id) => document.getElementById(id);
-      const state = { courses: [], groups: [], teachers: [], rewards: [], leaderboardOffset: 0, leaderboardTotal: 0 };
+      const state = { courses: [], groups: [], teachers: [], rewards: [], achievements: [], leaderboardOffset: 0, leaderboardTotal: 0 };
 
       function apiPath(path) {
         if (local) return `${localBase}${path}`;
@@ -239,6 +273,34 @@
         renderList('reward-list', state.rewards.map(r => ({ title: r.name, detail: `${r.type} · ${r.price} монет${r.course_category ? ` · ${r.course_category}` : ''}` })), 'Наград пока нет.');
         $('counts').textContent = `${state.teachers.length} учителей · ${state.courses.length} курсов · ${state.groups.length} групп · ${state.rewards.length} наград`;
       }
+      function renderAchievements() {
+        const container = $('achievement-list'); container.replaceChildren();
+        if (!state.achievements.length) {
+          const empty = document.createElement('div'); empty.className = 'empty'; empty.textContent = 'Ачивок за монеты пока нет.'; container.append(empty); return;
+        }
+        for (const achievement of state.achievements) {
+          const item = document.createElement('div'); item.className = 'item';
+          const title = document.createElement('strong'); title.textContent = `${achievement.icon} ${achievement.name} · ${achievement.required_coins} 🪙`;
+          const detail = document.createElement('small'); detail.textContent = `${achievement.description} · ${achievement.type} · ID ${achievement.id}`;
+          const remove = document.createElement('button'); remove.type = 'button'; remove.className = 'button light small'; remove.textContent = 'Удалить';
+          remove.addEventListener('click', async () => {
+            remove.disabled = true;
+            try {
+              await request(`/achievements/${achievement.id}`, { method: 'DELETE' });
+              status('achievement-status', `Ачивка «${achievement.name}» удалена.`, 'success');
+              await loadAchievements();
+              const studentId = Number($('profile-student-id').value);
+              if (Number.isInteger(studentId) && studentId > 0) await loadStudentAchievements(studentId);
+            } catch (error) { status('achievement-status', error.message, 'error'); }
+            finally { remove.disabled = false; }
+          });
+          item.append(title, detail, remove); container.append(item);
+        }
+      }
+      async function loadAchievements() {
+        state.achievements = await request('/achievements');
+        renderAchievements();
+      }
       function refreshSelectors() {
         fillSelect('group-course', state.courses.map(c => ({ value: c.id, label: `${c.name} (#${c.id})` })), 'Нет курсов');
         const teachers = state.teachers.map(t => ({ value: t.id, label: `${t.name} (#${t.id})` }));
@@ -250,12 +312,14 @@
         $('refresh-button').disabled = true;
         status('data-status', 'Загружаю данные…');
         try {
-          const [users, courses, rewards] = await Promise.all([request('/users'), request('/course'), request('/rewards')]);
+          const [users, courses, rewards, achievements] = await Promise.all([request('/users'), request('/course'), request('/rewards'), request('/achievements')]);
           state.teachers = users.filter(user => user.role === 'teacher');
           state.courses = courses;
           state.groups = courses.flatMap(course => (course.groups || []).map(group => ({ ...group, courseName: course.name })));
           state.rewards = rewards;
+          state.achievements = achievements;
           refreshSelectors(); renderLists();
+          renderAchievements();
           status('data-status', 'Списки обновлены.', 'success');
         } catch (error) { status('data-status', error.message, 'error'); }
         finally { $('refresh-button').disabled = false; }
@@ -397,9 +461,159 @@
         }
       }
 
+      async function loadStudentAchievements(studentId) {
+        const display = $('student-achievements-display');
+        display.textContent = `Загружаю прогресс ученика #${studentId}…`;
+        try {
+          const data = await request(`/student/${studentId}/achievements`);
+          if (Number($('profile-student-id').value) !== studentId) return;
+          display.replaceChildren();
+          const total = document.createElement('div'); total.className = 'item';
+          total.textContent = `Заработано всего: ${data.earned_coins} 🪙`;
+          display.append(total);
+          if (!data.achievements.length) {
+            const empty = document.createElement('div'); empty.className = 'empty'; empty.textContent = 'Ачивок за монеты пока нет.'; display.append(empty);
+          }
+          for (const achievement of data.achievements) {
+            const item = document.createElement('div'); item.className = 'item';
+            const title = document.createElement('strong');
+            title.textContent = `${achievement.icon} ${achievement.name} · ${achievement.earned ? 'получена ✓' : `${achievement.progress_percent}%`}`;
+            const detail = document.createElement('small');
+            detail.textContent = `${Math.min(data.earned_coins, achievement.required_coins)} из ${achievement.required_coins} монет · ${achievement.description}`;
+            const progress = document.createElement('progress'); progress.max = 100; progress.value = achievement.progress_percent; progress.style.width = '100%';
+            item.append(title, detail, progress); display.append(item);
+          }
+          status('student-achievements-status', `Прогресс ученика #${studentId} обновлён.`, 'success');
+          return true;
+        } catch (error) {
+          if (Number($('profile-student-id').value) === studentId) {
+            display.textContent = `Не удалось загрузить ачивки: ${error.message}`;
+            status('student-achievements-status', error.message, 'error');
+          }
+          return false;
+        }
+      }
+
+      async function loadStudentTransactions(studentId) {
+        const display = $('student-transactions-display');
+        display.textContent = `Загружаю историю ученика #${studentId}…`;
+        status('student-transactions-status', 'Загружаю историю транзакций…');
+        try {
+          const data = await request(`/student/${studentId}/transactions?limit=100&offset=0`);
+          if (Number($('profile-student-id').value) !== studentId) return false;
+          display.replaceChildren();
+          const transactions = data.transactions || [];
+          if (!transactions.length) {
+            const empty = document.createElement('div');
+            empty.className = 'empty';
+            empty.textContent = 'У ученика пока нет транзакций.';
+            display.append(empty);
+          }
+          for (const transaction of transactions) {
+            const item = document.createElement('article');
+            item.className = `transaction-item${transaction.cancelled_at ? ' cancelled' : ''}`;
+            const details = document.createElement('div');
+            const heading = document.createElement('strong');
+            const sign = transaction.operation === 'deposit' ? '+' : '−';
+            heading.textContent = `#${transaction.id} · ${sign}${transaction.amount} 🪙`;
+            const metadata = document.createElement('div');
+            metadata.className = 'transaction-detail';
+            const createdAt = new Date(transaction.created_at).toLocaleString('ru-RU');
+            const reasons = (transaction.reason || []).join(', ') || 'Причина не указана';
+            metadata.textContent = `${createdAt} · ${reasons}`;
+            details.append(heading, metadata);
+            const actions = document.createElement('div');
+            actions.className = 'transaction-amount';
+            actions.classList.add(transaction.operation);
+            if (transaction.cancelled_at) {
+              const cancelledAt = document.createElement('span');
+              cancelledAt.textContent = `Отменена ${new Date(transaction.cancelled_at).toLocaleString('ru-RU')}`;
+              actions.append(cancelledAt);
+            } else {
+              const cancelButton = document.createElement('button');
+              cancelButton.type = 'button';
+              cancelButton.className = 'button light small';
+              cancelButton.textContent = 'Отменить';
+              cancelButton.addEventListener('click', async () => {
+                if (!window.confirm(`Отменить транзакцию #${transaction.id} на ${transaction.amount} 🪙?`)) return;
+                cancelButton.disabled = true;
+                status('student-transactions-status', `Отменяю транзакцию #${transaction.id}…`);
+                try {
+                  const result = await request(`/student/transactions/${transaction.id}/cancel`, {
+                    method: 'POST',
+                  });
+                  await Promise.all([
+                    loadStudentTransactions(studentId),
+                    loadStudentAchievements(studentId),
+                    loadLeaderboard(),
+                  ]);
+                  status(
+                    'student-transactions-status',
+                    `Транзакция #${transaction.id} отменена. Новый баланс: ${result.balance} 🪙.`,
+                    'success',
+                  );
+                } catch (error) {
+                  status('student-transactions-status', error.message, 'error');
+                  cancelButton.disabled = false;
+                }
+              });
+              actions.append(cancelButton);
+            }
+            item.append(details, actions);
+            display.append(item);
+          }
+          status(
+            'student-transactions-status',
+            `Показано транзакций: ${transactions.length}.`,
+            'success',
+          );
+          return true;
+        } catch (error) {
+          if (Number($('profile-student-id').value) === studentId) {
+            display.textContent = `Не удалось загрузить историю: ${error.message}`;
+            status('student-transactions-status', error.message, 'error');
+          }
+          return false;
+        }
+      }
+
+      $('test-achievement-coin').addEventListener('click', async () => {
+        const studentId = Number($('profile-student-id').value);
+        if (!Number.isInteger(studentId) || studentId < 1) {
+          status('student-achievements-status', 'Сначала выберите корректный ID ученика.', 'error');
+          return;
+        }
+        const button = $('test-achievement-coin'); button.disabled = true;
+        status('student-achievements-status', 'Начисляю тестовую монету…');
+        try {
+          const result = await request(`/student/${studentId}/balance/transactions`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ reason: ['theory'] }),
+          });
+          if (await loadStudentAchievements(studentId)) {
+            status('student-achievements-status', `Начислена 1 монета. Баланс: ${result.balance} 🪙.`, 'success');
+          }
+          await loadStudentTransactions(studentId);
+        } catch (error) { status('student-achievements-status', error.message, 'error'); }
+        finally { button.disabled = false; }
+      });
+
       $('profile-student-id').addEventListener('change', () => {
         const studentId = Number($('profile-student-id').value);
-        if (Number.isInteger(studentId) && studentId > 0) loadStudentStreaks(studentId);
+        if (Number.isInteger(studentId) && studentId > 0) {
+          loadStudentStreaks(studentId);
+          loadStudentAchievements(studentId);
+          loadStudentTransactions(studentId);
+        }
+      });
+      $('student-transactions-refresh').addEventListener('click', () => {
+        const studentId = Number($('profile-student-id').value);
+        if (!Number.isInteger(studentId) || studentId < 1) {
+          status('student-transactions-status', 'Сначала выберите корректный ID ученика.', 'error');
+          return;
+        }
+        loadStudentTransactions(studentId);
       });
 
       $('load-students-button').addEventListener('click', async () => {
@@ -427,6 +641,8 @@
               $('profile-avatar').value = student.avatar || '';
               status('students-load-status', `Выбран ученик #${student.id}.`, 'success');
               loadStudentStreaks(student.id);
+              loadStudentAchievements(student.id);
+              loadStudentTransactions(student.id);
             });
             picker.append(item);
           }
@@ -467,6 +683,25 @@
         const result = await request('/rewards', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
         $('reward-form').reset(); $('reward-category-wrap').hidden = false;
         status('reward-status', `Награда «${result.reward.name}» создана.`, 'success'); await loadData();
+      });
+      submitForm('achievement-form', 'button', 'achievement-status', async () => {
+        const achievement = await request('/achievements', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: $('achievement-name').value.trim(),
+            description: $('achievement-description').value.trim(),
+            icon: $('achievement-icon').value.trim(),
+            type: $('achievement-type').value,
+            required_coins: Number($('achievement-threshold').value),
+          }),
+        });
+        $('achievement-form').reset();
+        $('achievement-icon').value = '🏅';
+        status('achievement-status', `Ачивка «${achievement.name}» создана: ${achievement.required_coins} заработанных монет.`, 'success');
+        await loadAchievements();
+        const studentId = Number($('profile-student-id').value);
+        if (Number.isInteger(studentId) && studentId > 0) await loadStudentAchievements(studentId);
       });
 
       request('/auth/me').then(signedIn).catch(() => {});

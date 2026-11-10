@@ -22,6 +22,7 @@ from app.models.reward import Reward
 from app.models.user import User
 from app.models.daily_task import DailyTask
 from app.models.streak import Streak
+from app.models.achievement import Achievement, StudentAchievement
 from app.core.config import Config as cfg
 
 # this is the Alembic Config object, which provides

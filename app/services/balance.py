@@ -5,6 +5,7 @@ from app.models.group import Group
 from app.repositories.group import GroupRepository
 from app.models.transaction import BalanceTransaction
 from app.repositories.student import StudentRepository
+from app.services.student_achievement import StudentAchievementService
 from app.repositories.transaction import TransactionRepository
 from app.schemas.balance import BalanceChangeRequest
 
@@ -31,11 +32,25 @@ class BalanceService:
         student_repository: StudentRepository,
         transaction_repository: TransactionRepository,
         group_repository: GroupRepository | None = None,
+        student_achievement_service: StudentAchievementService | None = None,
     ):
+        self.session = session
         self.student_repository = student_repository
         self.transaction_repository = transaction_repository
         self.group_repository = group_repository or GroupRepository(
             student_repository.session
+        )
+        self.student_achievement_service = student_achievement_service
+
+    async def _award_coin_earning_achievements(self, student_id: int) -> None:
+        if self.student_achievement_service is None:
+            return
+        earned_coins = await self.transaction_repository.get_total_earned_coins(
+            student_id
+        )
+        await self.student_achievement_service.award_coin_earning_achievements(
+            student_id,
+            earned_coins,
         )
 
     async def get_balance(self, student_id: int) -> float:
@@ -64,6 +79,7 @@ class BalanceService:
             reason=[reason.value for reason in change.reason],
         )
         await self.transaction_repository.create(transaction)
+        await self._award_coin_earning_achievements(student_id)
         await self.transaction_repository.commit()
         return balance, transaction
 
@@ -88,6 +104,7 @@ class BalanceService:
                 reason=[BalanceChangeReasons.PRACTICE_COMPLETED.value],
             )
             await self.transaction_repository.create(transaction)
+            await self._award_coin_earning_achievements(student_id)
             results.append((balance, transaction))
 
         await self.transaction_repository.commit()
@@ -127,7 +144,7 @@ class BalanceService:
 
         transaction.cancelled_at = datetime.now(timezone.utc)
         transaction.cancelled_by_user_id = cancelled_by_user_id
+        await self.session.flush()
+        await self._award_coin_earning_achievements(transaction.student_id)
         await self.transaction_repository.commit()
         return balance, transaction
-
-

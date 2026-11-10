@@ -1,28 +1,35 @@
 import asyncio
 from pathlib import Path
 from types import SimpleNamespace
+from typing import cast
 from unittest.mock import AsyncMock
 
 import pytest
 from fastapi import HTTPException
 from sqlalchemy.engine import URL
+from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
 from app.api.routes.balance import (
+    cancel_student_transaction,
     change_student_balance,
     get_student_balance_by_id,
     get_student_transaction_history,
 )
 from app.core.database import Base
-from app.core.enums import BalanceChangeReasons
+from app.core.enums import AchievementCategory, AchievementType, BalanceChangeReasons
+from app.models.achievement import Achievement
 from app.models.course import Course
 from app.models.group import Group
 from app.models.student import Student
 from app.models.user import User
 from app.repositories.student import StudentRepository
+from app.repositories.achievement import AchievementRepository
+from app.repositories.student_achievement import StudentAchievementRepository
 from app.repositories.transaction import TransactionRepository
 from app.schemas.balance import BalanceChangeRequest
 from app.services.balance import BalanceService
+from app.services.student_achievement import StudentAchievementService
 
 
 def test_balance_changes_are_atomic_and_recorded_in_history(tmp_path: Path):
@@ -59,10 +66,35 @@ def test_balance_changes_are_atomic_and_recorded_in_history(tmp_path: Path):
                 session.add(student)
                 await session.commit()
 
+                session.add(
+                    Achievement(
+                        name="Earn three coins",
+                        description="Earn three coins",
+                        icon="coin",
+                        type=AchievementType.BADGE,
+                        category=AchievementCategory.COINS_EARNING,
+                        required_coins=3,
+                    )
+                )
+                session.add(
+                    Achievement(
+                        name="Earn eleven coins",
+                        description="Earn eleven coins",
+                        icon="coin",
+                        type=AchievementType.TROPHY,
+                        category=AchievementCategory.COINS_EARNING,
+                        required_coins=11,
+                    )
+                )
+                await session.commit()
                 service = BalanceService(
                     session,
                     StudentRepository(session),
                     TransactionRepository(session),
+                    student_achievement_service=StudentAchievementService(
+                        StudentAchievementRepository(session),
+                        AchievementRepository(session),
+                    ),
                 )
                 authorization = SimpleNamespace(
                     is_allowed=AsyncMock(return_value=True)
@@ -78,8 +110,29 @@ def test_balance_changes_are_atomic_and_recorded_in_history(tmp_path: Path):
                 assert empty_history.status == "success"
                 assert empty_history.code == 200
 
+                first_deposit = await service.change_balance(
+                    user.id,
+                    BalanceChangeRequest(reason=[BalanceChangeReasons.THEORY]),
+                )
+                await service.change_balance(
+                    user.id,
+                    BalanceChangeRequest(reason=[BalanceChangeReasons.THEORY]),
+                )
+                assert await StudentAchievementRepository(
+                    session
+                ).get_student_achievements(user.id) == []
+
+                await service.cancel_transaction(first_deposit[1].id, teacher.id)
+                await service.change_balance(
+                    user.id,
+                    BalanceChangeRequest(reason=[BalanceChangeReasons.THEORY]),
+                )
+                assert await StudentAchievementRepository(
+                    session
+                ).get_student_achievements(user.id) == []
+
                 deposit = None
-                for _ in range(10):
+                for _ in range(8):
                     deposit = await change_student_balance(
                         user.id,
                         BalanceChangeRequest(reason=[BalanceChangeReasons.THEORY]),
@@ -92,6 +145,11 @@ def test_balance_changes_are_atomic_and_recorded_in_history(tmp_path: Path):
                 assert deposit.balance == 10.0
                 assert deposit.transaction.operation == "deposit"
                 assert deposit.transaction.amount == 1.0
+                awarded = await StudentAchievementRepository(
+                    session
+                ).get_student_achievements(user.id)
+                assert len(awarded) == 1
+                assert awarded[0].achievement_id == 1
 
                 deduction = await change_student_balance(
                     user.id,
@@ -126,7 +184,21 @@ def test_balance_changes_are_atomic_and_recorded_in_history(tmp_path: Path):
                 assert history.transactions[1].reason == [
                     BalanceChangeReasons.THEORY.value,
                 ]
-                assert len(history.transactions) == 11
+                assert len(history.transactions) == 12
+
+                group_result = await service.award_group_practice_completed(
+                    group.id
+                )
+                assert group_result is not None
+                assert len(group_result[1]) == 1
+                assert group_result[1][0][0] == 7.0
+                awarded = await StudentAchievementRepository(
+                    session
+                ).get_student_achievements(user.id)
+                assert {assignment.achievement_id for assignment in awarded} == {
+                    1,
+                    2,
+                }
 
                 await change_student_balance(
                     user.id,
@@ -145,8 +217,13 @@ def test_balance_changes_are_atomic_and_recorded_in_history(tmp_path: Path):
                     session
                 ).get_by_student_id(user.id, limit=50)
                 assert saved_student is not None
-                assert saved_student.balance == 3.0
-                assert len(saved_transactions) == 12
+                assert saved_student.balance == 4.0
+                assert len(saved_transactions) == 14
+                assert len(
+                    await StudentAchievementRepository(session).get_student_achievements(
+                        user.id
+                    )
+                ) == 2
         finally:
             await engine.dispose()
 
@@ -184,6 +261,116 @@ def test_balance_endpoints_return_404_for_unknown_student(tmp_path: Path):
                         service=service,
                     )
                 assert error.value.status_code == 404
+        finally:
+            await engine.dispose()
+
+    asyncio.run(run_test())
+
+
+def test_balance_updates_compile_with_postgres_rounding():
+    from sqlalchemy.dialects import postgresql
+
+    async def run_test():
+        session = SimpleNamespace(
+            execute=AsyncMock(
+                return_value=SimpleNamespace(scalar_one_or_none=lambda: 1.1)
+            )
+        )
+        repository = StudentRepository(cast(AsyncSession, session))
+
+        assert await repository.change_balance(1, 0.1) == 1.1
+        change_sql = str(
+            session.execute.await_args.args[0].compile(
+                dialect=postgresql.dialect()
+            )
+        )
+        assert "round(CAST(students.balance +" in change_sql
+        assert "round(students.balance +" not in change_sql
+
+        await repository.reverse_balance_transaction(1, "deduct", 0.1)
+        reverse_sql = str(
+            session.execute.await_args.args[0].compile(
+                dialect=postgresql.dialect()
+            )
+        )
+        assert "round(CAST(students.balance +" in reverse_sql
+        assert "round(students.balance +" not in reverse_sql
+
+    asyncio.run(run_test())
+
+
+def test_admin_can_cancel_transaction_through_api(tmp_path: Path):
+    async def run_test():
+        engine = create_async_engine(
+            URL.create(
+                "sqlite+aiosqlite",
+                database=str(tmp_path / "cancel-transaction.db"),
+            )
+        )
+        session_factory = async_sessionmaker(engine, expire_on_commit=False)
+
+        try:
+            async with engine.begin() as connection:
+                await connection.run_sync(Base.metadata.create_all)
+
+            async with session_factory() as session:
+                admin = User(
+                    name="Admin",
+                    role="admin",
+                    access_code="ADMIN123",
+                )
+                student_user = User(
+                    name="Student",
+                    role="student",
+                    access_code="STUDENT123",
+                )
+                session.add_all([admin, student_user])
+                await session.flush()
+                session.add(
+                    Student(
+                        id=student_user.id,
+                        user_id=student_user.id,
+                        name=student_user.name,
+                        hash_access_key="student-hash",
+                        access_code="STUDENT456",
+                        balance=5.0,
+                    )
+                )
+                await session.commit()
+
+                service = BalanceService(
+                    session,
+                    StudentRepository(session),
+                    TransactionRepository(session),
+                )
+                _, transaction = await service.change_balance(
+                    student_user.id,
+                    BalanceChangeRequest(reason=[BalanceChangeReasons.THEORY]),
+                )
+                authorization = SimpleNamespace(
+                    is_allowed=AsyncMock(return_value=True)
+                )
+
+                result = await cancel_student_transaction(
+                    transaction.id,
+                    service,
+                    admin,
+                    authorization,
+                )
+
+                assert result.balance == 5.0
+                assert result.transaction.cancelled_at is not None
+                assert result.transaction.cancelled_by_user_id == admin.id
+                authorization.is_allowed.assert_awaited_once()
+
+                with pytest.raises(HTTPException) as error:
+                    await cancel_student_transaction(
+                        transaction.id,
+                        service,
+                        admin,
+                        authorization,
+                    )
+                assert error.value.status_code == 409
         finally:
             await engine.dispose()
 

@@ -6,6 +6,7 @@ from sqlalchemy import CheckConstraint, Float, ForeignKey, Integer, String, Uniq
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
+from app.models.achievement import StudentAchievement
 
 if TYPE_CHECKING:
     from app.models.group import Group
@@ -56,4 +57,8 @@ class Student(Base):
         back_populates="student", cascade="all, delete-orphan"
     )
     current_goal: Mapped[str | None] = mapped_column(String, nullable=True)
-    
+
+    achievements: Mapped[list["StudentAchievement"]] = relationship(
+        back_populates="student",
+        cascade="all, delete-orphan",
+    )

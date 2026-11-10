@@ -1,5 +1,5 @@
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import case, func, or_, select, update
+from sqlalchemy import Float, Numeric, case, cast, func, or_, select, update
 from sqlalchemy.orm import selectinload
 
 from app.core.enums import UserRole
@@ -127,13 +127,17 @@ class StudentRepository:
 
     async def change_balance(self, student_id: int, amount: float) -> float | None:
         """Atomically change a balance without allowing it to fall below zero."""
+        new_balance = cast(
+            func.round(cast(Student.balance + amount, Numeric), 1),
+            Float,
+        )
         result = await self.session.execute(
             update(Student)
             .where(Student.id == student_id)
             .values(
                 balance=case(
                     (Student.balance + amount < 0, 0),
-                    else_=func.round(Student.balance + amount, 1),
+                    else_=new_balance,
                 )
             )
             .returning(Student.balance)
@@ -151,9 +155,13 @@ class StudentRepository:
         statement = update(Student).where(Student.id == student_id)
         if delta < 0:
             statement = statement.where(Student.balance >= amount)
+        new_balance = cast(
+            func.round(cast(Student.balance + delta, Numeric), 1),
+            Float,
+        )
         result = await self.session.execute(
             statement.values(
-                balance=func.round(Student.balance + delta, 1)
+                balance=new_balance
             ).returning(Student.balance)
         )
         return result.scalar_one_or_none()

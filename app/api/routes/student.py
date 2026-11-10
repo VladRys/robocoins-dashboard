@@ -1,11 +1,12 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, Response
 
 from app.api.dependencies import (
-    get_authenticated_admin,
     get_authenticated_user,
     get_authenticated_teacher,
     get_authorization_service,
     get_reward_service,
+    get_student_achievement_service,
+    get_transaction_repository,
     get_streak_service,
     get_student_service,
 )
@@ -26,9 +27,15 @@ from app.schemas.student import (
     BalanceLeaderboardRankResponse,
 )
 from app.schemas.auth import StudentCredentialsResponse
+from app.schemas.achievement import (
+    CoinAchievementProgressItem,
+    StudentAchievementProgressResponse,
+)
 from app.services.authorization import AuthorizationService
 from app.services.reward import RewardService
 from app.services.student import StudentService
+from app.services.student_achievement import StudentAchievementService
+from app.repositories.transaction import TransactionRepository
 from app.services.streak import StreakService
 from app.schemas.streak import StreakResponse, LongestStreakResponse, StreakDaysUpdate
 
@@ -36,6 +43,55 @@ student_router = APIRouter(
     prefix="/student",
     tags=["students"],
 )
+
+
+@student_router.get(
+    "/{student_id}/achievements",
+    response_model=StudentAchievementProgressResponse,
+)
+async def get_student_achievement_progress(
+    student_id: int,
+    student_service: StudentService = Depends(get_student_service),
+    achievement_service: StudentAchievementService = Depends(
+        get_student_achievement_service
+    ),
+    transaction_repository: TransactionRepository = Depends(
+        get_transaction_repository
+    ),
+    authorization: AuthorizationService = Depends(get_authorization_service),
+    user: User = Depends(get_authenticated_user),
+) -> StudentAchievementProgressResponse:
+    if await student_service.get_student_by_id(student_id) is None:
+        raise HTTPException(status_code=404, detail=HttpErrorMessage.STUDENT_NOT_FOUND)
+    if not await authorization.is_allowed(
+        AuthorizationAction.VIEW_STUDENT_ACHIEVEMENTS,
+        user,
+        student_id,
+    ):
+        raise HTTPException(status_code=403, detail=HttpErrorMessage.FORBIDDEN)
+
+    earned_coins = await transaction_repository.get_total_earned_coins(student_id)
+    progress = await achievement_service.get_coin_earning_progress(
+        student_id,
+        earned_coins,
+    )
+    return StudentAchievementProgressResponse(
+        earned_coins=earned_coins,
+        achievements=[
+            CoinAchievementProgressItem(
+                id=achievement.id,
+                name=achievement.name,
+                description=achievement.description,
+                icon=achievement.icon,
+                type=achievement.type,
+                category=achievement.category,
+                required_coins=achievement.required_coins,
+                earned=earned,
+                progress_percent=percent,
+            )
+            for achievement, earned, percent in progress
+        ],
+    )
 
 
 @student_router.patch("/{student_id}/change-goal", response_model=StudentGoalChangeResponse)

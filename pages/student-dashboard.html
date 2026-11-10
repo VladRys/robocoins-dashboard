@@ -224,6 +224,14 @@
       border-radius: 10px;
     }
     .history-item.cancelled { opacity: .58; }
+    .achievement-list { display: grid; gap: 10px; }
+    .achievement-card { padding: 12px; border: 1px solid var(--line); border-radius: 12px; background: #fff; }
+    .achievement-card.earned { border-color: #b7e4c7; background: #f5fff8; }
+    .achievement-head { display: flex; justify-content: space-between; gap: 10px; align-items: flex-start; }
+    .achievement-title { font-weight: 800; }
+    .achievement-description { margin-top: 3px; color: var(--muted); font-size: 13px; }
+    .achievement-progress { display: flex; justify-content: space-between; gap: 8px; margin: 8px 0 5px; color: var(--muted); font-size: 12px; }
+    .achievement-card progress { accent-color: var(--gold); }
     .amount { font-weight: 850; white-space: nowrap; }
     .amount.deposit { color: var(--green); }
     .amount.deduct { color: var(--red); }
@@ -362,6 +370,16 @@
 
           <section class="panel">
             <div class="panel-head">
+              <div><h2>Мои достижения 🏅</h2><p>Зарабатывай монеты и открывай новые ачивки.</p></div>
+              <button id="achievements-refresh" class="button light small" type="button">Обновить</button>
+            </div>
+            <div id="achievements-total" class="muted"></div>
+            <div id="achievements-list" class="achievement-list"><div class="empty">Загружаю достижения…</div></div>
+            <p id="achievements-status" class="status" role="status" aria-live="polite"></p>
+          </section>
+
+          <section class="panel">
+            <div class="panel-head">
               <div><h2>История монет 🪙</h2><p>Последние изменения баланса.</p></div>
               <button id="history-refresh" class="button light small" type="button">Обновить</button>
             </div>
@@ -386,6 +404,7 @@
     let currentStreak = null;
     let longestStreak = 0;
     let accessCode = '';
+    let coinAchievements = [];
 
     async function request(path, options = {}) {
       const response = await fetch(`${apiBase}${path}`, {
@@ -431,6 +450,9 @@
       } else {
         accessCode = '';
         rewards = [];
+        coinAchievements = [];
+        $('achievements-list').replaceChildren(emptyMessage('Войдите, чтобы посмотреть достижения.'));
+        $('achievements-total').textContent = '';
         $('credential-code').textContent = 'Не выполнен вход';
         $('copy-code').disabled = true;
       }
@@ -567,6 +589,54 @@
       renderGoal();
       renderHistory(history.transactions || []);
       setStatus('history-status', '');
+    }
+
+    async function loadAchievements() {
+      setStatus('achievements-status', 'Загружаю достижения…');
+      try {
+        const result = await request(`/student/${currentUser.id}/achievements`);
+        coinAchievements = result.achievements || [];
+        $('achievements-total').textContent = `Всего заработано: ${result.earned_coins} 🪙`;
+        const list = $('achievements-list');
+        list.replaceChildren();
+        if (!coinAchievements.length) {
+          list.append(emptyMessage('Пока нет ачивок за монеты. Скоро они появятся!'));
+        }
+        for (const achievement of coinAchievements) {
+          const card = document.createElement('article');
+          card.className = `achievement-card${achievement.earned ? ' earned' : ''}`;
+          const head = document.createElement('div');
+          head.className = 'achievement-head';
+          const copy = document.createElement('div');
+          const title = document.createElement('div');
+          title.className = 'achievement-title';
+          title.textContent = `${achievement.icon} ${achievement.name}`;
+          const description = document.createElement('div');
+          description.className = 'achievement-description';
+          description.textContent = achievement.description;
+          copy.append(title, description);
+          const badge = document.createElement('span');
+          badge.className = 'tag';
+          badge.textContent = achievement.earned ? 'Получена ✓' : `${achievement.required_coins} 🪙`;
+          head.append(copy, badge);
+          const progressMeta = document.createElement('div');
+          progressMeta.className = 'achievement-progress';
+          const progressLabel = document.createElement('span');
+          progressLabel.textContent = `${Math.min(result.earned_coins, achievement.required_coins)} из ${achievement.required_coins} заработано`;
+          const percentLabel = document.createElement('span');
+          percentLabel.textContent = `${achievement.progress_percent}%`;
+          progressMeta.append(progressLabel, percentLabel);
+          const progress = document.createElement('progress');
+          progress.max = 100;
+          progress.value = achievement.progress_percent;
+          card.append(head, progressMeta, progress);
+          list.append(card);
+        }
+        setStatus('achievements-status', 'Достижения обновлены.', 'success');
+      } catch (error) {
+        setStatus('achievements-status', error.message, 'error');
+        throw error;
+      }
     }
 
     function renderHistory(transactions) {
@@ -718,6 +788,7 @@
           const refreshResults = await Promise.allSettled([
             loadDailyTasks(),
             loadBalanceAndHistory(),
+            loadAchievements(),
           ]);
           if (refreshResults[1].status === 'rejected') {
             setStatus('history-status', refreshResults[1].reason.message, 'error');
@@ -761,6 +832,7 @@
         { statusId: 'shop-status', load: loadRewards },
         { statusId: 'history-status', load: loadBalanceAndHistory },
         { statusId: 'streak-status', load: loadStreaks },
+        { statusId: 'achievements-status', load: loadAchievements },
         { statusId: 'tasks-status', load: loadDailyTasks },
       ];
       const results = await Promise.allSettled(
@@ -837,6 +909,9 @@
     $('tasks-refresh').addEventListener('click', loadDailyTasks);
     $('shop-refresh').addEventListener('click', () => loadRewards().catch((error) => setStatus('shop-status', error.message, 'error')));
     $('history-refresh').addEventListener('click', () => loadBalanceAndHistory().catch((error) => setStatus('history-status', error.message, 'error')));
+    $('achievements-refresh').addEventListener('click', () => {
+      loadAchievements().catch((error) => setStatus('achievements-status', error.message, 'error'));
+    });
     $('goal-select').addEventListener('change', () => {
       $('goal-button').disabled = !$('goal-select').value;
     });

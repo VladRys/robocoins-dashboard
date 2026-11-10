@@ -5,6 +5,7 @@ RoboCoins is an educational platform for managing student groups, virtual coins,
 ## Features
 
 - 🪙 Virtual currency for student achievements and activities
+- 🏆 Coin-earning achievements awarded automatically at configured lifetime earned-coin thresholds
 - 👨‍🎓 Student profiles with customizable nicknames and avatars
 - 👨‍🏫 Teacher management of assigned groups and students
 - 👥 Group enrollment and teacher assignments
@@ -26,6 +27,7 @@ Set a unique `ADMIN_PASSWORD` per environment. When it is not configured, the se
 
 The admin testing page is available at `/admin`.
 The student dashboard test page is available at `/student-dashboard`.
+Admins can create coin-earning achievements from `/admin`; students see their earned-coin total and achievement progress in their dashboard. Each threshold uses lifetime valid deposits, excluding cancelled transactions. The admin dashboard also has a one-coin test action that records a normal balance transaction.
 
 ## API overview
 
@@ -62,6 +64,9 @@ Removing a student only removes that group's membership. It does not delete the 
 - `GET /student/{student_id}/balance` reads a balance.
 - `POST /student/{student_id}/balance/transactions` records a balance change. Example: `{"operation":"deposit","amount":5,"reason":"Completed a challenge"}`. Use `"deduct"` to subtract coins.
 - `GET /student/{student_id}/transactions?limit=50&offset=0` lists transactions, newest first.
+- The admin page shows the selected student's latest 100 transactions and can cancel active ones; cancellation is recorded and updates the student's balance.
+- `GET /student/{student_id}/achievements` lists coin-earning achievement progress for the student, their assigned teacher, or an admin.
+- Admins can manage coin-earning achievements with `GET` and `POST /achievements`, and remove one with `DELETE /achievements/{achievement_id}`. Create bodies accept `name`, `description`, `icon`, `type`, and a positive `required_coins` threshold.
 - `GET /rewards` lists rewards; `POST /rewards` creates one.
 
 Amounts must be positive and deductions cannot reduce a balance below zero. Review authorization before exposing balance endpoints to untrusted clients.

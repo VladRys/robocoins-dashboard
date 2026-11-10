@@ -4,6 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_db
 from app.core.enums import AuthorizationAction, HttpErrorMessage
 from app.models.user import User
+from app.repositories.achievement import AchievementRepository
 from app.repositories.course import CourseRepository
 from app.repositories.daily_task import DailyTaskRepository
 from app.repositories.group import GroupRepository
@@ -11,9 +12,11 @@ from app.repositories.reward import RewardRepository
 from app.repositories.session import SessionRepository
 from app.repositories.streak import StreakRepository
 from app.repositories.student import StudentRepository
+from app.repositories.student_achievement import StudentAchievementRepository
 from app.repositories.transaction import TransactionRepository
 from app.repositories.users import UserRepository
 from app.services.authorization import AuthorizationService
+from app.services.achievement import AchievementService
 from app.services.balance import BalanceService
 from app.services.course import CourseService
 from app.services.group import GroupService
@@ -22,11 +25,33 @@ from app.services.session import SessionService
 from app.services.streak import StreakService
 from app.services.daily_task import DailyTaskService
 from app.services.student import StudentService
+from app.services.student_achievement import StudentAchievementService
 from app.services.users import UserService
 
 
 def get_user_service(db: AsyncSession = Depends(get_db)) -> UserService:
     return UserService(UserRepository(db))
+
+
+def get_achievement_service(
+    db: AsyncSession = Depends(get_db),
+) -> AchievementService:
+    return AchievementService(AchievementRepository(db))
+
+
+def get_student_achievement_service(
+    db: AsyncSession = Depends(get_db),
+) -> StudentAchievementService:
+    return StudentAchievementService(
+        StudentAchievementRepository(db),
+        AchievementRepository(db),
+    )
+
+
+def get_transaction_repository(
+    db: AsyncSession = Depends(get_db),
+) -> TransactionRepository:
+    return TransactionRepository(db)
 
 
 async def get_student_service(db: AsyncSession = Depends(get_db)) -> StudentService:
@@ -55,6 +80,7 @@ def get_balance_service(db: AsyncSession = Depends(get_db)) -> BalanceService:
         StudentRepository(db),
         TransactionRepository(db),
         GroupRepository(db),
+        get_student_achievement_service(db),
     )
 
 

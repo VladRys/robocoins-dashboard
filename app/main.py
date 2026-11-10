@@ -93,6 +93,7 @@ async def log_http_requests(request, call_next):
         duration_ms = round((perf_counter() - started_at) * 1000, 2)
         logger.error(
             "Unhandled request error",
+            exc_info=not IS_PRODUCTION,
             extra={
                 **log_fields,
                 "status_code": 500,

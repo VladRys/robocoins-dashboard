@@ -107,8 +107,18 @@ def test_authorization_policies_and_scoped_avatar_and_group_actions(tmp_path: Pa
                     student,
                     student.id,
                 )
+                assert await authorization.is_allowed(
+                    AuthorizationAction.VIEW_STUDENT_ACHIEVEMENTS,
+                    student,
+                    student.id,
+                )
                 assert not await authorization.is_allowed(
                     AuthorizationAction.ACCESS_DAILY_TASK,
+                    student,
+                    other_student.id,
+                )
+                assert not await authorization.is_allowed(
+                    AuthorizationAction.VIEW_STUDENT_ACHIEVEMENTS,
                     student,
                     other_student.id,
                 )
@@ -131,6 +141,16 @@ def test_authorization_policies_and_scoped_avatar_and_group_actions(tmp_path: Pa
                     AuthorizationAction.EDIT_STUDENT_NICKNAME,
                     student,
                     student.id,
+                )
+                assert await authorization.is_allowed(
+                    AuthorizationAction.VIEW_STUDENT_ACHIEVEMENTS,
+                    teacher,
+                    student.id,
+                )
+                assert not await authorization.is_allowed(
+                    AuthorizationAction.VIEW_STUDENT_ACHIEVEMENTS,
+                    teacher,
+                    other_student.id,
                 )
                 assert not await authorization.is_allowed(
                     AuthorizationAction.EDIT_STUDENT_AVATAR,
