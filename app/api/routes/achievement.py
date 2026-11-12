@@ -16,7 +16,7 @@ async def get_achievements(
     service: AchievementService = Depends(get_achievement_service),
     _user: User = Depends(get_authenticated_admin),
 ) -> list[AchievementResponse]:
-    achievements = await service.get_coin_earning_achievements()
+    achievements = await service.get_all_achievements()
     return [AchievementResponse.model_validate(item) for item in achievements]
 
 

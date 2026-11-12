@@ -56,12 +56,28 @@ def test_admin_can_create_and_list_coin_earning_achievements(tmp_path: Path):
                     service,
                     admin,
                 )
+                daily_task_achievement = await service.create_achievement(
+                    Achievement(
+                        name="Без пропусків",
+                        description="Complete daily tasks correctly for five days",
+                        icon="🔥",
+                        type=AchievementType.BADGE,
+                        category=AchievementCategory.DAILY_TASK_STREAK,
+                    )
+                )
                 listed = await get_achievements(service, admin)
 
                 assert created.id > 0
                 assert created.category == "coins_earning"
                 assert created.required_coins == 25
-                assert listed == [created]
+                assert [item.id for item in listed] == [
+                    created.id,
+                    daily_task_achievement.id,
+                ]
+                assert [item.category for item in listed] == [
+                    "coins_earning",
+                    AchievementCategory.DAILY_TASK_STREAK,
+                ]
         finally:
             await engine.dispose()
 
