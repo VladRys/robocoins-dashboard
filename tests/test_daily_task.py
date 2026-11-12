@@ -428,6 +428,34 @@ def test_daily_task_hides_answer_and_awards_correct_submission_once():
     asyncio.run(run())
 
 
+def test_daily_task_balance_update_uses_postgresql_numeric_rounding():
+    async def run():
+        session = SimpleNamespace(
+            scalar=AsyncMock(return_value=0.1),
+            add=lambda transaction: None,
+            commit=AsyncMock(),
+        )
+        service = DailyTaskService(session)
+        service.repository._get_assignment = AsyncMock(
+            return_value=SimpleNamespace(
+                completed_at=None,
+                daily_task=SimpleNamespace(
+                    question=SimpleNamespace(answer="LED", reward=0.1)
+                ),
+            )
+        )
+
+        result = await service.answer(1, "LED")
+        statement = session.scalar.await_args.args[0]
+        sql = str(statement.compile(dialect=postgresql.dialect()))
+
+        assert result.reward == 0.1
+        assert "round(CAST(students.balance +" in sql
+        assert " AS NUMERIC)" in sql
+
+    asyncio.run(run())
+
+
 def test_daily_task_selection_uses_course_ids_not_categories():
     async def run():
         engine = create_async_engine("sqlite+aiosqlite:///:memory:")

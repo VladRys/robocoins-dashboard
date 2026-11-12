@@ -1,6 +1,6 @@
 from datetime import date, datetime, timezone
 
-from sqlalchemy import case, func, select, update
+from sqlalchemy import Numeric, case, cast, func, select, update
 from sqlalchemy.orm import joinedload, selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -208,7 +208,12 @@ class DailyTaskRepository:
             balance = await self.session.scalar(
                 update(Student)
                 .where(Student.id == student_id)
-                .values(balance=func.round(Student.balance + question.reward, 1))
+                .values(
+                    balance=func.round(
+                        cast(Student.balance + question.reward, Numeric),
+                        1,
+                    )
+                )
                 .returning(Student.balance)
             )
             if balance is None:
