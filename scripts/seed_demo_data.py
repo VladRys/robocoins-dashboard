@@ -15,7 +15,14 @@ from sqlalchemy.orm import selectinload
 from app.core.access_code import generate_access_code
 from app.core.config import Config
 from app.core.database import SessionLocal, engine
-from app.core.enums import CourseCategory, RewardType, UserRole
+from app.core.enums import (
+    AchievementCategory,
+    AchievementType,
+    CourseCategory,
+    RewardType,
+    UserRole,
+)
+from app.models.achievement import Achievement
 from app.models.course import Course
 from app.models.group import Group
 from app.models.reward import Reward
@@ -61,6 +68,14 @@ DEMO_DAILY_TASK_COURSES = (
     "Web Middle",
 )
 
+DEMO_ACHIEVEMENTS = (
+    (1, "Це лише початок...", "Зароби 5 монет", "🎖️", AchievementType.BADGE, 5),
+    (2, "Монетна скарбничка", "Зароби 10 монет", "💰", AchievementType.BADGE, 10),
+    (3, "Збирач монет", "Зароби 25 монет", "🏅", AchievementType.BADGE, 25),
+    (4, "Золота колекція", "Зароби 50 монет", "🥇", AchievementType.TROPHY, 50),
+    (5, "Легенда монет", "Зароби 100 монет", "🏆", AchievementType.TROPHY, 100),
+)
+
 # Keep these IDs stable so the demo catalog matches the documented sample data.
 DEMO_REWARDS = (
     (5, "Плата Arduino Nano", 70, "", RewardType.REWARD, CourseCategory.EMBEDDED),
@@ -74,10 +89,11 @@ DEMO_REWARDS = (
     (12, "Трендові Клавіши", 15, "Брелок з трендовими клавішами", RewardType.REWARD, None),
     (1, "Випадковий стікер", 5, None, RewardType.REWARD, None),
     (2, "Стікер на вибір", 7, None, RewardType.REWARD, None),
-    (6, "Набір Arduino Starter Kit", 100, "Приз Року!\nЙого отримає учень, якйи назбирає найбільше монет протягорм навчального року.\n\nНабір електроніки та компонентів, з яких ти вжеш зможеш зібрати власний проект. \nПлата: Arduino Uno", RewardType.REWARD, CourseCategory.EMBEDDED),
+    (6, "Набір Arduino Starter Kit", 100, "Приз Року!\nЙого отримає учень, який назбирає найбільше монет протягом навчального року.\n\nНабір електроніки та компонентів, з яких ти вжеш зможеш зібрати власний проект. \nПлата: Arduino Uno", RewardType.REWARD, CourseCategory.EMBEDDED),
     (11, "Набір стикерів 100шт", 20, "Набір стікерів на тематику программування.", RewardType.REWARD, None),
     (15, "Гра в стимі", 70, "Будь яка гра гіфтом (До 225₴)", RewardType.REWARD, CourseCategory.GAME_DEV),
     (16, "Гра в стимі", 70, "Будь яка гра гіфтом (До 225₴)", RewardType.REWARD, CourseCategory.WEB),
+    (17, "ESP32 DevKit", 70, "Мікроконтролер ESP32", RewardType.REWARD, CourseCategory.EMBEDDED),
 )
 
 
@@ -90,7 +106,7 @@ async def unique_access_code(db) -> str:
 
 async def align_sequence(db, table: str) -> None:
     """Advance a stale serial sequence without rewinding one already in use."""
-    if table not in {"courses", "groups", "users", "rewards"}:
+    if table not in {"achievements", "courses", "groups", "users", "rewards"}:
         raise ValueError(f"Unsupported sequence table: {table}")
 
     sequence = await db.scalar(
@@ -123,7 +139,9 @@ async def seed_demo_data() -> tuple[int, int]:
             await align_sequence(db, "courses")
             await align_sequence(db, "groups")
             await align_sequence(db, "users")
-            await seed_demo_rewards(db)
+            achievements = await seed_demo_achievements(db)
+            await align_sequence(db, "achievements")
+            rewards = await seed_demo_rewards(db)
 
             course_names = {
                 course_name for _, course_name, _ in DEMO_GROUPS
@@ -196,7 +214,7 @@ async def seed_demo_data() -> tuple[int, int]:
                     created_students += 1
 
     await engine.dispose()
-    return created_groups, created_students
+    return created_groups, created_students, 
 
 
 async def seed_demo_rewards(db) -> None:
@@ -220,6 +238,39 @@ async def seed_demo_rewards(db) -> None:
         reward.course_category = category
     await db.flush()
     await align_sequence(db, "rewards")
+
+
+async def seed_demo_achievements(db) -> None:
+    """Insert or update the fixed demo coin-achievement catalog by ID."""
+    achievement_ids = [achievement_id for achievement_id, *_ in DEMO_ACHIEVEMENTS]
+    existing = {
+        achievement.id: achievement
+        for achievement in (
+            await db.scalars(
+                select(Achievement).where(Achievement.id.in_(achievement_ids))
+            )
+        ).all()
+    }
+    for (
+        achievement_id,
+        name,
+        description,
+        icon,
+        achievement_type,
+        required_coins,
+    ) in DEMO_ACHIEVEMENTS:
+        achievement = existing.get(achievement_id)
+        if achievement is None:
+            achievement = Achievement(id=achievement_id)
+            db.add(achievement)
+        achievement.name = name
+        achievement.description = description
+        achievement.icon = icon
+        achievement.type = achievement_type
+        achievement.category = AchievementCategory.COINS_EARNING
+        achievement.required_coins = required_coins
+    await db.flush()
+    
 
 
 async def main() -> None:
