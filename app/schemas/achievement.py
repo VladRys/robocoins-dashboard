@@ -31,3 +31,6 @@ class CoinAchievementProgressItem(AchievementResponse):
 class StudentAchievementProgressResponse(BaseModel):
     earned_coins: float
     achievements: list[CoinAchievementProgressItem]
+    earned_daily_task_achievements: list[AchievementResponse] = Field(
+        default_factory=list
+    )

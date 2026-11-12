@@ -69,11 +69,69 @@ DEMO_DAILY_TASK_COURSES = (
 )
 
 DEMO_ACHIEVEMENTS = (
-    (1, "Це лише початок...", "Зароби 5 монет", "🎖️", AchievementType.BADGE, 5),
-    (2, "Монетна скарбничка", "Зароби 10 монет", "💰", AchievementType.BADGE, 10),
-    (3, "Збирач монет", "Зароби 25 монет", "🏅", AchievementType.BADGE, 25),
-    (4, "Золота колекція", "Зароби 50 монет", "🥇", AchievementType.TROPHY, 50),
-    (5, "Легенда монет", "Зароби 100 монет", "🏆", AchievementType.TROPHY, 100),
+    (
+        1,
+        AchievementCategory.COINS_EARNING,
+        "Це лише початок...",
+        "Зароби 5 монет",
+        "🎖️",
+        AchievementType.BADGE,
+        5,
+    ),
+    (
+        2,
+        AchievementCategory.COINS_EARNING,
+        "Монетна скарбничка",
+        "Зароби 10 монет",
+        "💰",
+        AchievementType.BADGE,
+        10,
+    ),
+    (
+        3,
+        AchievementCategory.COINS_EARNING,
+        "Збирач монет",
+        "Зароби 25 монет",
+        "🏅",
+        AchievementType.BADGE,
+        25,
+    ),
+    (
+        4,
+        AchievementCategory.COINS_EARNING,
+        "Золота колекція",
+        "Зароби 50 монет",
+        "🥇",
+        AchievementType.TROPHY,
+        50,
+    ),
+    (
+        5,
+        AchievementCategory.COINS_EARNING,
+        "Легенда монет",
+        "Зароби 100 монет",
+        "🏆",
+        AchievementType.TROPHY,
+        100,
+    ),
+    (
+        6,
+        AchievementCategory.DAILY_TASK_STREAK,
+        "Без пропусків",
+        "Правильно виконай завдання дня 5 днів поспіль",
+        "🔥",
+        AchievementType.BADGE,
+        None,
+    ),
+    (
+        7,
+        AchievementCategory.DAILY_TASK_COMPLETION,
+        "Наполегливість",
+        "Заверши 10 завдань дня незалежно від правильності відповіді",
+        "💪",
+        AchievementType.BADGE,
+        None,
+    ),
 )
 
 # Keep these IDs stable so the demo catalog matches the documented sample data.
@@ -93,7 +151,7 @@ DEMO_REWARDS = (
     (11, "Набір стикерів 100шт", 20, "Набір стікерів на тематику программування.", RewardType.REWARD, None),
     (15, "Гра в стимі", 70, "Будь яка гра гіфтом (До 225₴)", RewardType.REWARD, CourseCategory.GAME_DEV),
     (16, "Гра в стимі", 70, "Будь яка гра гіфтом (До 225₴)", RewardType.REWARD, CourseCategory.WEB),
-    (17, "ESP32 DevKit", 70, "Мікроконтролер ESP32", RewardType.REWARD, CourseCategory.EMBEDDED),
+    (17, "ESP32 DevKit", 85, "Мікроконтролер ESP32", RewardType.REWARD, CourseCategory.EMBEDDED),
 )
 
 
@@ -253,6 +311,7 @@ async def seed_demo_achievements(db) -> None:
     }
     for (
         achievement_id,
+        category,
         name,
         description,
         icon,
@@ -267,7 +326,7 @@ async def seed_demo_achievements(db) -> None:
         achievement.description = description
         achievement.icon = icon
         achievement.type = achievement_type
-        achievement.category = AchievementCategory.COINS_EARNING
+        achievement.category = category
         achievement.required_coins = required_coins
     await db.flush()
     

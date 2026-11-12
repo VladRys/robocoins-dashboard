@@ -19,7 +19,14 @@ from app.api.routes.daily_task import (
     get_daily_task_test_tasks,
 )
 from app.core.database import Base
-from app.core.enums import AuthorizationAction, ProductMode, TaskType, UserRole
+from app.core.enums import (
+    AchievementCategory,
+    AuthorizationAction,
+    ProductMode,
+    TaskType,
+    UserRole,
+)
+from app.models.achievement import Achievement, StudentAchievement
 from app.models.course import Course  
 from app.models.daily_task import (
     CourseDailyTask,
@@ -39,6 +46,7 @@ from app.services.daily_task import (
     DailyTaskAlreadyCompletedError,
     DailyTaskService,
 )
+from scripts.seed_demo_data import seed_demo_achievements
 
 
 def test_daily_task_routes_use_authorization_service():
@@ -432,13 +440,16 @@ def test_daily_task_balance_update_uses_postgresql_numeric_rounding():
     async def run():
         session = SimpleNamespace(
             scalar=AsyncMock(return_value=0.1),
+            scalars=AsyncMock(return_value=SimpleNamespace(all=lambda: [])),
             add=lambda transaction: None,
+            flush=AsyncMock(),
             commit=AsyncMock(),
         )
         service = DailyTaskService(session)
         service.repository._get_assignment = AsyncMock(
             return_value=SimpleNamespace(
                 completed_at=None,
+                task_date=date.today(),
                 daily_task=SimpleNamespace(
                     question=SimpleNamespace(answer="LED", reward=0.1)
                 ),
@@ -446,12 +457,104 @@ def test_daily_task_balance_update_uses_postgresql_numeric_rounding():
         )
 
         result = await service.answer(1, "LED")
-        statement = session.scalar.await_args.args[0]
+        statement = session.scalar.await_args_list[0].args[0]
         sql = str(statement.compile(dialect=postgresql.dialect()))
 
         assert result.reward == 0.1
         assert "round(CAST(students.balance +" in sql
         assert " AS NUMERIC)" in sql
+
+    asyncio.run(run())
+
+
+def test_daily_task_achievements_use_correct_day_streak_and_all_completions():
+    async def run():
+        engine = create_async_engine("sqlite+aiosqlite:///:memory:")
+        async with engine.begin() as connection:
+            await connection.run_sync(Base.metadata.create_all)
+
+        sessions = async_sessionmaker(engine, expire_on_commit=False)
+        async with sessions() as session:
+            user = User(
+                id=1,
+                name="Student",
+                role=UserRole.STUDENT.value,
+                access_code="ABC12345",
+            )
+            student = Student(
+                id=1,
+                user_id=1,
+                name="Student",
+                balance=0,
+                hash_access_key="test-key",
+                access_code="ABC12345",
+            )
+            question = DailyTaskQuestion(
+                slug="streak-achievement-question",
+                question="Which component emits light?",
+                task_type=TaskType.MULTIPLE_CHOICE,
+                options=["Resistor", "LED"],
+                answer="LED",
+                reward=0.1,
+            )
+            task = DailyTask(question=question)
+            session.add_all([user, student, task])
+            await session.flush()
+
+            first_day = date.today() - timedelta(days=9)
+            session.add_all(
+                StudentDailyTask(
+                    student_id=student.id,
+                    daily_task_id=task.id,
+                    task_date=first_day + timedelta(days=offset),
+                )
+                for offset in range(10)
+            )
+            await seed_demo_achievements(session)
+            await session.commit()
+
+        for offset in range(10):
+            task_date = first_day + timedelta(days=offset)
+            async with sessions() as session:
+                service = DailyTaskService(session)
+                service.repository.current_date = lambda task_date=task_date: task_date
+                answer = "Resistor" if offset == 4 else "LED"
+                await service.repository.answer(1, answer)
+
+                if offset == 4:
+                    streak_achievement = await session.scalar(
+                        select(StudentAchievement.achievement_id)
+                        .join(
+                            Achievement,
+                            Achievement.id == StudentAchievement.achievement_id,
+                        )
+                        .where(
+                            StudentAchievement.student_id == 1,
+                            Achievement.category
+                            == AchievementCategory.DAILY_TASK_STREAK,
+                        )
+                    )
+                    assert streak_achievement is None
+
+        async with sessions() as session:
+            earned_categories = set(
+                (
+                    await session.scalars(
+                        select(Achievement.category)
+                        .join(
+                            StudentAchievement,
+                            StudentAchievement.achievement_id == Achievement.id,
+                        )
+                        .where(StudentAchievement.student_id == 1)
+                    )
+                ).all()
+            )
+            assert earned_categories == {
+                AchievementCategory.DAILY_TASK_STREAK,
+                AchievementCategory.DAILY_TASK_COMPLETION,
+            }
+
+        await engine.dispose()
 
     asyncio.run(run())
 

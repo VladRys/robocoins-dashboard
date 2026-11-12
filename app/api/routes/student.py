@@ -28,6 +28,7 @@ from app.schemas.student import (
 )
 from app.schemas.auth import StudentCredentialsResponse
 from app.schemas.achievement import (
+    AchievementResponse,
     CoinAchievementProgressItem,
     StudentAchievementProgressResponse,
 )
@@ -75,6 +76,9 @@ async def get_student_achievement_progress(
         student_id,
         earned_coins,
     )
+    earned_daily_task_achievements = (
+        await achievement_service.get_earned_daily_task_achievements(student_id)
+    )
     return StudentAchievementProgressResponse(
         earned_coins=earned_coins,
         achievements=[
@@ -90,6 +94,10 @@ async def get_student_achievement_progress(
                 progress_percent=percent,
             )
             for achievement, earned, percent in progress
+        ],
+        earned_daily_task_achievements=[
+            AchievementResponse.model_validate(achievement)
+            for achievement in earned_daily_task_achievements
         ],
     )
 

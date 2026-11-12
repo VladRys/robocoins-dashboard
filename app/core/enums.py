@@ -128,3 +128,5 @@ class AchievementType(StrEnum):
 
 class AchievementCategory(StrEnum):
     COINS_EARNING = "coins_earning"
+    DAILY_TASK_STREAK = "daily_task_streak"
+    DAILY_TASK_COMPLETION = "daily_task_completion"

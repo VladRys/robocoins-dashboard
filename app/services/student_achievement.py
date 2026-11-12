@@ -37,6 +37,20 @@ class StudentAchievementService:
             )
         return progress
 
+    async def get_earned_daily_task_achievements(
+        self,
+        student_id: int,
+    ) -> list[Achievement]:
+        achievements = (
+            await self.achievement_repository.get_daily_task_achievements()
+        )
+        earned_ids = await self.repository.get_student_achievement_ids(student_id)
+        return [
+            achievement
+            for achievement in achievements
+            if achievement.id in earned_ids
+        ]
+
     async def get_student_achievement(
         self, student_id: int, achievement_id: int
     ) -> StudentAchievement | None:

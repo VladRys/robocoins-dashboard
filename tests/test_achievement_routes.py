@@ -14,8 +14,8 @@ from app.api.routes.achievement import (
 )
 from app.api.routes.student import get_student_achievement_progress
 from app.core.database import Base
-from app.core.enums import AchievementType
-from app.models.achievement import Achievement
+from app.core.enums import AchievementCategory, AchievementType
+from app.models.achievement import Achievement, StudentAchievement
 from app.models.student import Student
 from app.models.transaction import BalanceTransaction
 from app.models.user import User
@@ -96,15 +96,25 @@ def test_student_achievement_progress_requires_access_and_reports_threshold(
                         access_code="STU00002",
                     )
                 )
-                session.add(
-                    Achievement(
-                        name="First milestone",
-                        description="Earn 4 coins",
-                        icon="⭐",
-                        type=AchievementType.BADGE,
-                        category="coins_earning",
-                        required_coins=4,
-                    )
+                daily_task_achievement = Achievement(
+                    name="Без пропусков",
+                    description="Solve daily tasks correctly 5 days in a row",
+                    icon="🔥",
+                    type=AchievementType.BADGE,
+                    category=AchievementCategory.DAILY_TASK_STREAK,
+                )
+                session.add_all(
+                    [
+                        Achievement(
+                            name="First milestone",
+                            description="Earn 4 coins",
+                            icon="⭐",
+                            type=AchievementType.BADGE,
+                            category="coins_earning",
+                            required_coins=4,
+                        ),
+                        daily_task_achievement,
+                    ]
                 )
                 session.add(
                     BalanceTransaction(
@@ -112,6 +122,13 @@ def test_student_achievement_progress_requires_access_and_reports_threshold(
                         operation="deposit",
                         amount=3.0,
                         reason=["theory"],
+                    )
+                )
+                await session.flush()
+                session.add(
+                    StudentAchievement(
+                        student_id=user.id,
+                        achievement_id=daily_task_achievement.id,
                     )
                 )
                 await session.commit()
@@ -135,6 +152,10 @@ def test_student_achievement_progress_requires_access_and_reports_threshold(
                 assert len(result.achievements) == 1
                 assert result.achievements[0].earned is False
                 assert result.achievements[0].progress_percent == 75
+                assert [
+                    achievement.name
+                    for achievement in result.earned_daily_task_achievements
+                ] == ["Без пропусков"]
 
                 authorization.is_allowed.return_value = False
                 with pytest.raises(HTTPException) as error:

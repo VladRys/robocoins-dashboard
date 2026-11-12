@@ -32,17 +32,17 @@ def test_seed_demo_achievements_is_idempotent():
                     select(func.count()).select_from(Achievement)
                 ) == len(DEMO_ACHIEVEMENTS)
                 assert [
-                    (achievement.id, achievement.required_coins)
+                    (
+                        achievement.id,
+                        achievement.category,
+                        achievement.required_coins,
+                    )
                     for achievement in achievements
                 ] == [
-                    (achievement_id, required_coins)
-                    for achievement_id, _, _, _, _, required_coins
+                    (achievement_id, category, required_coins)
+                    for achievement_id, category, _, _, _, _, required_coins
                     in DEMO_ACHIEVEMENTS
                 ]
-                assert all(
-                    achievement.category == "coins_earning"
-                    for achievement in achievements
-                )
         finally:
             await engine.dispose()
 

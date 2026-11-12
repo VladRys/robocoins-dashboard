@@ -596,10 +596,11 @@
       try {
         const result = await request(`/student/${currentUser.id}/achievements`);
         coinAchievements = result.achievements || [];
+        const dailyTaskAchievements = result.earned_daily_task_achievements || [];
         $('achievements-total').textContent = `Всего заработано: ${result.earned_coins} 🪙`;
         const list = $('achievements-list');
         list.replaceChildren();
-        if (!coinAchievements.length) {
+        if (!coinAchievements.length && !dailyTaskAchievements.length) {
           list.append(emptyMessage('Пока нет ачивок за монеты. Скоро они появятся!'));
         }
         for (const achievement of coinAchievements) {
@@ -630,6 +631,26 @@
           progress.max = 100;
           progress.value = achievement.progress_percent;
           card.append(head, progressMeta, progress);
+          list.append(card);
+        }
+        for (const achievement of dailyTaskAchievements) {
+          const card = document.createElement('article');
+          card.className = 'achievement-card earned';
+          const head = document.createElement('div');
+          head.className = 'achievement-head';
+          const copy = document.createElement('div');
+          const title = document.createElement('div');
+          title.className = 'achievement-title';
+          title.textContent = `${achievement.icon} ${achievement.name}`;
+          const description = document.createElement('div');
+          description.className = 'achievement-description';
+          description.textContent = achievement.description;
+          copy.append(title, description);
+          const badge = document.createElement('span');
+          badge.className = 'tag';
+          badge.textContent = 'Получена ✓';
+          head.append(copy, badge);
+          card.append(head);
           list.append(card);
         }
         setStatus('achievements-status', 'Достижения обновлены.', 'success');

@@ -40,6 +40,21 @@ class AchievementRepository:
         )
         return list(result.scalars().all())
 
+    async def get_daily_task_achievements(self) -> list[Achievement]:
+        result = await self.session.execute(
+            select(Achievement)
+            .where(
+                Achievement.category.in_(
+                    (
+                        AchievementCategory.DAILY_TASK_STREAK,
+                        AchievementCategory.DAILY_TASK_COMPLETION,
+                    )
+                )
+            )
+            .order_by(Achievement.id)
+        )
+        return list(result.scalars().all())
+
     async def get_achievements_by_type(
         self, achievement_type: AchievementType
     ) -> list[Achievement]:

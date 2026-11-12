@@ -1,10 +1,11 @@
-from datetime import date, datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 
 from sqlalchemy import Numeric, case, cast, func, select, update
 from sqlalchemy.orm import joinedload, selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.enums import BalanceChangeReasons
+from app.core.enums import AchievementCategory, BalanceChangeReasons
+from app.models.achievement import Achievement, StudentAchievement
 from app.models.course import Course
 from app.models.daily_task import (
     CourseDailyTask,
@@ -232,6 +233,7 @@ class DailyTaskRepository:
                 raise StudentNotFoundError
             balance = student.balance
 
+        await self._award_daily_task_achievements(student_id, assignment.task_date)
         await self.session.commit()
         return DailyTaskAnswerResponse(
             correct=is_correct,
@@ -239,6 +241,92 @@ class DailyTaskRepository:
             reward=question.reward if is_correct else 0.0,
             balance=balance,
         )
+
+    async def _award_daily_task_achievements(
+        self,
+        student_id: int,
+        task_date: date,
+    ) -> None:
+        achievements = list(
+            (
+                await self.session.scalars(
+                    select(Achievement).where(
+                        Achievement.category.in_(
+                            (
+                                AchievementCategory.DAILY_TASK_STREAK,
+                                AchievementCategory.DAILY_TASK_COMPLETION,
+                            )
+                        )
+                    )
+                )
+            ).all()
+        )
+        if not achievements:
+            return
+
+        await self.session.flush()
+        completed_count = await self.session.scalar(
+            select(func.count())
+            .select_from(StudentDailyTask)
+            .where(
+                StudentDailyTask.student_id == student_id,
+                StudentDailyTask.completed_at.is_not(None),
+            )
+        )
+        correct_dates = (
+            await self.session.scalars(
+                select(StudentDailyTask.task_date)
+                .where(
+                    StudentDailyTask.student_id == student_id,
+                    StudentDailyTask.completed_at.is_not(None),
+                    StudentDailyTask.correct.is_(True),
+                    StudentDailyTask.task_date <= task_date,
+                )
+                .distinct()
+                .order_by(StudentDailyTask.task_date.desc())
+            )
+        ).all()
+
+        consecutive_correct_days = 0
+        expected_date = task_date
+        for correct_date in correct_dates:
+            if correct_date < expected_date:
+                break
+            if correct_date == expected_date:
+                consecutive_correct_days += 1
+                expected_date -= timedelta(days=1)
+
+        earned_metrics: dict[str, int] = {
+            AchievementCategory.DAILY_TASK_STREAK.value: consecutive_correct_days,
+            AchievementCategory.DAILY_TASK_COMPLETION.value: completed_count or 0,
+        }
+        thresholds: dict[str, int] = {
+            AchievementCategory.DAILY_TASK_STREAK.value: 5,
+            AchievementCategory.DAILY_TASK_COMPLETION.value: 10,
+        }
+        achievement_ids = {achievement.id for achievement in achievements}
+        existing_ids = set(
+            (
+                await self.session.scalars(
+                    select(StudentAchievement.achievement_id).where(
+                        StudentAchievement.student_id == student_id,
+                        StudentAchievement.achievement_id.in_(achievement_ids),
+                    )
+                )
+            ).all()
+        )
+        for achievement in achievements:
+            if (
+                achievement.id not in existing_ids
+                and earned_metrics[achievement.category]
+                >= thresholds[achievement.category]
+            ):
+                self.session.add(
+                    StudentAchievement(
+                        student_id=student_id,
+                        achievement_id=achievement.id,
+                    )
+                )
 
     async def _get_assignment(
         self,
