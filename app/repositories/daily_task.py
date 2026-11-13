@@ -1,6 +1,6 @@
 from datetime import date, datetime, timedelta, timezone
 
-from sqlalchemy import Numeric, case, cast, func, select, update
+from sqlalchemy import Float, Numeric, case, cast, func, select, update
 from sqlalchemy.orm import joinedload, selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -210,9 +210,13 @@ class DailyTaskRepository:
                 update(Student)
                 .where(Student.id == student_id)
                 .values(
-                    balance=func.round(
-                        cast(Student.balance + question.reward, Numeric),
-                        1,
+                    balance=cast(
+                        func.round(
+                            cast(Student.balance, Numeric)
+                            + cast(question.reward, Numeric),
+                            1,
+                        ),
+                        Float,
                     )
                 )
                 .returning(Student.balance)

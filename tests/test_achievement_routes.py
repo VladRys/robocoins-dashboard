@@ -188,3 +188,55 @@ def test_student_achievement_progress_requires_access_and_reports_threshold(
             await engine.dispose()
 
     asyncio.run(run())
+
+
+def test_total_earned_coins_rounds_float_aggregation_to_tenths(tmp_path: Path):
+    async def run():
+        engine = create_async_engine(
+            URL.create(
+                "sqlite+aiosqlite",
+                database=str(tmp_path / "earned-coins-rounding.db"),
+            )
+        )
+        async with engine.begin() as connection:
+            await connection.run_sync(Base.metadata.create_all)
+
+        sessions = async_sessionmaker(engine, expire_on_commit=False)
+        try:
+            async with sessions() as session:
+                user = User(id=30, name="Student", role="student", access_code="STU00030")
+                student = Student(
+                    id=user.id,
+                    user_id=user.id,
+                    name=user.name,
+                    hash_access_key="student-hash-30",
+                    access_code="STU00031",
+                )
+                session.add_all(
+                    [
+                        user,
+                        student,
+                        BalanceTransaction(
+                            student_id=student.id,
+                            operation="deposit",
+                            amount=7.1,
+                            reason=["theory"],
+                        ),
+                        BalanceTransaction(
+                            student_id=student.id,
+                            operation="deposit",
+                            amount=0.1,
+                            reason=["additional_task_completed"],
+                        ),
+                    ]
+                )
+                await session.commit()
+
+                earned_coins = await TransactionRepository(session).get_total_earned_coins(
+                    student.id
+                )
+                assert earned_coins == 7.2
+        finally:
+            await engine.dispose()
+
+    asyncio.run(run())

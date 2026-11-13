@@ -439,7 +439,7 @@ def test_daily_task_hides_answer_and_awards_correct_submission_once():
 def test_daily_task_balance_update_uses_postgresql_numeric_rounding():
     async def run():
         session = SimpleNamespace(
-            scalar=AsyncMock(return_value=0.1),
+            scalar=AsyncMock(return_value=7.199999999999999),
             scalars=AsyncMock(return_value=SimpleNamespace(all=lambda: [])),
             add=lambda transaction: None,
             flush=AsyncMock(),
@@ -461,7 +461,8 @@ def test_daily_task_balance_update_uses_postgresql_numeric_rounding():
         sql = str(statement.compile(dialect=postgresql.dialect()))
 
         assert result.reward == 0.1
-        assert "round(CAST(students.balance +" in sql
+        assert result.balance == 7.2
+        assert "round(CAST(students.balance AS NUMERIC) + CAST(" in sql
         assert " AS NUMERIC)" in sql
 
     asyncio.run(run())
@@ -685,7 +686,13 @@ def test_daily_tasks_repeat_in_oldest_assignment_order(monkeypatch):
     asyncio.run(run())
 
 
-def test_daily_tasks_are_synchronized_per_course_and_support_multiple_courses():
+@pytest.mark.parametrize(
+    "initial_balance",
+    [7.0, 17.0000000000001],
+)
+def test_daily_tasks_are_synchronized_per_course_and_support_multiple_courses(
+    initial_balance,
+):
     async def run():
         engine = create_async_engine("sqlite+aiosqlite:///:memory:")
         async with engine.begin() as connection:
@@ -711,7 +718,7 @@ def test_daily_tasks_are_synchronized_per_course_and_support_multiple_courses():
                 id=1,
                 user_id=1,
                 name="Student 1",
-                balance=0,
+                balance=initial_balance,
                 hash_access_key="test-key-1",
                 access_code="ABC00001",
                 groups=[group_a1, group_b],
@@ -772,10 +779,14 @@ def test_daily_tasks_are_synchronized_per_course_and_support_multiple_courses():
                 select(func.count()).select_from(StudentDailyTask)
             ) == 3
 
-            await service.answer(1, "A", course_id=course_a.id)
+            result_a = await service.answer(1, "A", course_id=course_a.id)
+            assert result_a.balance == round(initial_balance + 0.1, 1)
             result = await service.answer(1, "B", course_id=course_b.id)
             assert result.correct is True
-            assert result.balance == 0.2
+            assert result.balance == round(initial_balance + 0.2, 1)
+            assert await session.scalar(
+                select(Student.balance).where(Student.id == 1)
+            ) == round(initial_balance + 0.2, 1)
 
         await engine.dispose()
 

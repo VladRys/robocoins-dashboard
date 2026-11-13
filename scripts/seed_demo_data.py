@@ -191,6 +191,8 @@ async def seed_demo_data() -> tuple[int, int]:
 
     created_groups = 0
     created_students = 0
+    created_achievements = 0
+    created_rewards = 0
 
     async with SessionLocal() as db:
         async with db.begin():
@@ -330,7 +332,6 @@ async def seed_demo_achievements(db) -> None:
         achievement.required_coins = required_coins
     await db.flush()
     
-
 
 async def main() -> None:
     groups, students = await seed_demo_data()

@@ -1,6 +1,6 @@
 from datetime import date, datetime
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 from app.core.enums import TaskType
 
@@ -40,3 +40,8 @@ class DailyTaskAnswerResponse(BaseModel):
     completed_at: datetime
     reward: float
     balance: float
+
+    @field_validator("balance")
+    @classmethod
+    def normalize_balance(cls, balance: float) -> float:
+        return round(balance + 1e-9, 1)

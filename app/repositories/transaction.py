@@ -50,4 +50,4 @@ class TransactionRepository:
                 BalanceTransaction.cancelled_at.is_(None),
             )
         )
-        return float(total if total is not None else 0)
+        return round(float(total if total is not None else 0) + 1e-9, 1)

@@ -190,6 +190,11 @@
       element.className = `status${kind ? ` ${kind}` : ''}`;
     }
 
+    function formatCoins(value) {
+      const rounded = Math.round((Number(value) + Number.EPSILON) * 10) / 10;
+      return new Intl.NumberFormat('uk-UA', { maximumFractionDigits: 1 }).format(rounded);
+    }
+
     function setUser(user) {
       currentUser = user;
       $('identity').textContent = user
@@ -400,10 +405,12 @@
             ? 'Следующее задание'
             : 'Завершить тестирование';
         } else {
+          const reward = formatCoins(result.reward);
+          const balance = formatCoins(result.balance);
           setStatus(
             'task-status',
             result.correct
-              ? `Верно! Начислено ${result.reward} 🪙. Баланс: ${result.balance} 🪙.`
+              ? `Верно! Начислено ${reward} 🪙. Баланс: ${balance} 🪙.`
               : 'Ответ неверный. Попытка использована; правильный ответ не раскрывается.',
             result.correct ? 'success' : 'error',
           );

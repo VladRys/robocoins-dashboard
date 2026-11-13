@@ -432,6 +432,11 @@
       element.className = `status${kind ? ` ${kind}` : ''}`;
     }
 
+    function formatCoins(value) {
+      const rounded = Math.round((Number(value) + Number.EPSILON) * 10) / 10;
+      return new Intl.NumberFormat('uk-UA', { maximumFractionDigits: 1 }).format(rounded);
+    }
+
     function setUser(user) {
       currentUser = user;
       $('login-card').hidden = Boolean(user);
@@ -477,9 +482,6 @@
           box.append(description);
         }
         const balance = Number(currentUser.balance) || 0;
-        const formatCoins = (value) => new Intl.NumberFormat('uk-UA', {
-          maximumFractionDigits: 1,
-        }).format(Math.round((value + Number.EPSILON) * 10) / 10);
         const percent = reward.price > 0 ? Math.min(100, Math.round(balance / reward.price * 100)) : 100;
         const meta = document.createElement('div');
         meta.className = 'progress-meta';
@@ -585,7 +587,7 @@
         request(`/student/${currentUser.id}/transactions?limit=10&offset=0`),
       ]);
       currentUser.balance = balance.balance;
-      $('stat-balance').textContent = `${balance.balance} 🪙`;
+      $('stat-balance').textContent = `${formatCoins(balance.balance)} 🪙`;
       renderGoal();
       renderHistory(history.transactions || []);
       setStatus('history-status', '');
@@ -597,7 +599,7 @@
         const result = await request(`/student/${currentUser.id}/achievements`);
         coinAchievements = result.achievements || [];
         const dailyTaskAchievements = result.earned_daily_task_achievements || [];
-        $('achievements-total').textContent = `Всего заработано: ${result.earned_coins} 🪙`;
+        $('achievements-total').textContent = `Всего заработано: ${formatCoins(result.earned_coins)} 🪙`;
         const list = $('achievements-list');
         list.replaceChildren();
         if (!coinAchievements.length && !dailyTaskAchievements.length) {
@@ -623,7 +625,7 @@
           const progressMeta = document.createElement('div');
           progressMeta.className = 'achievement-progress';
           const progressLabel = document.createElement('span');
-          progressLabel.textContent = `${Math.min(result.earned_coins, achievement.required_coins)} из ${achievement.required_coins} заработано`;
+          progressLabel.textContent = `${formatCoins(Math.min(result.earned_coins, achievement.required_coins))} из ${achievement.required_coins} заработано`;
           const percentLabel = document.createElement('span');
           percentLabel.textContent = `${achievement.progress_percent}%`;
           progressMeta.append(progressLabel, percentLabel);
@@ -799,12 +801,14 @@
               body: JSON.stringify({ answer: answer.trim() }),
             },
           );
+          const formattedReward = formatCoins(response.reward);
+          const formattedBalance = formatCoins(response.balance);
           result.textContent = response.correct
-            ? `Верно! Начислено ${response.reward} 🪙. Новый баланс: ${response.balance} 🪙.`
+            ? `Верно! Начислено ${formattedReward} 🪙. Новый баланс: ${formattedBalance} 🪙.`
             : 'Ответ неверный. Попытка использована.';
           result.style.color = response.correct ? 'var(--green)' : 'var(--red)';
           currentUser.balance = response.balance;
-          $('stat-balance').textContent = `${response.balance} 🪙`;
+          $('stat-balance').textContent = `${formattedBalance} 🪙`;
           renderGoal();
           const refreshResults = await Promise.allSettled([
             loadDailyTasks(),
