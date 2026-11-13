@@ -17,6 +17,9 @@ class StudentAchievementService:
     ) -> list[StudentAchievement]:
         return await self.repository.get_student_achievements(student_id)
 
+    async def get_earned_achievements(self, student_id: int) -> list[Achievement]:
+        return await self.repository.get_earned_achievements(student_id)
+
     async def get_coin_earning_progress(
         self,
         student_id: int,

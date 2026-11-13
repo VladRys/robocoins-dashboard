@@ -65,7 +65,7 @@ async def get_student_achievement_progress(
     if await student_service.get_student_by_id(student_id) is None:
         raise HTTPException(status_code=404, detail=HttpErrorMessage.STUDENT_NOT_FOUND)
     if not await authorization.is_allowed(
-        AuthorizationAction.VIEW_STUDENT_ACHIEVEMENTS,
+        AuthorizationAction.VIEW_STUDENT_ACHIEVEMENTS_PROGRESS,
         user,
         student_id,
     ):
@@ -100,6 +100,28 @@ async def get_student_achievement_progress(
             for achievement in earned_daily_task_achievements
         ],
     )
+
+
+@student_router.get(
+    "/{student_id}/earned-achievements",
+    response_model=list[AchievementResponse],
+)
+async def get_student_earned_achievements(
+    student_id: int,
+    student_service: StudentService = Depends(get_student_service),
+    achievement_service: StudentAchievementService = Depends(
+        get_student_achievement_service
+    ),
+    _user: User = Depends(get_authenticated_user),
+) -> list[AchievementResponse]:
+    if await student_service.get_student_by_id(student_id) is None:
+        raise HTTPException(status_code=404, detail=HttpErrorMessage.STUDENT_NOT_FOUND)
+
+    achievements = await achievement_service.get_earned_achievements(student_id)
+    return [
+        AchievementResponse.model_validate(achievement)
+        for achievement in achievements
+    ]
 
 
 @student_router.patch("/{student_id}/change-goal", response_model=StudentGoalChangeResponse)

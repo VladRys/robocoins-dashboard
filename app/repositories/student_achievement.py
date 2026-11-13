@@ -1,7 +1,7 @@
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.achievement import StudentAchievement
+from app.models.achievement import Achievement, StudentAchievement
 
 
 class StudentAchievementRepository:
@@ -17,6 +17,18 @@ class StudentAchievementRepository:
             .order_by(StudentAchievement.achievement_id)
         )
         return list(result.scalars().all())
+
+    async def get_earned_achievements(self, student_id: int) -> list[Achievement]:
+        result = await self.session.scalars(
+            select(Achievement)
+            .join(
+                StudentAchievement,
+                StudentAchievement.achievement_id == Achievement.id,
+            )
+            .where(StudentAchievement.student_id == student_id)
+            .order_by(Achievement.id)
+        )
+        return list(result.all())
 
     async def get_student_achievement_ids(self, student_id: int) -> set[int]:
         result = await self.session.scalars(

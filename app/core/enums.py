@@ -64,7 +64,7 @@ class AuthorizationAction(StrEnum):
     SHOW_STUDENT_CREDENTIALS = "show_student_credentials"
     TEACHER_AND_ADMIN_OPERATION = "teacher_and_admin_operation"
     CHANGE_STUDENT_GOAL = "change_student_goal"
-    VIEW_STUDENT_ACHIEVEMENTS = "view_student_achievements"
+    VIEW_STUDENT_ACHIEVEMENTS_PROGRESS = "view_student_achievements_progress"
 
 
 class CourseCategory(StrEnum):

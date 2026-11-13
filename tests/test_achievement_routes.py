@@ -12,7 +12,10 @@ from app.api.routes.achievement import (
     create_coin_earning_achievement,
     get_achievements,
 )
-from app.api.routes.student import get_student_achievement_progress
+from app.api.routes.student import (
+    get_student_achievement_progress,
+    get_student_earned_achievements,
+)
 from app.core.database import Base
 from app.core.enums import AchievementCategory, AchievementType
 from app.models.achievement import Achievement, StudentAchievement
@@ -177,6 +180,30 @@ def test_student_achievement_progress_requires_access_and_reports_threshold(
                     result.earned_daily_task_achievements[0].type
                     == AchievementType.BADGE
                 )
+
+                earned = await get_student_earned_achievements(
+                    user.id,
+                    StudentRepository(session),
+                    achievement_service,
+                    User(
+                        id=21,
+                        name="Other student",
+                        role="student",
+                        access_code="STU00003",
+                    ),
+                )
+                assert [achievement.name for achievement in earned] == [
+                    "Без пропусков"
+                ]
+
+                with pytest.raises(HTTPException) as missing_student:
+                    await get_student_earned_achievements(
+                        999,
+                        StudentRepository(session),
+                        achievement_service,
+                        user,
+                    )
+                assert missing_student.value.status_code == 404
 
                 authorization.is_allowed.return_value = False
                 with pytest.raises(HTTPException) as error:

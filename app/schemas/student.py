@@ -27,7 +27,7 @@ class StudentResponse(APIResponse):
     avatar_ring: str | None = None
     balance: float
     hash_access_key: str
-
+    
     # Access code - keyword for auth.
     access_code: str
 
@@ -54,7 +54,7 @@ class StudentProfileResponse(APIResponse):
     avatar_ring: str | None = None
     balance: float
     current_goal: str | None = None
-
+    
     @field_validator("balance")
     @classmethod
     def normalize_balance(cls, balance: float) -> float:

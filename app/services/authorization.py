@@ -27,6 +27,10 @@ class OwnStudentResourcePolicy:
             and user.id == subject_id
         )
 
+class EveryonePolicy:
+    async def allows(self, user: User, subject_id: int | None) -> bool:
+        return True
+    
 
 class TeacherStudentGroupPolicy:
     def __init__(self, student_service: StudentService) -> None:
@@ -90,7 +94,7 @@ class AuthorizationService:
             AuthorizationAction.VIEW_STUDENT_CREDENTIALS: OwnStudentResourcePolicy(),
             AuthorizationAction.ACCESS_DAILY_TASK: OwnStudentResourcePolicy(),
             AuthorizationAction.CHANGE_STUDENT_GOAL: edit_student_profile_policy,
-            AuthorizationAction.VIEW_STUDENT_ACHIEVEMENTS: edit_student_profile_policy,
+            AuthorizationAction.VIEW_STUDENT_ACHIEVEMENTS_PROGRESS: edit_student_profile_policy,
             AuthorizationAction.EDIT_STUDENT_AVATAR: edit_student_profile_policy,
             AuthorizationAction.EDIT_STUDENT_NICKNAME: edit_student_profile_policy,
             AuthorizationAction.ASSIGN_STUDENT_TO_GROUP: AnyPolicy(
