@@ -405,6 +405,11 @@
     let longestStreak = 0;
     let accessCode = '';
     let coinAchievements = [];
+    const achievementTypeLabels = {
+      badge: 'Значок',
+      trophy: 'Трофей',
+      certificate: 'Сертификат',
+    };
 
     async function request(path, options = {}) {
       const response = await fetch(`${apiBase}${path}`, {
@@ -620,7 +625,8 @@
           copy.append(title, description);
           const badge = document.createElement('span');
           badge.className = 'tag';
-          badge.textContent = achievement.earned ? 'Получена ✓' : `${achievement.required_coins} 🪙`;
+          const type = achievementTypeLabels[achievement.type] || achievement.type;
+          badge.textContent = `${type} · ${achievement.earned ? 'Получена ✓' : `${achievement.required_coins} 🪙`}`;
           head.append(copy, badge);
           const progressMeta = document.createElement('div');
           progressMeta.className = 'achievement-progress';
@@ -650,7 +656,7 @@
           copy.append(title, description);
           const badge = document.createElement('span');
           badge.className = 'tag';
-          badge.textContent = 'Получена ✓';
+          badge.textContent = `${achievementTypeLabels[achievement.type] || achievement.type} · Получена ✓`;
           head.append(copy, badge);
           card.append(head);
           list.append(card);

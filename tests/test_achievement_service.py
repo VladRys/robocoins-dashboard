@@ -97,34 +97,36 @@ def test_coin_earning_achievements_are_awarded_once_when_threshold_is_reached():
             achievement_id=2,
         )
         achievement_repository = AsyncMock()
-        achievement = Achievement(
-            id=2,
-            name="Coin collector",
-            description="Earn 10 coins",
-            icon="coin",
-            type=AchievementType.BADGE,
-            category="coins_earning",
-            required_coins=10,
-        )
-        achievement_repository.get_coin_earning_achievements.return_value = [
-            achievement
+        achievements = [
+            Achievement(
+                id=index,
+                name=f"{achievement_type.value} collector",
+                description="Earn 10 coins",
+                icon="coin",
+                type=achievement_type,
+                category="coins_earning",
+                required_coins=10,
+            )
+            for index, achievement_type in enumerate(AchievementType, start=2)
         ]
+        achievement_repository.get_coin_earning_achievements.return_value = achievements
         service = StudentAchievementService(repository, achievement_repository)
 
         assert await service.award_coin_earning_achievements(1, 9) == []
         repository.add_student_achievement.assert_not_awaited()
 
-        assert await service.award_coin_earning_achievements(1, 10) == [achievement]
-        repository.add_student_achievement.assert_awaited_once_with(
-            1,
-            2,
-            commit=False,
-        )
+        assert await service.award_coin_earning_achievements(1, 10) == achievements
+        assert {
+            call.args[1]
+            for call in repository.add_student_achievement.await_args_list
+        } == {achievement.id for achievement in achievements}
+        assert repository.add_student_achievement.await_count == len(achievements)
 
         repository.get_student_achievements.return_value = [
-            StudentAchievement(student_id=1, achievement_id=2)
+            StudentAchievement(student_id=1, achievement_id=achievement.id)
+            for achievement in achievements
         ]
         assert await service.award_coin_earning_achievements(1, 20) == []
-        repository.add_student_achievement.assert_awaited_once()
+        assert repository.add_student_achievement.await_count == len(achievements)
 
     asyncio.run(run())

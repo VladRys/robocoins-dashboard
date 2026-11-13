@@ -107,6 +107,9 @@ class BalanceLeaderboardResponse(BaseModel):
 
 class BalanceLeaderboardRankResponse(BaseModel):
     student_id: int
+    student_avatar: str | None = None
+    avatar_ring: str | None = None
+    name: str
     rank: int
     balance: float
 

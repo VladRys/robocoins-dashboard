@@ -232,6 +232,9 @@ async def get_balance_leaderboard_rank(
     rank, student = result
     return BalanceLeaderboardRankResponse(
         student_id=student.id,
+        student_avatar=student.avatar,
+        avatar_ring=student.avatar_ring,
+        name=student.name,
         rank=rank,
         balance=student.balance,
     )

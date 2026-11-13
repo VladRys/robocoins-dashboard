@@ -238,7 +238,6 @@ class DailyTaskRepository:
             balance = student.balance
 
         await self._award_daily_task_achievements(student_id, assignment.task_date)
-        await self.session.commit()
         return DailyTaskAnswerResponse(
             correct=is_correct,
             completed_at=completed_at,

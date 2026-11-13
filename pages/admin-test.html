@@ -153,7 +153,7 @@
         </section>
 
         <section class="panel">
-          <div class="panel-head"><h2>Ачивка за монеты 🏅</h2><p>Выдаётся автоматически, когда ученик заработает указанный суммарный порог монет.</p></div>
+          <div class="panel-head"><h2>Ачивки 🏅</h2><p>Создавайте ачивки за монеты; ниже отображаются все категории и типы.</p></div>
           <form id="achievement-form">
             <label for="achievement-name">Название</label><input id="achievement-name" maxlength="200" required>
             <label for="achievement-description">Описание</label><textarea id="achievement-description" maxlength="1000" required></textarea>
@@ -232,6 +232,16 @@
       const localBase = local ? (location.port === '8000' ? '' : `${location.protocol}//${location.hostname}:8000`) : '';
       const $ = (id) => document.getElementById(id);
       const state = { courses: [], groups: [], teachers: [], rewards: [], achievements: [], leaderboardOffset: 0, leaderboardTotal: 0 };
+      const achievementTypeLabels = {
+        badge: 'Значок',
+        trophy: 'Трофей',
+        certificate: 'Сертификат',
+      };
+      const achievementCategoryLabels = {
+        coins_earning: 'За монеты',
+        daily_task_streak: 'Серия ежедневных заданий',
+        daily_task_completion: 'Выполнение ежедневных заданий',
+      };
 
       function apiPath(path) {
         if (local) return `${localBase}${path}`;
@@ -250,6 +260,10 @@
       }
       function status(id, message, kind = '') {
         const el = $(id); el.textContent = message; el.className = `status${kind ? ` ${kind}` : ''}`;
+      }
+      function formatCoins(value) {
+        const rounded = Math.round((Number(value) + Number.EPSILON) * 10) / 10;
+        return new Intl.NumberFormat('uk-UA', { maximumFractionDigits: 1 }).format(rounded);
       }
       function fillSelect(id, entries, emptyLabel) {
         const select = $(id); select.replaceChildren();
@@ -276,13 +290,17 @@
       function renderAchievements() {
         const container = $('achievement-list'); container.replaceChildren();
         if (!state.achievements.length) {
-          const empty = document.createElement('div'); empty.className = 'empty'; empty.textContent = 'Ачивок за монеты пока нет.'; container.append(empty); return;
+          const empty = document.createElement('div'); empty.className = 'empty'; empty.textContent = 'Ачивок пока нет.'; container.append(empty); return;
         }
         for (const achievement of state.achievements) {
           const item = document.createElement('div'); item.className = 'item';
-          const title = document.createElement('strong'); title.textContent = `${achievement.icon} ${achievement.name} · ${achievement.required_coins} 🪙`;
-          const detail = document.createElement('small'); detail.textContent = `${achievement.description} · ${achievement.type} · ID ${achievement.id}`;
+          const threshold = achievement.required_coins == null ? '' : ` · ${achievement.required_coins} 🪙`;
+          const title = document.createElement('strong'); title.textContent = `${achievement.icon} ${achievement.name}${threshold}`;
+          const type = achievementTypeLabels[achievement.type] || achievement.type;
+          const category = achievementCategoryLabels[achievement.category] || achievement.category;
+          const detail = document.createElement('small'); detail.textContent = `${achievement.description} · ${type} · ${category} · ID ${achievement.id}`;
           const remove = document.createElement('button'); remove.type = 'button'; remove.className = 'button light small'; remove.textContent = 'Удалить';
+          remove.hidden = achievement.category !== 'coins_earning';
           remove.addEventListener('click', async () => {
             remove.disabled = true;
             try {
@@ -468,20 +486,33 @@
           const data = await request(`/student/${studentId}/achievements`);
           if (Number($('profile-student-id').value) !== studentId) return;
           display.replaceChildren();
+          const dailyTaskAchievements = data.earned_daily_task_achievements || [];
           const total = document.createElement('div'); total.className = 'item';
-          total.textContent = `Заработано всего: ${data.earned_coins} 🪙`;
+          total.textContent = `Заработано всего: ${formatCoins(data.earned_coins)} 🪙`;
           display.append(total);
-          if (!data.achievements.length) {
-            const empty = document.createElement('div'); empty.className = 'empty'; empty.textContent = 'Ачивок за монеты пока нет.'; display.append(empty);
+          if (!data.achievements.length && !dailyTaskAchievements.length) {
+            const empty = document.createElement('div'); empty.className = 'empty'; empty.textContent = 'Ачивок пока нет.'; display.append(empty);
           }
           for (const achievement of data.achievements) {
             const item = document.createElement('div'); item.className = 'item';
             const title = document.createElement('strong');
-            title.textContent = `${achievement.icon} ${achievement.name} · ${achievement.earned ? 'получена ✓' : `${achievement.progress_percent}%`}`;
+            const type = achievementTypeLabels[achievement.type] || achievement.type;
+            title.textContent = `${achievement.icon} ${achievement.name} · ${type} · ${achievement.earned ? 'получена ✓' : `${achievement.progress_percent}%`}`;
             const detail = document.createElement('small');
-            detail.textContent = `${Math.min(data.earned_coins, achievement.required_coins)} из ${achievement.required_coins} монет · ${achievement.description}`;
+            detail.textContent = `${formatCoins(Math.min(data.earned_coins, achievement.required_coins))} из ${achievement.required_coins} монет · ${achievement.description}`;
             const progress = document.createElement('progress'); progress.max = 100; progress.value = achievement.progress_percent; progress.style.width = '100%';
             item.append(title, detail, progress); display.append(item);
+          }
+          for (const achievement of dailyTaskAchievements) {
+            const item = document.createElement('div'); item.className = 'item';
+            const type = achievementTypeLabels[achievement.type] || achievement.type;
+            const title = document.createElement('strong');
+            title.textContent = `${achievement.icon} ${achievement.name} · ${type} · получена ✓`;
+            const category = achievementCategoryLabels[achievement.category] || achievement.category;
+            const detail = document.createElement('small');
+            detail.textContent = `${category} · ${achievement.description}`;
+            item.append(title, detail);
+            display.append(item);
           }
           status('student-achievements-status', `Прогресс ученика #${studentId} обновлён.`, 'success');
           return true;

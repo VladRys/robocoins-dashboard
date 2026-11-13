@@ -21,6 +21,7 @@ from app.api.routes.daily_task import (
 from app.core.database import Base
 from app.core.enums import (
     AchievementCategory,
+    AchievementType,
     AuthorizationAction,
     ProductMode,
     TaskType,
@@ -436,11 +437,93 @@ def test_daily_task_hides_answer_and_awards_correct_submission_once():
     asyncio.run(run())
 
 
+def test_daily_task_rewards_award_all_coin_achievement_types():
+    async def run():
+        engine = create_async_engine("sqlite+aiosqlite:///:memory:")
+        async with engine.begin() as connection:
+            await connection.run_sync(Base.metadata.create_all)
+
+        sessions = async_sessionmaker(engine, expire_on_commit=False)
+        async with sessions() as session:
+            user = User(
+                id=1,
+                name="Student",
+                role=UserRole.STUDENT.value,
+                access_code="ABC12345",
+            )
+            student = Student(
+                id=1,
+                user_id=1,
+                name="Student",
+                balance=0.9,
+                hash_access_key="test-key",
+                access_code="ABC12345",
+            )
+            achievements = [
+                Achievement(
+                    name=f"{achievement_type.value} milestone",
+                    description="Earn one coin",
+                    icon="coin",
+                    type=achievement_type,
+                    category=AchievementCategory.COINS_EARNING,
+                    required_coins=1,
+                )
+                for achievement_type in AchievementType
+            ]
+            question = DailyTaskQuestion(
+                slug="coin-achievement-task",
+                question="Answer correctly",
+                task_type=TaskType.TEXT,
+                answer="correct",
+                reward=0.1,
+            )
+            session.add_all(
+                [
+                    user,
+                    student,
+                    *achievements,
+                    DailyTask(question=question),
+                    BalanceTransaction(
+                        student_id=student.id,
+                        operation="deposit",
+                        amount=0.9,
+                        reason=["theory"],
+                    ),
+                ]
+            )
+            await session.commit()
+
+            service = DailyTaskService(session)
+            await service.get_or_create(1)
+            result = await service.answer(1, "correct")
+
+            earned_ids = set(
+                (
+                    await session.scalars(
+                        select(StudentAchievement.achievement_id).where(
+                            StudentAchievement.student_id == student.id
+                        )
+                    )
+                ).all()
+            )
+            assert result.balance == 1.0
+            assert earned_ids == {achievement.id for achievement in achievements}
+
+        await engine.dispose()
+
+    asyncio.run(run())
+
+
 def test_daily_task_balance_update_uses_postgresql_numeric_rounding():
     async def run():
         session = SimpleNamespace(
             scalar=AsyncMock(return_value=7.199999999999999),
             scalars=AsyncMock(return_value=SimpleNamespace(all=lambda: [])),
+            execute=AsyncMock(
+                return_value=SimpleNamespace(
+                    scalars=lambda: SimpleNamespace(all=lambda: [])
+                )
+            ),
             add=lambda transaction: None,
             flush=AsyncMock(),
             commit=AsyncMock(),
@@ -468,7 +551,9 @@ def test_daily_task_balance_update_uses_postgresql_numeric_rounding():
     asyncio.run(run())
 
 
-def test_daily_task_achievements_use_correct_day_streak_and_all_completions():
+def test_daily_task_achievements_use_correct_day_streak_and_all_completions(
+    monkeypatch,
+):
     async def run():
         engine = create_async_engine("sqlite+aiosqlite:///:memory:")
         async with engine.begin() as connection:
@@ -512,15 +597,38 @@ def test_daily_task_achievements_use_correct_day_streak_and_all_completions():
                 for offset in range(10)
             )
             await seed_demo_achievements(session)
+            daily_task_achievements = (
+                await session.scalars(
+                    select(Achievement).where(
+                        Achievement.category.in_(
+                            (
+                                AchievementCategory.DAILY_TASK_STREAK,
+                                AchievementCategory.DAILY_TASK_COMPLETION,
+                            )
+                        )
+                    )
+                )
+            ).all()
+            for achievement in daily_task_achievements:
+                achievement.type = (
+                    AchievementType.TROPHY
+                    if achievement.category == AchievementCategory.DAILY_TASK_STREAK
+                    else AchievementType.CERTIFICATE
+                )
             await session.commit()
 
+        current_date = first_day
+        monkeypatch.setattr(
+            daily_task_module,
+            "date",
+            SimpleNamespace(today=lambda: current_date),
+        )
         for offset in range(10):
-            task_date = first_day + timedelta(days=offset)
+            current_date = first_day + timedelta(days=offset)
             async with sessions() as session:
                 service = DailyTaskService(session)
-                service.repository.current_date = lambda task_date=task_date: task_date
                 answer = "Resistor" if offset == 4 else "LED"
-                await service.repository.answer(1, answer)
+                await service.answer(1, answer)
 
                 if offset == 4:
                     streak_achievement = await session.scalar(
@@ -553,6 +661,22 @@ def test_daily_task_achievements_use_correct_day_streak_and_all_completions():
             assert earned_categories == {
                 AchievementCategory.DAILY_TASK_STREAK,
                 AchievementCategory.DAILY_TASK_COMPLETION,
+            }
+            earned_types = set(
+                (
+                    await session.scalars(
+                        select(Achievement.type)
+                        .join(
+                            StudentAchievement,
+                            StudentAchievement.achievement_id == Achievement.id,
+                        )
+                        .where(StudentAchievement.student_id == 1)
+                    )
+                ).all()
+            )
+            assert earned_types == {
+                AchievementType.TROPHY,
+                AchievementType.CERTIFICATE,
             }
 
         await engine.dispose()

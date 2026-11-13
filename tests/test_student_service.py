@@ -11,6 +11,7 @@ from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
 from app.api.routes.student import (
     change_goal as change_goal_endpoint,
+    get_balance_leaderboard_rank,
     get_student_by_id as get_student_endpoint,
 )
 from app.core.database import Base
@@ -100,6 +101,35 @@ def test_get_student_by_id_returns_404_when_missing():
     assert error.value.status_code == 404
     assert error.value.detail == HttpErrorMessage.STUDENT_NOT_FOUND
     logger.info("Missing student correctly returned HTTP 404")
+
+
+@pytest.mark.parametrize(
+    ("avatar", "avatar_ring"),
+    [("🐯", "gold"), (None, None)],
+)
+def test_get_balance_leaderboard_rank_returns_student_details(avatar, avatar_ring):
+    student = SimpleNamespace(
+        id=123456,
+        name="Макс",
+        avatar=avatar,
+        avatar_ring=avatar_ring,
+        balance=42.5,
+    )
+    service = SimpleNamespace(
+        get_balance_leaderboard_rank=AsyncMock(return_value=(3, student))
+    )
+
+    response = asyncio.run(
+        get_balance_leaderboard_rank(123456, service, SimpleNamespace())
+    )
+
+    assert response.student_id == 123456
+    assert response.student_avatar == avatar
+    assert response.avatar_ring == avatar_ring
+    assert response.name == "Макс"
+    assert response.rank == 3
+    assert response.balance == 42.5
+    service.get_balance_leaderboard_rank.assert_awaited_once_with(123456)
 
 
 def test_create_student_generates_unique_hash(tmp_path: Path):

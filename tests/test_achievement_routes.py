@@ -166,12 +166,17 @@ def test_student_achievement_progress_requires_access_and_reports_threshold(
                 )
                 assert result.earned_coins == 3.0
                 assert len(result.achievements) == 1
+                assert result.achievements[0].type == AchievementType.BADGE
                 assert result.achievements[0].earned is False
                 assert result.achievements[0].progress_percent == 75
                 assert [
                     achievement.name
                     for achievement in result.earned_daily_task_achievements
                 ] == ["Без пропусков"]
+                assert (
+                    result.earned_daily_task_achievements[0].type
+                    == AchievementType.BADGE
+                )
 
                 authorization.is_allowed.return_value = False
                 with pytest.raises(HTTPException) as error:
