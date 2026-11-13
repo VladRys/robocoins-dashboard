@@ -3,6 +3,7 @@ from app.schemas.reward import RewardProgressResponse, RewardResponse
 from app.services import authorization
 from app.services.authorization import AuthorizationService
 from app.services.reward import RewardService
+from app.services.student import StudentService
 
 from app.api.dependencies import (
     get_authenticated_teacher,
@@ -10,6 +11,7 @@ from app.api.dependencies import (
     get_authorization_service,
     get_balance_service,
     get_reward_service,
+    get_student_service,
 )
 from app.core.enums import AuthorizationAction, HttpErrorMessage, BalanceChangeReasons
 from app.models.user import User
@@ -49,32 +51,28 @@ async def get_student_balance_by_id(
 @coins_router.get("/{student_id}/reward-progress", response_model=RewardProgressResponse)
 async def get_student_reward_progress(
     student_id: int,
-    service: BalanceService = Depends(get_balance_service),
+    student_service: StudentService = Depends(get_student_service),
     rewards_service: RewardService = Depends(get_reward_service),
     _user: User = Depends(get_authenticated_user),
 ) -> RewardProgressResponse:
-    try:
-        balance = await service.get_balance(student_id)
-    except StudentNotFoundError:
-        raise HTTPException(status_code=404, detail=HttpErrorMessage.STUDENT_NOT_FOUND) from None
+    student = await student_service.get_student_by_id(student_id)
+    if student is None:
+        raise HTTPException(status_code=404, detail=HttpErrorMessage.STUDENT_NOT_FOUND)
 
-    next_reward = next(
-        (reward for reward in await rewards_service.get_rewards_for_student(student_id) if reward.price > balance),
-        None,
+    progress = await rewards_service.get_student_reward_progress(
+        student_id=student_id,
+        balance=student.balance,
+        current_goal=student.current_goal,
     )
-    if next_reward is None:
-        return RewardProgressResponse(
-            balance=balance,
-            reward=None,
-            coins_remaining=None,
-            progress_percent=None,
-        )
-
     return RewardProgressResponse(
-        balance=balance,
-        reward=RewardResponse.model_validate(next_reward),
-        coins_remaining=round(next_reward.price - balance, 1),
-        progress_percent=round(balance / next_reward.price * 100, 2),
+        balance=student.balance,
+        current_goal=(
+            RewardResponse.model_validate(progress.current_goal)
+            if progress.current_goal is not None
+            else None
+        ),
+        coins_remaining=progress.coins_remaining,
+        progress_percent=progress.progress_percent,
     )
 
 

@@ -14,6 +14,7 @@ from app.api.routes.balance import (
     cancel_student_transaction,
     change_student_balance,
     get_student_balance_by_id,
+    get_student_reward_progress,
     get_student_transaction_history,
 )
 from app.core.database import Base
@@ -28,7 +29,9 @@ from app.repositories.achievement import AchievementRepository
 from app.repositories.student_achievement import StudentAchievementRepository
 from app.repositories.transaction import TransactionRepository
 from app.schemas.balance import BalanceChangeRequest
+from app.schemas.reward import RewardResponse
 from app.services.balance import BalanceService
+from app.services.reward import StudentRewardProgress
 from app.services.student_achievement import StudentAchievementService
 
 
@@ -265,6 +268,48 @@ def test_balance_endpoints_return_404_for_unknown_student(tmp_path: Path):
             await engine.dispose()
 
     asyncio.run(run_test())
+
+
+def test_reward_progress_uses_current_goal():
+    student = SimpleNamespace(balance=40.0, current_goal="Python course")
+    student_service = SimpleNamespace(
+        get_student_by_id=AsyncMock(return_value=student)
+    )
+    goal_reward = SimpleNamespace(
+        id=42,
+        name="Python course",
+        price=100,
+        description="A course reward",
+        type="reward",
+        course_category=None,
+    )
+    rewards_service = SimpleNamespace(
+        get_student_reward_progress=AsyncMock(
+            return_value=StudentRewardProgress(
+                current_goal=goal_reward,
+                coins_remaining=60.0,
+                progress_percent=40.0,
+            )
+        )
+    )
+
+    response = asyncio.run(
+        get_student_reward_progress(
+            123,
+            student_service=student_service,
+            rewards_service=rewards_service,
+        )
+    )
+
+    assert response.current_goal == RewardResponse.model_validate(goal_reward)
+    assert response.balance == 40.0
+    assert response.coins_remaining == 60.0
+    assert response.progress_percent == 40.0
+    rewards_service.get_student_reward_progress.assert_awaited_once_with(
+        student_id=123,
+        balance=40.0,
+        current_goal="Python course",
+    )
 
 
 def test_balance_updates_compile_with_postgres_rounding():

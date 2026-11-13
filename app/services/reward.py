@@ -1,6 +1,15 @@
+from dataclasses import dataclass
+
 from app.models.reward import Reward
 from app.core.enums import CourseCategory
 from app.repositories.reward import RewardRepository
+
+
+@dataclass(frozen=True)
+class StudentRewardProgress:
+    current_goal: Reward | None
+    coins_remaining: float | None
+    progress_percent: float | None
 
 
 class RewardService:
@@ -25,4 +34,41 @@ class RewardService:
 
     async def get_rewards_for_student(self, student_id: int) -> list[Reward]:
         return await self.repository.get_rewards_for_student(student_id)
+
+    async def get_student_reward_progress(
+        self,
+        *,
+        student_id: int,
+        balance: float,
+        current_goal: str | None,
+    ) -> StudentRewardProgress:
+        goal_reward = (
+            await self.get_reward_by_name(current_goal)
+            if current_goal is not None
+            else None
+        )
+        if goal_reward is None:
+            available_rewards = await self.get_rewards_for_student(student_id)
+            goal_reward = min(
+                (reward for reward in available_rewards if reward.price > balance),
+                key=lambda reward: reward.price,
+                default=None,
+            )
+
+        if goal_reward is None:
+            return StudentRewardProgress(
+                current_goal=None,
+                coins_remaining=None,
+                progress_percent=None,
+            )
+
+        return StudentRewardProgress(
+            current_goal=goal_reward,
+            coins_remaining=max(0.0, round(goal_reward.price - balance, 1)),
+            progress_percent=(
+                100.0
+                if goal_reward.price <= 0
+                else round(min(balance / goal_reward.price * 100, 100), 2)
+            ),
+        )
 
