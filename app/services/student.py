@@ -66,8 +66,17 @@ class StudentService:
     async def update_nickname(self, student_id: int, nickname: str) -> Student | None:
         return await self.repository.update_nickname(student_id, nickname)
 
-    async def change_student_goal(self, student_id: int, goal: str) -> Student | None:
-        return await self.repository.change_student_goal(student_id, goal)
+    async def change_student_goal(
+        self,
+        student_id: int,
+        goal_reward_id: int,
+        goal_name: str,
+    ) -> Student | None:
+        return await self.repository.change_student_goal(
+            student_id,
+            goal_reward_id,
+            goal_name,
+        )
 
     async def get_student_by_access_code(self, access_code: str) -> Student | None:
         return await self.repository.get_student_by_access_code(access_code)

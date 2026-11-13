@@ -309,6 +309,7 @@ def test_reward_progress_uses_current_goal():
         student_id=123,
         balance=40.0,
         current_goal="Python course",
+        current_goal_reward_id=None,
     )
 
 

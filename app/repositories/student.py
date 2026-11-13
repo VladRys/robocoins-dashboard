@@ -98,11 +98,19 @@ class StudentRepository:
         await self.session.commit()
         return await self.get_student_by_id(student_id)
 
-    async def change_student_goal(self, student_id: int, goal: str) -> Student | None:
+    async def change_student_goal(
+        self,
+        student_id: int,
+        goal_reward_id: int,
+        goal_name: str,
+    ) -> Student | None:
         result = await self.session.execute(
             update(Student)
             .where(Student.id == student_id)
-            .values(current_goal=goal)
+            .values(
+                current_goal=goal_name,
+                current_goal_reward_id=goal_reward_id,
+            )
             .returning(Student.id)
         )
         updated_id = result.scalar_one_or_none()

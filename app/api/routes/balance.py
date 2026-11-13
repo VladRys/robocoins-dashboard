@@ -63,6 +63,7 @@ async def get_student_reward_progress(
         student_id=student_id,
         balance=student.balance,
         current_goal=student.current_goal,
+        current_goal_reward_id=getattr(student, "current_goal_reward_id", None),
     )
     return RewardProgressResponse(
         balance=student.balance,

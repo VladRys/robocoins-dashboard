@@ -146,7 +146,11 @@ async def change_goal(
     new_goal = await reward_service.get_reward_by_id(request.new_goal_reward_id)
     if new_goal is None:
         raise HTTPException(status_code=404, detail=HttpErrorMessage.REWARD_NOT_FOUND)
-    updated_student = await student_service.change_student_goal(student_id, new_goal.name)
+    updated_student = await student_service.change_student_goal(
+        student_id,
+        new_goal.id,
+        new_goal.name,
+    )
     if updated_student is None:
         raise HTTPException(status_code=404, detail=HttpErrorMessage.STUDENT_NOT_FOUND)
     return StudentGoalChangeResponse(new_goal=RewardResponse.model_validate(new_goal))

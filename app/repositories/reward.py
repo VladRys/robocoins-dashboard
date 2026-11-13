@@ -26,11 +26,15 @@ class RewardRepository:
     async def get_reward_by_id(self, reward_id: int) -> Reward | None:
         return await self.session.get(Reward, reward_id)
 
-    async def get_reward_by_name(self, reward_name: str) -> Reward:
+    async def get_reward_by_name(self, reward_name: str) -> Reward | None:
+        rewards = await self.get_rewards_by_name(reward_name)
+        return rewards[0] if len(rewards) == 1 else None
+
+    async def get_rewards_by_name(self, reward_name: str) -> list[Reward]:
         result = await self.session.execute(
-            select(Reward).where(Reward.name == reward_name)
+            select(Reward).where(Reward.name == reward_name).order_by(Reward.id)
         )
-        return result.scalar_one_or_none()
+        return list(result.scalars().all())
 
     async def get_all_rewards(self, course_category: CourseCategory | None = None) -> list[Reward]:
         query = select(Reward)

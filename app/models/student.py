@@ -57,6 +57,10 @@ class Student(Base):
         back_populates="student", cascade="all, delete-orphan"
     )
     current_goal: Mapped[str | None] = mapped_column(String, nullable=True)
+    current_goal_reward_id: Mapped[int | None] = mapped_column(
+        ForeignKey("rewards.id", ondelete="SET NULL"),
+        nullable=True,
+    )
 
     achievements: Mapped[list["StudentAchievement"]] = relationship(
         back_populates="student",

@@ -29,6 +29,9 @@ class RewardService:
     async def get_reward_by_name(self, reward_name: str) -> Reward | None:
         return await self.repository.get_reward_by_name(reward_name)
 
+    async def get_rewards_by_name(self, reward_name: str) -> list[Reward]:
+        return await self.repository.get_rewards_by_name(reward_name)
+
     async def get_all_rewards(self, course_category: CourseCategory | None = None) -> list[Reward]:
         return await self.repository.get_all_rewards(course_category)
 
@@ -41,12 +44,16 @@ class RewardService:
         student_id: int,
         balance: float,
         current_goal: str | None,
+        current_goal_reward_id: int | None = None,
     ) -> StudentRewardProgress:
-        goal_reward = (
-            await self.get_reward_by_name(current_goal)
-            if current_goal is not None
-            else None
-        )
+        goal_reward = None
+        if current_goal_reward_id is not None:
+            goal_reward = await self.get_reward_by_id(current_goal_reward_id)
+        elif current_goal is not None:
+            matching_rewards = await self.get_rewards_by_name(current_goal)
+            if len(matching_rewards) == 1:
+                goal_reward = matching_rewards[0]
+
         if goal_reward is None:
             available_rewards = await self.get_rewards_for_student(student_id)
             goal_reward = min(

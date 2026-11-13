@@ -18,6 +18,7 @@ from app.core.database import Base
 from app.core.enums import HttpErrorMessage
 from app.models.course import Course
 from app.models.group import Group
+from app.models.reward import Reward
 from app.models.user import User
 from app.repositories.student import StudentRepository
 from app.schemas.student import StudentCreateRequest, StudentGoalChangeRequest
@@ -58,6 +59,7 @@ def test_change_goal_endpoint_saves_selected_reward_name():
     assert response.new_goal.id == 987
     student_service.change_student_goal.assert_awaited_once_with(
         123456,
+        987,
         "Новая цель",
     )
 
@@ -156,6 +158,14 @@ def test_create_student_generates_unique_hash(tmp_path: Path):
                 await session.flush()
                 group = Group(id=1, name="Default", course_id=course.id)
                 session.add(group)
+                goal = Reward(
+                    id=987,
+                    name="Python course",
+                    price=100,
+                    type="reward",
+                    course_category=None,
+                )
+                session.add(goal)
                 await session.commit()
 
                 first_student = await service.create_student(
@@ -178,10 +188,12 @@ def test_create_student_generates_unique_hash(tmp_path: Path):
                 first_student_id = first_student.id
                 updated_student = await service.change_student_goal(
                     first_student_id,
+                    goal.id,
                     "Python course",
                 )
                 assert updated_student is not None
                 assert updated_student.current_goal == "Python course"
+                assert updated_student.current_goal_reward_id == goal.id
 
             async with session_factory() as verification_session:
                 saved_student = await StudentRepository(
@@ -192,6 +204,7 @@ def test_create_student_generates_unique_hash(tmp_path: Path):
                 assert saved_student.avatar == "🐯"
                 assert saved_student.balance == 0.0
                 assert saved_student.current_goal == "Python course"
+                assert saved_student.current_goal_reward_id == 987
                 assert [group.id for group in saved_student.groups] == [1]
                 saved_user = await verification_session.get(User, saved_student.user_id)
                 assert saved_user is not None
