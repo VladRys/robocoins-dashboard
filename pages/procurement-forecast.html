@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f5f7fb">
+  <title>Прогноз закупки наград — RoboCoins</title>
+  <style>
+    :root { color-scheme:light; --ink:#18233b; --muted:#71809a; --line:#e3e8f1; --blue:#315efb; --blue-dark:#244bd5; --bg:#f5f7fb; --green:#16794d; --amber:#9a5a08; --red:#b83a45; }
+    * { box-sizing:border-box; }
+    body { margin:0; min-height:100vh; background:var(--bg); color:var(--ink); font:15px/1.5 Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif; }
+    button,input { font:inherit; }
+    .topbar { min-height:68px; display:flex; justify-content:space-between; align-items:center; gap:16px; padding:12px max(20px,calc((100vw - 1120px)/2)); background:#fff; border-bottom:1px solid var(--line); }
+    .brand { display:flex; align-items:center; gap:10px; font-weight:800; }
+    .mark { display:grid; place-items:center; width:36px; height:36px; border-radius:12px; background:#eaf0ff; color:var(--blue); font-size:19px; }
+    .top-actions { display:flex; align-items:center; gap:10px; }
+    main { width:min(100% - 36px,1080px); margin:34px auto 64px; }
+    h1 { margin:0; font-size:clamp(28px,4vw,38px); line-height:1.15; letter-spacing:-1px; }
+    h2 { margin:0; font-size:18px; letter-spacing:-.3px; }
+    p { margin:8px 0 0; color:var(--muted); }
+    .intro { margin-bottom:22px; }
+    .panel,.login-card { border:1px solid var(--line); border-radius:17px; background:#fff; box-shadow:0 8px 28px #25385a0a; }
+    .login-card { max-width:470px; margin:55px auto; padding:26px; }
+    .panel { padding:20px; }
+    .grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:14px; margin:18px 0; }
+    .metric { padding:18px; }
+    .metric-label { color:var(--muted); font-size:13px; font-weight:700; }
+    .metric-value { margin-top:5px; font-size:30px; line-height:1.1; font-weight:850; letter-spacing:-.7px; }
+    .metric-note { margin-top:8px; color:var(--muted); font-size:12px; }
+    .section-head { display:flex; justify-content:space-between; gap:16px; align-items:flex-start; margin-bottom:14px; }
+    .badge { display:inline-flex; padding:5px 9px; border-radius:999px; background:#eef3ff; color:#3152b7; font-size:12px; font-weight:750; white-space:nowrap; }
+    .table-wrap { overflow-x:auto; }
+    table { width:100%; border-collapse:collapse; min-width:680px; }
+    th,td { padding:11px 9px; border-bottom:1px solid var(--line); text-align:left; vertical-align:middle; }
+    th { color:var(--muted); font-size:12px; font-weight:700; }
+    td strong { display:block; }
+    td small { color:var(--muted); }
+    td.num,th.num { text-align:right; font-variant-numeric:tabular-nums; }
+    .expected { color:var(--green); font-weight:800; }
+    .ceiling { color:var(--amber); font-weight:800; }
+    .note { margin-top:14px; padding:13px 15px; border-radius:11px; background:#f6f8fc; color:#53627b; font-size:13px; }
+    .details { display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-top:14px; }
+    .detail { padding:17px; }
+    .detail ul { margin:10px 0 0; padding-left:19px; color:#53627b; font-size:13px; }
+    .detail li+li { margin-top:6px; }
+    .button { min-height:38px; padding:7px 12px; border:0; border-radius:10px; background:var(--blue); color:#fff; font-weight:750; cursor:pointer; }
+    .button:hover { background:var(--blue-dark); }
+    .button.light { border:1px solid var(--line); background:#fff; color:var(--ink); text-decoration:none; display:inline-flex; align-items:center; justify-content:center; }
+    .button.light:hover { background:#f8faff; }
+    label { display:block; margin:12px 0 6px; font-size:13px; font-weight:700; }
+    input { width:100%; min-height:42px; padding:9px 11px; border:1px solid #d5dce8; border-radius:10px; background:#fff; color:var(--ink); }
+    .row { display:grid; grid-template-columns:1fr auto; gap:9px; }
+    .status { min-height:20px; margin-top:10px; color:var(--muted); font-size:13px; overflow-wrap:anywhere; }
+    .status.error { color:var(--red); }
+    [hidden] { display:none !important; }
+    @media(max-width:740px) { .grid { grid-template-columns:1fr; } .details { grid-template-columns:1fr; } main { width:calc(100% - 26px); margin-top:24px; } .topbar { padding:10px 14px; } }
+    @media(max-width:430px) { .row { grid-template-columns:1fr; } .top-actions { gap:6px; } .top-actions .button { padding-inline:9px; font-size:12px; } }
+  </style>
+</head>
+<body>
+  <nav class="topbar" aria-label="Главная навигация">
+    <div class="brand"><span class="mark">✦</span> RoboCoins · Закупка наград</div>
+    <div class="top-actions"><a id="admin-link" class="button light" href="#">Админ-панель</a><button id="logout" class="button light" type="button" hidden>Выйти</button></div>
+  </nav>
+  <main>
+    <header class="intro">
+      <h1>Сколько наград закупить</h1>
+      <p>Прогноз по балансам учеников и текущим правилам начисления. Ученики группы Senior Embedded исключены. Срок расчёта — до 26–27 декабря 2026.</p>
+    </header>
+
+    <section id="login-card" class="login-card">
+      <h2>Вход администратора</h2>
+      <p>Данные прогноза доступны администратору RoboCoins.</p>
+      <form id="login-form">
+        <label for="admin-password">Пароль администратора</label>
+        <div class="row"><input id="admin-password" type="password" autocomplete="current-password" required><button id="login-button" class="button" type="submit">Войти</button></div>
+      </form>
+      <div id="login-status" class="status" role="status" aria-live="polite"></div>
+    </section>
+
+    <section id="dashboard" hidden>
+      <div class="grid">
+        <article class="panel metric"><div class="metric-label">Учеников в базе</div><div class="metric-value" id="student-count">—</div><div class="metric-note" id="group-count"></div></article>
+        <article class="panel metric"><div class="metric-label">Средний баланс сейчас</div><div class="metric-value" id="current-average">—</div><div class="metric-note">Монет на одного ученика</div></article>
+        <article class="panel metric"><div class="metric-label">Средний прогноз к 27 декабря</div><div class="metric-value"><span id="expected-average">—</span> / <span id="no-daily-average">—</span></div><div class="metric-note">Фактический темп / без ежедневных заданий</div></article>
+        <article class="panel metric"><div class="metric-label">Теоретический максимум</div><div class="metric-value" id="theoretical-average">—</div><div class="metric-note">Если выполнять все задания и посещать занятия</div></article>
+      </div>
+
+      <section class="panel">
+        <div class="section-head"><div><h2>Потребность по каталогу физических наград</h2><p id="history-summary">Загружаю историю начислений…</p></div><span class="badge">Покупные призы</span></div>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Награда</th><th class="num">Цена</th><th class="num">Уже могут купить</th><th class="num">Прогноз по фактическому темпу</th><th class="num">Без ежедневных заданий</th><th class="num">Верхний сценарий</th></tr></thead>
+          <tbody id="reward-rows"><tr><td colspan="6">Загружаю данные…</td></tr></tbody>
+        </table></div>
+        <div class="note"><strong>Как читать количество:</strong> в колонках показано, сколько учеников смогут позволить себе конкретную награду. Прогноз без ежедневных заданий исключает начисления за правильные ежедневные ответы из исторического темпа. Это оценка спроса на каждый отдельный приз, если все ученики выберут именно его; строки нельзя складывать, потому что ученики могут выбрать разные награды.</div>
+      </section>
+
+      <div class="details">
+        <section class="panel detail"><h2>Основа прогноза</h2><ul id="basis-list"></ul></section>
+        <section class="panel detail"><h2>Допущения верхнего сценария</h2><ul id="assumption-list"></ul></section>
+      </div>
+      <p id="data-status" class="status" role="status" aria-live="polite"></p>
+    </section>
+  </main>
+  <script>
+    (() => {
+      const $ = (id) => document.getElementById(id);
+      const local = ['localhost', '127.0.0.1', '::1'].includes(location.hostname);
+      const apiBase = local ? (location.port === '8000' ? '' : `${location.protocol}//${location.hostname}:8000`) : '/api';
+      const apiPath = (path) => local ? `${apiBase}${path}` : path.startsWith('/auth/') ? path : `${apiBase}${path}`;
+      $('admin-link').href = apiPath('/admin-test.html');
+      const status = (id, message, error = false) => { const node = $(id); node.textContent = message; node.classList.toggle('error', error); };
+      const fmt = (value, digits = 1) => Number(value).toLocaleString('ru-RU', { maximumFractionDigits: digits });
+      async function request(path, options = {}) {
+        const response = await fetch(apiPath(path), { credentials: 'include', ...options });
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(payload.detail || `Ошибка запроса (${response.status})`);
+        return payload;
+      }
+      function signedIn(user) {
+        if (user.role !== 'admin') throw new Error('Для просмотра нужен аккаунт администратора.');
+        $('login-card').hidden = true;
+        $('dashboard').hidden = false;
+        $('logout').hidden = false;
+        loadForecast();
+      }
+      function render(data) {
+        $('student-count').textContent = data.students;
+        $('group-count').textContent = `В группах: ${data.students_with_groups}`;
+        $('current-average').textContent = fmt(data.averages.balance, 2);
+        $('expected-average').textContent = fmt(data.averages.expected, 1);
+        $('no-daily-average').textContent = fmt(data.averages.expected_without_daily_tasks, 1);
+        $('theoretical-average').textContent = fmt(data.averages.theoretical, 1);
+        $('history-summary').textContent = `Фактические начисления за ${data.history.days} дней (${data.history.from} — ${data.history.to}): ${fmt(data.history.coins)} монет, из них ${fmt(data.history.daily_task_coins)} — ежедневные задания. Средний темп — ${fmt(data.history.average_daily_per_student, 3)} монеты на ученика в день.`;
+        const rows = $('reward-rows');
+        rows.replaceChildren();
+        for (const reward of data.rewards) {
+          const tr = document.createElement('tr');
+          const category = reward.category ? ` · ${reward.category}` : ' · доступна всем';
+          const values = [
+            `<strong>${escapeHtml(reward.name)}</strong><small>${escapeHtml(category)}</small>`,
+            `${fmt(reward.price, 0)} 🪙`,
+            `${reward.can_afford_now} / ${reward.eligible_students}`,
+            `<span class="expected">${reward.can_afford_expected}</span> / ${reward.eligible_students}`,
+            `${reward.can_afford_without_daily_tasks} / ${reward.eligible_students}`,
+            `<span class="ceiling">${reward.can_afford_theoretical}</span> / ${reward.eligible_students}`
+          ];
+          values.forEach((value, index) => { const td = document.createElement('td'); td.innerHTML = value; if (index > 0) td.className = 'num'; tr.append(td); });
+          rows.append(tr);
+        }
+        $('basis-list').innerHTML = `<li>Средний текущий баланс: <strong>${fmt(data.averages.balance, 2)} монеты</strong>.</li><li>По фактическому темпу: <strong>${fmt(data.averages.expected, 2)} монеты</strong>; без ежедневных заданий: <strong>${fmt(data.averages.expected_without_daily_tasks, 2)}</strong>.</li><li>Ученики курса <strong>${escapeHtml(data.excluded_course)}</strong> исключены из расчёта.</li><li>В текущем каталоге награды типа «приз»; привилегии исключены из закупки.</li><li>Для призов по категориям учитываются только ученики соответствующих курсов.</li>`;
+        $('assumption-list').innerHTML = `<li>До срока осталось ${data.forecast_days} дней; ежедневное задание приносит ${fmt(data.assumptions.daily_task_reward, 1)} монеты.</li><li>До конца периода у субботних групп — ${data.assumptions.saturday_sessions} занятий, у воскресных — ${data.assumptions.sunday_sessions}.</li><li>Максимум за один урок — ${data.assumptions.coins_per_lesson} монеты. Если ученик состоит в нескольких группах, учитываются занятия каждой группы.</li><li>Верхний сценарий предполагает посещение каждого занятия и выполнение ежедневного задания каждый день.</li><li>Средний верхний сценарий: <strong>${fmt(data.averages.theoretical, 2)} монеты</strong> на ученика.</li>`;
+        status('data-status', `Обновлено ${data.as_of}.`);
+      }
+      function escapeHtml(value) { return String(value).replace(/[&<>"']/g, (char) => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' })[char]); }
+      async function loadForecast() {
+        try { render(await request('/procurement-forecast/data')); }
+        catch (error) { status('data-status', error.message, true); }
+      }
+      $('login-form').addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const button = $('login-button'); button.disabled = true;
+        try {
+          await request('/auth/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code: $('admin-password').value }) });
+          $('admin-password').value = '';
+          signedIn(await request('/auth/me'));
+        } catch (error) { status('login-status', error.message, true); }
+        finally { button.disabled = false; }
+      });
+      $('logout').addEventListener('click', async () => {
+        try { await request('/auth/logout', { method: 'POST' }); } catch (_) {}
+        $('dashboard').hidden = true; $('login-card').hidden = false; $('logout').hidden = true;
+      });
+      request('/auth/me').then(signedIn).catch(() => {});
+    })();
+  </script>
+</body>
+</html>

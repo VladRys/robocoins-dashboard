@@ -10,6 +10,7 @@ from app.api.routes.users import users_router
 from app.api.routes.auth import auth_router
 from app.api.routes.achievement import achievement_router
 from app.api.routes.reward import rewards_router, shop_router
+from app.api.routes.procurement_forecast import procurement_forecast_router
 
 router = APIRouter()
 router.include_router(course_router)
@@ -24,6 +25,7 @@ router.include_router(auth_router)
 router.include_router(shop_router)
 router.include_router(rewards_router)
 router.include_router(achievement_router)
+router.include_router(procurement_forecast_router)
 
 @router.get("/")
 async def root():

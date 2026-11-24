@@ -75,7 +75,7 @@
 <body>
   <nav class="topbar" aria-label="Главная навигация">
     <div class="brand"><span class="mark">✦</span> RoboCoins · Администратор</div>
-    <div class="top-actions"><span id="user-name" class="who"></span><button id="logout-button" class="button light small" type="button" hidden>Выйти</button></div>
+    <div class="top-actions"><span id="user-name" class="who"></span><a id="procurement-link" class="button light small" href="#">Прогноз закупки</a><button id="logout-button" class="button light small" type="button" hidden>Выйти</button></div>
   </nav>
   <main>
     <header class="intro">
@@ -247,6 +247,7 @@
         if (local) return `${localBase}${path}`;
         return path.startsWith('/auth/') ? path : `/api${path}`;
       }
+      $('procurement-link').href = apiPath('/procurement-forecast');
       async function request(path, options = {}) {
         const response = await fetch(apiPath(path), { credentials: 'include', ...options });
         const raw = await response.text();
