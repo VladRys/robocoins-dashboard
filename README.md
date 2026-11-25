@@ -12,6 +12,7 @@ RoboCoins is an educational platform for managing student groups, virtual coins,
 - 🎁 Reward and privilege shop with configurable prices
 - 📜 Student transaction history and balance tracking
 - 🔐 Role-based accounts for students, teachers, and administrators
+- 🔑 Optional Google sign-in for existing accounts after linking from account settings
 
 ## Roles and access
 
@@ -21,7 +22,17 @@ RoboCoins is an educational platform for managing student groups, virtual coins,
 | `teacher` | Work with assigned groups and their students, including student profile edits and group membership |
 | `student` | View their own profile and credentials, and use student features |
 
-All accounts use `POST /auth/login` with `{"code":"..."}`. Successful login sets an HTTP-only session cookie. Normal teacher and student accounts log in with their access code. The administrator uses the 12-character `ADMIN_PASSWORD`.
+All accounts can use `POST /auth/login` with `{"code":"..."}`. Successful login sets an HTTP-only session cookie. Normal teacher and student accounts log in with their access code. The administrator uses the 12-character `ADMIN_PASSWORD`. Google sign-in is an optional alternative for accounts that have already linked Google in `/auth/account-settings`; it never creates accounts or matches users by email. Google linking requires an active code-based session, and `/auth/google/status` reports the linked email.
+
+To enable Google sign-in, configure an OAuth 2.0 Web application in Google Cloud, add the callback URI below to its authorized redirect URIs, and set these environment variables:
+
+```dotenv
+GOOGLE_CLIENT_ID=your-oauth-client-id
+GOOGLE_CLIENT_SECRET=your-oauth-client-secret
+GOOGLE_REDIRECT_URI=https://your-app.example/auth/google/callback
+```
+
+For deployments that expose the API beneath a proxy prefix such as `/api`, include that prefix in `GOOGLE_REDIRECT_URI`. The Google OAuth consent screen must permit the requested `openid`, `email`, and `profile` scopes. The account selection prompt is shown for both linking and sign-in.
 
 Set a unique `ADMIN_PASSWORD` per environment. When it is not configured, the server generates a 12-character password at startup and writes it to the application log. The administrator account is created the first time that password successfully logs in. Keep the password and logs private.
 

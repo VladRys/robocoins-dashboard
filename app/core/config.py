@@ -113,6 +113,9 @@ CORS_ORIGINS_BY_MODE = {
 class Config:
     PROJECT_NAME = "RoboCoins Dashboard"
     ADMIN_PASSWORD, ADMIN_PASSWORD_WAS_GENERATED = resolve_admin_password()
+    GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
+    GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET")
+    GOOGLE_REDIRECT_URI = os.getenv("GOOGLE_REDIRECT_URI")
     PRODUCT_MODE, DATABASE_URL = resolve_database_url(
         os.getenv("PRODUCT_MODE", ProductMode.DEV.value)
     )

@@ -281,6 +281,8 @@
           <button id="login-button" class="button" type="submit">Войти</button>
         </div>
       </form>
+      <button id="google-login-button" class="button light full" type="button">Войти с помощью Google</button>
+      <p class="muted">Google — дополнительный способ входа для аккаунта, привязанного в настройках.</p>
       <p id="session-status" class="status" role="status" aria-live="polite"></p>
     </section>
 
@@ -355,6 +357,7 @@
               <div><div class="muted">Твой код доступа</div><code id="credential-code">Загружаю…</code></div>
               <button id="copy-code" class="button light small" type="button" disabled>Копировать</button>
             </div>
+            <button id="account-settings-button" class="button light full" type="button">Настройки входа и привязка Google</button>
             <p id="profile-status" class="status" role="status" aria-live="polite"></p>
           </section>
 
@@ -398,6 +401,12 @@
       ? (location.port === '8000' ? '' : `${location.protocol}//${location.hostname}:8000`)
       : '/api';
     const $ = (id) => document.getElementById(id);
+    $('google-login-button').addEventListener('click', () => {
+      location.assign(`${apiBase}/auth/google/login`);
+    });
+    $('account-settings-button').addEventListener('click', () => {
+      location.assign(`${apiBase}/auth/account-settings`);
+    });
     let currentUser = null;
     let currentGoal = null;
     let rewards = [];

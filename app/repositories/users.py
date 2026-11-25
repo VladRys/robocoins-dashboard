@@ -10,6 +10,10 @@ from app.core.access_code import generate_access_code
 from app.core.enums import UserRole
 
 
+class GoogleAccountAlreadyLinkedError(Exception):
+    pass
+
+
 class UserRepository:
     def __init__(self, session: AsyncSession):
         self.session = session
@@ -22,6 +26,48 @@ class UserRepository:
             select(User).where(User.access_code == access_code)
         )
         return result.scalar_one_or_none()
+
+    async def get_user_by_google_sub(self, google_sub: str) -> User | None:
+        result = await self.session.execute(
+            select(User).where(User.google_sub == google_sub)
+        )
+        return result.scalar_one_or_none()
+
+    async def link_google_account(
+        self,
+        user_id: int,
+        google_sub: str,
+        google_email: str,
+    ) -> User:
+        linked_user = await self.get_user_by_google_sub(google_sub)
+        if linked_user is not None and linked_user.id != user_id:
+            raise GoogleAccountAlreadyLinkedError
+
+        user = await self.get_user_by_id(user_id)
+        if user is None:
+            raise LookupError(f"User {user_id} was not found")
+        user.google_sub = google_sub
+        user.google_email = google_email
+        try:
+            await self.session.commit()
+        except IntegrityError:
+            await self.session.rollback()
+            linked_user = await self.get_user_by_google_sub(google_sub)
+            if linked_user is not None and linked_user.id != user_id:
+                raise GoogleAccountAlreadyLinkedError from None
+            raise
+        await self.session.refresh(user)
+        return user
+
+    async def unlink_google_account(self, user_id: int) -> User:
+        user = await self.get_user_by_id(user_id)
+        if user is None:
+            raise LookupError(f"User {user_id} was not found")
+        user.google_sub = None
+        user.google_email = None
+        await self.session.commit()
+        await self.session.refresh(user)
+        return user
 
     async def get_users(self) -> list[User]:
         result = await self.session.execute(select(User).order_by(User.id))

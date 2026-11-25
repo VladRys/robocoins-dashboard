@@ -1,7 +1,10 @@
 from sqlalchemy.exc import IntegrityError
 from app.models.group import Group
 from app.models.user import User
-from app.repositories.users import UserRepository
+from app.repositories.users import (
+    GoogleAccountAlreadyLinkedError,
+    UserRepository,
+)
 
 
 class UserService:
@@ -16,6 +19,24 @@ class UserService:
 
     async def get_user_by_access_code(self, access_code: str) -> User | None:
         return await self.repository.get_user_by_access_code(access_code)
+
+    async def get_user_by_google_sub(self, google_sub: str) -> User | None:
+        return await self.repository.get_user_by_google_sub(google_sub)
+
+    async def link_google_account(
+        self,
+        user_id: int,
+        google_sub: str,
+        google_email: str,
+    ) -> User:
+        return await self.repository.link_google_account(
+            user_id,
+            google_sub,
+            google_email,
+        )
+
+    async def unlink_google_account(self, user_id: int) -> User:
+        return await self.repository.unlink_google_account(user_id)
 
     async def get_teacher_profile(
         self,

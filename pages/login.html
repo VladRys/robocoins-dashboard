@@ -1,9 +1,9 @@
 <!doctype html>
-<html lang="en">
+<html lang="ru">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>RoboCoins API Login Test</title>
+  <title>RoboCoins — вход</title>
   <style>
     * { box-sizing: border-box; }
     body { margin: 0; min-height: 100vh; display: grid; place-items: center; padding: 24px; font: 16px/1.5 system-ui, sans-serif; color: #172033; background: #f3f6fb; }
@@ -18,20 +18,22 @@
     input:focus { outline: 3px solid #1769ff25; border-color: #1769ff; }
     button { margin-top: 14px; border: 0; background: #1769ff; color: white; font-weight: 700; cursor: pointer; }
     button:disabled { opacity: .6; cursor: wait; }
+    .google { display: block; margin-top: 12px; padding: 11px 13px; border: 1px solid #ccd5e2; border-radius: 10px; color: #172033; text-align: center; text-decoration: none; font-weight: 700; }
     pre { overflow-wrap: anywhere; white-space: pre-wrap; margin: 18px 0 0; padding: 13px; border-radius: 10px; background: #f3f6fb; color: #344054; }
     pre:empty { display: none; }
   </style>
 </head>
 <body>
   <main>
-    <h1>API login test</h1>
-    <p>Enter a student's access code to test <code>POST /auth/login</code>.</p>
+    <h1>Вход в RoboCoins</h1>
+    <p>Основной способ входа — код доступа. Войти через Google можно только после привязки аккаунта в настройках.</p>
     <div class="backend">Backend: <a id="backend-link" target="_blank" rel="noreferrer"></a></div>
     <form id="login-form">
-      <label for="code">Access code</label>
+      <label for="code">Код доступа</label>
       <input id="code" name="code" autocomplete="one-time-code" required>
-      <button id="submit" type="submit">Log in</button>
+      <button id="submit" type="submit">Войти по коду</button>
     </form>
+    <a id="google-login" class="google" href="#">Войти с помощью Google</a>
     <pre id="result" role="status" aria-live="polite"></pre>
   </main>
   <script>
@@ -42,6 +44,7 @@
     const backendLink = document.querySelector('#backend-link');
     backendLink.href = backendUrl;
     backendLink.textContent = backendUrl;
+    document.querySelector('#google-login').href = `${backendUrl}/auth/google/login`;
     const form = document.querySelector('#login-form');
     const button = document.querySelector('#submit');
     const result = document.querySelector('#result');

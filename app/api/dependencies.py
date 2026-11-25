@@ -8,6 +8,7 @@ from app.repositories.achievement import AchievementRepository
 from app.repositories.course import CourseRepository
 from app.repositories.daily_task import DailyTaskRepository
 from app.repositories.group import GroupRepository
+from app.repositories.google_oauth import GoogleOAuthRepository
 from app.repositories.reward import RewardRepository
 from app.repositories.session import SessionRepository
 from app.repositories.streak import StreakRepository
@@ -20,6 +21,7 @@ from app.services.achievement import AchievementService
 from app.services.balance import BalanceService
 from app.services.course import CourseService
 from app.services.group import GroupService
+from app.services.google_oauth import GoogleOAuthService
 from app.services.reward import RewardService
 from app.services.session import SessionService
 from app.services.streak import StreakService
@@ -31,6 +33,12 @@ from app.services.users import UserService
 
 def get_user_service(db: AsyncSession = Depends(get_db)) -> UserService:
     return UserService(UserRepository(db))
+
+
+def get_google_oauth_service(
+    db: AsyncSession = Depends(get_db),
+) -> GoogleOAuthService:
+    return GoogleOAuthService(GoogleOAuthRepository(db))
 
 
 def get_achievement_service(

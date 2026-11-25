@@ -6,4 +6,5 @@ python-dotenv>=1.2.3
 psycopg[binary]>=3.3.6
 asyncpg>=0.31.0
 aiosqlite>=0.21.0
+google-auth[requests]>=2.40.0,<3.0.0
 pytest>=8.3

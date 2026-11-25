@@ -32,6 +32,8 @@ class User(Base):
     name: Mapped[str] = mapped_column(String, nullable=False)
     role: Mapped[str] = mapped_column(String(20), nullable=False)
     access_code: Mapped[str] = mapped_column(String, nullable=False, unique=True)
+    google_sub: Mapped[str | None] = mapped_column(String, unique=True)
+    google_email: Mapped[str | None] = mapped_column(String)
 
     student: Mapped["Student | None"] = relationship(
         back_populates="user",

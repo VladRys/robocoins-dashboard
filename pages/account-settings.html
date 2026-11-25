@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f3f6fb">
+  <meta name="referrer" content="no-referrer">
+  <title>RoboCoins — настройки входа</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; min-height: 100vh; display: grid; place-items: center; padding: 20px; font: 16px/1.5 system-ui, sans-serif; color: #172033; background: #f3f6fb; }
+    main { width: min(100%, 520px); padding: 28px; border: 1px solid #e1e7f0; border-radius: 18px; background: #fff; box-shadow: 0 18px 50px #243b5a12; }
+    h1 { margin: 0 0 8px; font-size: 25px; }
+    h2 { margin: 22px 0 5px; font-size: 18px; }
+    p { margin: 0 0 13px; color: #637089; }
+    label { display: block; margin: 12px 0 6px; font-weight: 650; }
+    input, button, a.button { width: 100%; min-height: 46px; border-radius: 10px; font: inherit; }
+    input { padding: 0 12px; border: 1px solid #ccd5e2; }
+    button, a.button { display: block; margin-top: 12px; padding: 9px 13px; border: 0; background: #1769ff; color: #fff; font-weight: 700; text-align: center; text-decoration: none; cursor: pointer; }
+    button.secondary, a.secondary { border: 1px solid #e1e7f0; background: #fff; color: #172033; }
+    button.danger { background: #b42318; }
+    button:disabled { opacity: .6; cursor: wait; }
+    [hidden] { display: none !important; }
+    .status { min-height: 20px; margin-top: 12px; padding: 0; color: #637089; font-size: 14px; overflow-wrap: anywhere; }
+    .status.error, .status.success { padding: 10px 12px; border-radius: 9px; }
+    .status.error { background: #fff1f0; color: #b42318; }
+    .status.success { background: #ecfdf3; color: #067647; }
+    .identity { padding: 12px; border: 1px solid #e1e7f0; border-radius: 10px; background: #f9fbfe; overflow-wrap: anywhere; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Настройки входа</h1>
+    <p>Основной способ входа — код доступа. Можно отдельно привязать Google и выбирать аккаунт Google при следующем входе.</p>
+
+    <section id="signed-in" hidden>
+      <div id="user-identity" class="identity"></div>
+      <h2>Аккаунт Google</h2>
+      <p id="google-status">Проверяем привязку…</p>
+      <button id="link-google" type="button">Привязать аккаунт Google</button>
+      <button id="unlink-google" class="danger" type="button" hidden>Отвязать Google</button>
+    </section>
+
+    <form id="code-login" hidden>
+      <label for="access-code">Войдите по коду, чтобы открыть настройки аккаунта</label>
+      <input id="access-code" autocomplete="one-time-code" required>
+      <button id="login-button" type="submit">Войти по коду</button>
+    </form>
+
+    <p id="status" class="status" role="status" aria-live="polite"></p>
+    <a id="dashboard-link" class="button secondary" href="/">Вернуться в RoboCoins</a>
+  </main>
+  <script>
+    const isLocal = ['localhost', '127.0.0.1', '::1'].includes(location.hostname);
+    const apiBase = isLocal
+      ? (location.port === '8000' ? '' : 'http://127.0.0.1:8000')
+      : '/api';
+    const $ = (id) => document.getElementById(id);
+
+    async function request(path, options = {}) {
+      const response = await fetch(`${apiBase}${path}`, {
+        credentials: 'include',
+        cache: 'no-store',
+        ...options,
+      });
+      const text = await response.text();
+      let body = null;
+      if (text) {
+        try { body = JSON.parse(text); } catch { body = text; }
+      }
+      if (!response.ok) {
+        const detail = body && typeof body === 'object' && 'detail' in body
+          ? body.detail
+          : typeof body === 'string' ? body : response.statusText;
+        throw new Error(`HTTP ${response.status}: ${detail}`);
+      }
+      return body;
+    }
+
+    function setStatus(message, kind = '') {
+      $('status').textContent = message;
+      $('status').className = `status${kind ? ` ${kind}` : ''}`;
+    }
+
+    function showOAuthResult() {
+      const result = new URLSearchParams(location.search).get('google');
+      const messages = {
+        linked: ['Аккаунт Google привязан. Теперь можно входить, выбрав этот аккаунт Google.', 'success'],
+        login: ['Вход через Google выполнен.', 'success'],
+        not_linked: ['Этот аккаунт Google не привязан. Сначала войдите по коду, затем привяжите Google здесь. Регистрация через Google отключена.', 'error'],
+        already_linked: ['Этот аккаунт Google уже привязан к другой учётной записи RoboCoins.', 'error'],
+        session_expired: ['Сессия истекла. Войдите по коду и повторите привязку.', 'error'],
+        invalid_state: ['Запрос входа устарел или недействителен. Попробуйте ещё раз.', 'error'],
+        cancelled: ['Вы отменили вход через Google.', 'error'],
+        verification_failed: ['Не удалось проверить аккаунт Google. Попробуйте ещё раз.', 'error'],
+        profile_missing: ['Для учётной записи не найден профиль. Обратитесь к администратору.', 'error'],
+      };
+      if (messages[result]) setStatus(...messages[result]);
+      if (result) history.replaceState(null, '', location.pathname);
+      return Boolean(result);
+    }
+
+    async function loadGoogleStatus() {
+      const result = await request('/auth/google/status');
+      if (result.linked) {
+        $('google-status').textContent = `Привязан аккаунт: ${result.email}`;
+        $('link-google').textContent = 'Сменить аккаунт Google';
+        $('unlink-google').hidden = false;
+      } else {
+        $('google-status').textContent = 'Google пока не привязан. Для первого входа продолжайте использовать код доступа.';
+        $('link-google').textContent = 'Привязать аккаунт Google';
+        $('unlink-google').hidden = true;
+      }
+    }
+
+    async function load() {
+      const hasOAuthResult = showOAuthResult();
+      let user;
+      try {
+        user = await request('/auth/me');
+      } catch (error) {
+        $('signed-in').hidden = true;
+        $('code-login').hidden = false;
+        $('google-status').textContent = '';
+        if (!hasOAuthResult) setStatus('Войдите по коду, чтобы управлять привязкой Google.');
+        else if (!error.message.includes('HTTP 401')) setStatus(error.message, 'error');
+        return;
+      }
+      $('signed-in').hidden = false;
+      $('code-login').hidden = true;
+      $('user-identity').textContent = `${user.name} · ${user.role} · ID ${user.id}`;
+      const dashboards = {
+        student: '/student-dashboard.html',
+        teacher: '/teacher-dashboard.html',
+        admin: '/admin-test.html',
+      };
+      $('dashboard-link').href = dashboards[user.role] || '/';
+      try {
+        await loadGoogleStatus();
+      } catch (error) {
+        setStatus(error.message, 'error');
+      }
+    }
+
+    $('code-login').addEventListener('submit', async (event) => {
+      event.preventDefault();
+      $('login-button').disabled = true;
+      setStatus('Выполняется вход…');
+      try {
+        await request('/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ code: $('access-code').value.trim() }),
+        });
+        await load();
+      } catch (error) {
+        setStatus(error.message, 'error');
+      } finally {
+        $('login-button').disabled = false;
+      }
+    });
+
+    $('link-google').addEventListener('click', async () => {
+      $('link-google').disabled = true;
+      setStatus('Открываем выбор аккаунта Google…');
+      try {
+        const result = await request('/auth/google/link', { method: 'POST' });
+        location.assign(result.authorization_url);
+      } catch (error) {
+        setStatus(error.message, 'error');
+        $('link-google').disabled = false;
+      }
+    });
+
+    $('unlink-google').addEventListener('click', async () => {
+      if (!confirm('Отвязать аккаунт Google? В RoboCoins по-прежнему можно будет войти по коду.')) return;
+      $('unlink-google').disabled = true;
+      try {
+        await request('/auth/google/link', { method: 'DELETE' });
+        await loadGoogleStatus();
+        setStatus('Аккаунт Google отвязан. Вход по коду продолжает работать.', 'success');
+      } catch (error) {
+        setStatus(error.message, 'error');
+      } finally {
+        $('unlink-google').disabled = false;
+      }
+    });
+
+    load();
+  </script>
+</body>
+</html>
