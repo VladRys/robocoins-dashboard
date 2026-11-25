@@ -46,7 +46,7 @@
 </div>
 </section></div></main>
 <script>
-const local=['localhost','127.0.0.1','::1'].includes(location.hostname);const api=local?(location.port==='8000'?'':`${location.protocol}//${location.hostname}:8000`):'/api';const $=id=>document.getElementById(id);$('google-login').href=`${api}/auth/google/login`;$('account-settings').href=`${api}/auth/account-settings`;const state={teacher:null,groups:[],members:new Map(),students:[],selected:null,groupId:null,reasons:[],log:[]};
+const local=['localhost','127.0.0.1','::1'].includes(location.hostname);const api=local?(location.port==='8000'?'':`${location.protocol}//${location.hostname}:8000`):'';const $=id=>document.getElementById(id);$('google-login').href=`${api}/auth/google/login`;$('account-settings').href=`${api}/auth/account-settings`;const state={teacher:null,groups:[],members:new Map(),students:[],selected:null,groupId:null,reasons:[],log:[]};
 const reasonLabels={theory:'Теория (+1)',practice_completed:'Практика выполнена (+1)',additional_task_completed:'Доп. задание (+1)',discipline_breakdown:'Нарушение дисциплины (−1)',middle_level_violation:'Нарушение среднего уровня (−2)',serious_violation:'Серьёзное нарушение (−3)'};
 function setStatus(id,msg,kind=''){const el=$(id);el.textContent=msg;el.className=`status${kind?` ${kind}`:''}`}
 function esc(v){return String(v??'')}

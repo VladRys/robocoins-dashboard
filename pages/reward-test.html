@@ -107,7 +107,7 @@
   </main>
   <script>
     const local = ['localhost', '127.0.0.1', '::1'].includes(location.hostname);
-    const apiBase = local ? (location.port === '8000' ? '' : `${location.protocol}//${location.hostname}:8000`) : '/api';
+    const apiBase = local ? (location.port === '8000' ? '' : `${location.protocol}//${location.hostname}:8000`) : '';
     const $ = (id) => document.getElementById(id);
     let currentUser = null;
     const courseCategories = [

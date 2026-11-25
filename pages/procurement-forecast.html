@@ -106,8 +106,8 @@
     (() => {
       const $ = (id) => document.getElementById(id);
       const local = ['localhost', '127.0.0.1', '::1'].includes(location.hostname);
-      const apiBase = local ? (location.port === '8000' ? '' : `${location.protocol}//${location.hostname}:8000`) : '/api';
-      const apiPath = (path) => local ? `${apiBase}${path}` : path.startsWith('/auth/') ? path : `${apiBase}${path}`;
+      const apiBase = local ? (location.port === '8000' ? '' : `${location.protocol}//${location.hostname}:8000`) : '';
+      const apiPath = (path) => `${apiBase}${path}`;
       $('admin-link').href = apiPath('/admin-test.html');
       const status = (id, message, error = false) => { const node = $(id); node.textContent = message; node.classList.toggle('error', error); };
       const fmt = (value, digits = 1) => Number(value).toLocaleString('ru-RU', { maximumFractionDigits: digits });

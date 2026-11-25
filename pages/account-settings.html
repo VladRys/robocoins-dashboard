@@ -52,9 +52,9 @@
   </main>
   <script>
     const isLocal = ['localhost', '127.0.0.1', '::1'].includes(location.hostname);
-    const apiBase = isLocal
-      ? (location.port === '8000' ? '' : 'http://127.0.0.1:8000')
-      : '/api';
+    const apiBase = isLocal && location.port !== '8000'
+      ? 'http://127.0.0.1:8000'
+      : '';
     const $ = (id) => document.getElementById(id);
 
     async function request(path, options = {}) {

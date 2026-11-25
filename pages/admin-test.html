@@ -246,7 +246,7 @@
 
       function apiPath(path) {
         if (local) return `${localBase}${path}`;
-        return path.startsWith('/auth/') ? path : `/api${path}`;
+        return path;
       }
       $('procurement-link').href = apiPath('/procurement-forecast');
       $('google-login-link').href = apiPath('/auth/google/login');

@@ -41,7 +41,7 @@
       ? location.origin
       : isLocal
         ? `${location.protocol}//${location.hostname}:8000`
-        : '/api';
+        : '';
     const backendLink = document.querySelector('#backend-link');
     backendLink.href = backendUrl;
     backendLink.textContent = backendUrl;

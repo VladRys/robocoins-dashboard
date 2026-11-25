@@ -154,7 +154,7 @@
     const isLocal = ['localhost', '127.0.0.1', '::1'].includes(location.hostname);
     const apiBase = isLocal
       ? (location.port === '8000' ? '' : `${location.protocol}//${location.hostname}:8000`)
-      : '/api';
+      : '';
     const $ = (id) => document.getElementById(id);
     let currentUser = null;
     let currentTask = null;
