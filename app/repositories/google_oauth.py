@@ -4,12 +4,13 @@ from datetime import datetime, timezone
 from sqlalchemy import delete
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.enums import GoogleOAuthFlow
 from app.models.google_oauth_state import GoogleOAuthState
 
 
 @dataclass(frozen=True)
 class PendingGoogleOAuth:
-    flow: str
+    flow: GoogleOAuthFlow
     user_id: int | None
     nonce: str
     code_verifier: str
@@ -22,7 +23,7 @@ class GoogleOAuthRepository:
     async def create_state(
         self,
         state_hash: str,
-        flow: str,
+        flow: GoogleOAuthFlow,
         user_id: int | None,
         nonce: str,
         code_verifier: str,
@@ -69,7 +70,7 @@ class GoogleOAuthRepository:
         if row is None:
             return None
         return PendingGoogleOAuth(
-            flow=row.flow,
+            flow=GoogleOAuthFlow(row.flow),
             user_id=row.user_id,
             nonce=row.nonce,
             code_verifier=row.code_verifier,

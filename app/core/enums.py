@@ -52,6 +52,23 @@ class UserRole(StrEnum):
     ADMIN = "admin"
 
 
+class GoogleOAuthFlow(StrEnum):
+    LOGIN = "login"
+    LINK = "link"
+
+
+class GoogleOAuthStatus(StrEnum):
+    LOGIN = "login"
+    LINKED = "linked"
+    NOT_LINKED = "not_linked"
+    ALREADY_LINKED = "already_linked"
+    SESSION_EXPIRED = "session_expired"
+    INVALID_STATE = "invalid_state"
+    CANCELLED = "cancelled"
+    VERIFICATION_FAILED = "verification_failed"
+    PROFILE_MISSING = "profile_missing"
+
+
 class AuthorizationAction(StrEnum):
     ADMINISTRATOR_OPERATION = "administrator_operation"
     TEACHER_OPERATION = "teacher_operation"

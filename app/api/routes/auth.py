@@ -10,7 +10,13 @@ from app.api.dependencies import (
     get_user_service,
 )
 from app.core.config import Config as cfg
-from app.core.enums import AuthorizationAction, HttpErrorMessage, UserRole
+from app.core.enums import (
+    AuthorizationAction,
+    GoogleOAuthFlow,
+    GoogleOAuthStatus,
+    HttpErrorMessage,
+    UserRole,
+)
 from app.models.user import User
 from app.repositories.users import GoogleAccountAlreadyLinkedError
 from app.schemas.auth import (
@@ -18,6 +24,7 @@ from app.schemas.auth import (
     GoogleAuthorizationResponse,
     GoogleLinkStatusResponse,
     GoogleOAuthCallbackResponse,
+    GoogleOAuthStatusesResponse,
     StudentCredentialsResponse,
     UserLogoutResponse,
     UserLoginRequest,
@@ -71,7 +78,7 @@ def _set_google_state_cookie(
 
 def _google_result_response(
     response: Response,
-    result: str,
+    result: GoogleOAuthStatus,
 ) -> GoogleOAuthCallbackResponse:
     response.headers["Cache-Control"] = "no-store"
     response.delete_cookie("google_oauth_state", path="/")
@@ -89,7 +96,7 @@ async def start_google_login(
     google_oauth: GoogleOAuthService = Depends(get_google_oauth_service),
 ) -> GoogleAuthorizationResponse:
     try:
-        authorization = await google_oauth.create_authorization_url("login")
+        authorization = await google_oauth.create_authorization_url(GoogleOAuthFlow.LOGIN)
     except GoogleOAuthError as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
     response.headers["Cache-Control"] = "no-store"
@@ -106,7 +113,7 @@ async def start_google_link(
 ) -> GoogleAuthorizationResponse:
     try:
         authorization = await google_oauth.create_authorization_url(
-            "link",
+            GoogleOAuthFlow.LINK,
             user_id=user.id,
         )
     except GoogleOAuthError as exc:
@@ -138,6 +145,14 @@ async def remove_google_link(
 
 
 @auth_router.get(
+    "/google/statuses",
+    response_model=GoogleOAuthStatusesResponse,
+)
+async def get_google_oauth_statuses() -> GoogleOAuthStatusesResponse:
+    return GoogleOAuthStatusesResponse(statuses=list(GoogleOAuthStatus))
+
+
+@auth_router.get(
     "/google/callback",
     response_model=GoogleOAuthCallbackResponse,
     include_in_schema=False,
@@ -162,15 +177,15 @@ async def google_oauth_callback(
         or not state_cookie.isascii()
         or not hmac.compare_digest(state, state_cookie)
     ):
-        return _google_result_response(response, "invalid_state")
+        return _google_result_response(response, GoogleOAuthStatus.INVALID_STATE)
 
     pending = await google_oauth.consume_state(state)
     if pending is None:
-        return _google_result_response(response, "invalid_state")
+        return _google_result_response(response, GoogleOAuthStatus.INVALID_STATE)
     if error is not None:
-        return _google_result_response(response, "cancelled")
+        return _google_result_response(response, GoogleOAuthStatus.CANCELLED)
     if not code:
-        return _google_result_response(response, "verification_failed")
+        return _google_result_response(response, GoogleOAuthStatus.VERIFICATION_FAILED)
 
     try:
         identity = await google_oauth.exchange_code(
@@ -179,9 +194,9 @@ async def google_oauth_callback(
             pending.nonce,
         )
     except GoogleOAuthError:
-        return _google_result_response(response, "verification_failed")
+        return _google_result_response(response, GoogleOAuthStatus.VERIFICATION_FAILED)
 
-    if pending.flow == "link" and pending.user_id is not None:
+    if pending.flow == GoogleOAuthFlow.LINK and pending.user_id is not None:
         token = request.cookies.get("session_token")
         session = (
             await session_service.get_session_by_token(token)
@@ -193,7 +208,7 @@ async def google_oauth_callback(
             or session.is_expired()
             or session.user_id != pending.user_id
         ):
-            return _google_result_response(response, "session_expired")
+            return _google_result_response(response, GoogleOAuthStatus.SESSION_EXPIRED)
         try:
             await user_service.link_google_account(
                 pending.user_id,
@@ -201,26 +216,26 @@ async def google_oauth_callback(
                 identity.email,
             )
         except GoogleAccountAlreadyLinkedError:
-            return _google_result_response(response, "already_linked")
-        return _google_result_response(response, "linked")
+            return _google_result_response(response, GoogleOAuthStatus.ALREADY_LINKED)
+        return _google_result_response(response, GoogleOAuthStatus.LINKED)
 
-    if pending.flow != "login" or pending.user_id is not None:
-        return _google_result_response(response, "invalid_state")
+    if pending.flow != GoogleOAuthFlow.LOGIN or pending.user_id is not None:
+        return _google_result_response(response, GoogleOAuthStatus.INVALID_STATE)
 
     user = await user_service.get_user_by_google_sub(identity.sub)
     if user is None:
-        return _google_result_response(response, "not_linked")
+        return _google_result_response(response, GoogleOAuthStatus.NOT_LINKED)
     if user.role == UserRole.STUDENT.value:
         student = await student_service.get_student_by_id(user.id)
         if student is None:
-            return _google_result_response(response, "profile_missing")
+            return _google_result_response(response, GoogleOAuthStatus.PROFILE_MISSING)
 
     student_id = user.id if user.role == UserRole.STUDENT.value else None
     session_token = await session_service.create_session(user.id, student_id)
     response.headers["Cache-Control"] = "no-store"
     response.delete_cookie("google_oauth_state", path="/")
     result = GoogleOAuthCallbackResponse(
-        status="login",
+        status=GoogleOAuthStatus.LOGIN,
         user={"id": user.id, "user_id": user.id, "name": user.name, "role": user.role},
     )
     _set_session_cookie(response, request, session_token)

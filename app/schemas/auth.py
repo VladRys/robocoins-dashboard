@@ -1,6 +1,6 @@
 from pydantic import BaseModel, Field
 
-from app.core.enums import UserRole
+from app.core.enums import GoogleOAuthStatus, UserRole
 from app.schemas.base import APIResponse
 
 
@@ -38,8 +38,12 @@ class GoogleOAuthUserResponse(BaseModel):
 
 
 class GoogleOAuthCallbackResponse(BaseModel):
-    status: str
+    status: GoogleOAuthStatus
     user: GoogleOAuthUserResponse | None = None
+
+
+class GoogleOAuthStatusesResponse(BaseModel):
+    statuses: list[GoogleOAuthStatus]
 
 
 class AdminProfileResponse(BaseModel):

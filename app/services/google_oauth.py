@@ -13,6 +13,7 @@ from google.oauth2 import id_token
 import requests
 
 from app.core.config import Config as cfg
+from app.core.enums import GoogleOAuthFlow
 from app.repositories.google_oauth import GoogleOAuthRepository, PendingGoogleOAuth
 
 GOOGLE_AUTHORIZE_URL = "https://accounts.google.com/o/oauth2/v2/auth"
@@ -54,11 +55,13 @@ class GoogleOAuthService:
 
     async def create_authorization_url(
         self,
-        flow: str,
+        flow: GoogleOAuthFlow,
         user_id: int | None = None,
     ) -> GoogleAuthorizationRequest:
         client_id, _, redirect_uri = self._client_configuration()
-        if flow not in {"login", "link"} or (flow == "link") != (user_id is not None):
+        if flow not in {GoogleOAuthFlow.LOGIN, GoogleOAuthFlow.LINK} or (
+            flow == GoogleOAuthFlow.LINK
+        ) != (user_id is not None):
             raise ValueError("Invalid Google OAuth flow")
 
         state = secrets.token_urlsafe(32)
