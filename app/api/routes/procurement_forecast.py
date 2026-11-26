@@ -13,6 +13,7 @@ from app.models.user import User
 procurement_forecast_router = APIRouter(tags=["procurement forecast"])
 PAGE_PATH = Path(__file__).resolve().parents[3] / "pages" / "procurement-forecast.html"
 ADMIN_PAGE_PATH = PAGE_PATH.with_name("admin-test.html")
+STUDENT_DASHBOARD_PATH = PAGE_PATH.with_name("student-dashboard.html")
 FORECAST_END = date(2026, 12, 27)
 DAILY_TASK_REWARD = 0.1
 COINS_PER_LESSON = 3
@@ -26,6 +27,11 @@ async def procurement_forecast_page() -> FileResponse:
 @procurement_forecast_router.get("/admin-test.html", include_in_schema=False)
 async def admin_test_page() -> FileResponse:
     return FileResponse(ADMIN_PAGE_PATH)
+
+
+@procurement_forecast_router.get("/student-dashboard.html", include_in_schema=False)
+async def student_dashboard_page() -> FileResponse:
+    return FileResponse(STUDENT_DASHBOARD_PATH, headers={"Cache-Control": "no-store"})
 
 
 @procurement_forecast_router.get("/procurement-forecast/data")

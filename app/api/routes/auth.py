@@ -78,7 +78,10 @@ def _google_result_redirect(request: Request, result: str) -> RedirectResponse:
         root_path = callback_path[: -len(callback_suffix)]
     else:
         root_path = request.scope.get("root_path", "").rstrip("/")
-    redirect_url = f"{root_path}/auth/account-settings?google={result}"
+    if result == "login":
+        redirect_url = f"{root_path}/student-dashboard.html"
+    else:
+        redirect_url = f"{root_path}/auth/account-settings?google={result}"
     response = RedirectResponse(redirect_url, status_code=303)
     response.headers["Cache-Control"] = "no-store"
     response.delete_cookie("google_oauth_state", path="/")
