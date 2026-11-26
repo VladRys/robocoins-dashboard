@@ -249,8 +249,17 @@
         return path;
       }
       $('procurement-link').href = apiPath('/procurement-forecast');
-      $('google-login-link').href = apiPath('/auth/google/login');
-      $('account-settings-link').href = apiPath('/auth/account-settings');
+      $('google-login-link').href = '#';
+      $('google-login-link').addEventListener('click', async (event) => {
+        event.preventDefault();
+        try {
+          const result = await request('/auth/google/login');
+          location.assign(result.authorization_url);
+        } catch (error) {
+          status('login-status', error.message, 'error');
+        }
+      });
+      $('account-settings-link').href = '/account-settings.html';
       async function request(path, options = {}) {
         const response = await fetch(apiPath(path), { credentials: 'include', ...options });
         const raw = await response.text();

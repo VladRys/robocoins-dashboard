@@ -44,10 +44,30 @@
     const backendLink = document.querySelector('#backend-link');
     backendLink.href = backendUrl;
     backendLink.textContent = backendUrl;
-    document.querySelector('#google-login').href = `${backendUrl}/auth/google/login`;
+    const googleLogin = document.querySelector('#google-login');
     const form = document.querySelector('#login-form');
     const button = document.querySelector('#submit');
     const result = document.querySelector('#result');
+    googleLogin.addEventListener('click', async (event) => {
+      event.preventDefault();
+      googleLogin.setAttribute('aria-disabled', 'true');
+      result.textContent = 'Opening Google sign-in…';
+      try {
+        const response = await fetch(`${backendUrl}/auth/google/login`, {
+          credentials: 'include',
+          cache: 'no-store',
+          headers: { Accept: 'application/json' },
+        });
+        const body = await response.json();
+        if (!response.ok || typeof body.authorization_url !== 'string') {
+          throw new Error(body.detail || 'Google sign-in could not be started');
+        }
+        location.assign(body.authorization_url);
+      } catch (error) {
+        result.textContent = `Request failed: ${error.message}`;
+        googleLogin.removeAttribute('aria-disabled');
+      }
+    });
     form.addEventListener('submit', async (event) => {
       event.preventDefault();
       button.disabled = true;

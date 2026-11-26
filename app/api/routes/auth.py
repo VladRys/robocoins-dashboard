@@ -1,9 +1,5 @@
 import hmac
-from pathlib import Path
-from urllib.parse import urlsplit
-
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
-from fastapi.responses import FileResponse, RedirectResponse
 
 from app.api.dependencies import (
     get_authenticated_user,
@@ -19,6 +15,9 @@ from app.models.user import User
 from app.repositories.users import GoogleAccountAlreadyLinkedError
 from app.schemas.auth import (
     AdminProfileResponse,
+    GoogleAuthorizationResponse,
+    GoogleLinkStatusResponse,
+    GoogleOAuthCallbackResponse,
     StudentCredentialsResponse,
     UserLogoutResponse,
     UserLoginRequest,
@@ -37,7 +36,6 @@ auth_router = APIRouter(
     prefix="/auth",
     tags=["auth"],
 )
-ACCOUNT_SETTINGS_PATH = Path(__file__).resolve().parents[3] / "pages" / "account-settings.html"
 
 
 def _set_session_cookie(
@@ -71,50 +69,41 @@ def _set_google_state_cookie(
     )
 
 
-def _google_result_redirect(request: Request, result: str) -> RedirectResponse:
-    callback_path = urlsplit(cfg.GOOGLE_REDIRECT_URI or "").path
-    callback_suffix = "/auth/google/callback"
-    if callback_path.endswith(callback_suffix):
-        root_path = callback_path[: -len(callback_suffix)]
-    else:
-        root_path = request.scope.get("root_path", "").rstrip("/")
-    if result == "login":
-        redirect_url = f"{root_path}/student-dashboard.html"
-    else:
-        redirect_url = f"{root_path}/auth/account-settings?google={result}"
-    response = RedirectResponse(redirect_url, status_code=303)
+def _google_result_response(
+    response: Response,
+    result: str,
+) -> GoogleOAuthCallbackResponse:
     response.headers["Cache-Control"] = "no-store"
     response.delete_cookie("google_oauth_state", path="/")
-    return response
+    return GoogleOAuthCallbackResponse(status=result)
 
 
-@auth_router.get("/account-settings", include_in_schema=False)
-async def google_account_settings() -> FileResponse:
-    return FileResponse(ACCOUNT_SETTINGS_PATH, headers={"Cache-Control": "no-store"})
-
-
-@auth_router.get("/google/login", include_in_schema=False)
+@auth_router.get(
+    "/google/login",
+    response_model=GoogleAuthorizationResponse,
+    include_in_schema=False,
+)
 async def start_google_login(
+    response: Response,
     request: Request,
     google_oauth: GoogleOAuthService = Depends(get_google_oauth_service),
-) -> RedirectResponse:
+) -> GoogleAuthorizationResponse:
     try:
         authorization = await google_oauth.create_authorization_url("login")
     except GoogleOAuthError as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
-    response = RedirectResponse(authorization.url, status_code=302)
     response.headers["Cache-Control"] = "no-store"
     _set_google_state_cookie(response, request, authorization.state)
-    return response
+    return GoogleAuthorizationResponse(authorization_url=authorization.url)
 
 
-@auth_router.post("/google/link")
+@auth_router.post("/google/link", response_model=GoogleAuthorizationResponse)
 async def start_google_link(
     response: Response,
     request: Request,
     user: User = Depends(get_authenticated_user),
     google_oauth: GoogleOAuthService = Depends(get_google_oauth_service),
-) -> dict[str, str]:
+) -> GoogleAuthorizationResponse:
     try:
         authorization = await google_oauth.create_authorization_url(
             "link",
@@ -124,32 +113,37 @@ async def start_google_link(
         raise HTTPException(status_code=503, detail=str(exc)) from exc
     response.headers["Cache-Control"] = "no-store"
     _set_google_state_cookie(response, request, authorization.state)
-    return {"authorization_url": authorization.url}
+    return GoogleAuthorizationResponse(authorization_url=authorization.url)
 
 
-@auth_router.get("/google/status")
+@auth_router.get("/google/status", response_model=GoogleLinkStatusResponse)
 async def get_google_link_status(
     response: Response,
     user: User = Depends(get_authenticated_user),
-) -> dict[str, str | bool | None]:
+) -> GoogleLinkStatusResponse:
     response.headers["Cache-Control"] = "no-store"
-    return {
-        "linked": user.google_sub is not None,
-        "email": user.google_email,
-    }
+    return GoogleLinkStatusResponse(
+        linked=user.google_sub is not None,
+        email=user.google_email,
+    )
 
 
-@auth_router.delete("/google/link")
+@auth_router.delete("/google/link", response_model=GoogleLinkStatusResponse)
 async def remove_google_link(
     user: User = Depends(get_authenticated_user),
     user_service: UserService = Depends(get_user_service),
-) -> dict[str, str | bool | None]:
+) -> GoogleLinkStatusResponse:
     updated_user = await user_service.unlink_google_account(user.id)
-    return {"linked": False, "email": updated_user.google_email}
+    return GoogleLinkStatusResponse(linked=False, email=updated_user.google_email)
 
 
-@auth_router.get("/google/callback", include_in_schema=False)
+@auth_router.get(
+    "/google/callback",
+    response_model=GoogleOAuthCallbackResponse,
+    include_in_schema=False,
+)
 async def google_oauth_callback(
+    response: Response,
     request: Request,
     code: str | None = None,
     state: str | None = None,
@@ -158,7 +152,7 @@ async def google_oauth_callback(
     user_service: UserService = Depends(get_user_service),
     student_service: StudentService = Depends(get_student_service),
     session_service: SessionService = Depends(get_session_service),
-) -> RedirectResponse:
+) -> GoogleOAuthCallbackResponse:
     state_cookie = request.cookies.get("google_oauth_state")
     if (
         not state
@@ -168,15 +162,15 @@ async def google_oauth_callback(
         or not state_cookie.isascii()
         or not hmac.compare_digest(state, state_cookie)
     ):
-        return _google_result_redirect(request, "invalid_state")
+        return _google_result_response(response, "invalid_state")
 
     pending = await google_oauth.consume_state(state)
     if pending is None:
-        return _google_result_redirect(request, "invalid_state")
+        return _google_result_response(response, "invalid_state")
     if error is not None:
-        return _google_result_redirect(request, "cancelled")
+        return _google_result_response(response, "cancelled")
     if not code:
-        return _google_result_redirect(request, "verification_failed")
+        return _google_result_response(response, "verification_failed")
 
     try:
         identity = await google_oauth.exchange_code(
@@ -185,7 +179,7 @@ async def google_oauth_callback(
             pending.nonce,
         )
     except GoogleOAuthError:
-        return _google_result_redirect(request, "verification_failed")
+        return _google_result_response(response, "verification_failed")
 
     if pending.flow == "link" and pending.user_id is not None:
         token = request.cookies.get("session_token")
@@ -199,7 +193,7 @@ async def google_oauth_callback(
             or session.is_expired()
             or session.user_id != pending.user_id
         ):
-            return _google_result_redirect(request, "session_expired")
+            return _google_result_response(response, "session_expired")
         try:
             await user_service.link_google_account(
                 pending.user_id,
@@ -207,25 +201,30 @@ async def google_oauth_callback(
                 identity.email,
             )
         except GoogleAccountAlreadyLinkedError:
-            return _google_result_redirect(request, "already_linked")
-        return _google_result_redirect(request, "linked")
+            return _google_result_response(response, "already_linked")
+        return _google_result_response(response, "linked")
 
     if pending.flow != "login" or pending.user_id is not None:
-        return _google_result_redirect(request, "invalid_state")
+        return _google_result_response(response, "invalid_state")
 
     user = await user_service.get_user_by_google_sub(identity.sub)
     if user is None:
-        return _google_result_redirect(request, "not_linked")
+        return _google_result_response(response, "not_linked")
     if user.role == UserRole.STUDENT.value:
         student = await student_service.get_student_by_id(user.id)
         if student is None:
-            return _google_result_redirect(request, "profile_missing")
+            return _google_result_response(response, "profile_missing")
 
     student_id = user.id if user.role == UserRole.STUDENT.value else None
     session_token = await session_service.create_session(user.id, student_id)
-    response = _google_result_redirect(request, "login")
+    response.headers["Cache-Control"] = "no-store"
+    response.delete_cookie("google_oauth_state", path="/")
+    result = GoogleOAuthCallbackResponse(
+        status="login",
+        user={"id": user.id, "user_id": user.id, "name": user.name, "role": user.role},
+    )
     _set_session_cookie(response, request, session_token)
-    return response
+    return result
 
 @auth_router.get("/me/credentials", response_model=StudentCredentialsResponse)
 async def get_student_credentials(

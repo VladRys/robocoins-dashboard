@@ -21,6 +21,27 @@ class UserLoginResponse(APIResponse):
     user: LoginUser
 
 
+class GoogleAuthorizationResponse(BaseModel):
+    authorization_url: str
+
+
+class GoogleLinkStatusResponse(BaseModel):
+    linked: bool
+    email: str | None = None
+
+
+class GoogleOAuthUserResponse(BaseModel):
+    id: int
+    user_id: int
+    name: str
+    role: UserRole
+
+
+class GoogleOAuthCallbackResponse(BaseModel):
+    status: str
+    user: GoogleOAuthUserResponse | None = None
+
+
 class AdminProfileResponse(BaseModel):
     id: int
     user_id: int

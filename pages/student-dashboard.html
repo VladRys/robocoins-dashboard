@@ -401,11 +401,19 @@
       ? (location.port === '8000' ? '' : `${location.protocol}//${location.hostname}:8000`)
       : '';
     const $ = (id) => document.getElementById(id);
-    $('google-login-button').addEventListener('click', () => {
-      location.assign(`${apiBase}/auth/google/login`);
+    $('google-login-button').addEventListener('click', async () => {
+      const button = $('google-login-button');
+      button.disabled = true;
+      try {
+        const result = await request('/auth/google/login');
+        location.assign(result.authorization_url);
+      } catch (error) {
+        $('session-status').textContent = error.message;
+        button.disabled = false;
+      }
     });
     $('account-settings-button').addEventListener('click', () => {
-      location.assign(`${apiBase}/auth/account-settings`);
+      location.assign('/account-settings.html');
     });
     let currentUser = null;
     let currentGoal = null;

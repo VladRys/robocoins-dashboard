@@ -32,7 +32,7 @@ GOOGLE_CLIENT_SECRET=your-oauth-client-secret
 GOOGLE_REDIRECT_URI=https://your-app.example/auth/google/callback
 ```
 
-Set `GOOGLE_REDIRECT_URI` to the public callback URL ending in `/auth/google/callback` and register that same URL in Google Cloud Console. The Google OAuth consent screen must permit the requested `openid`, `email`, and `profile` scopes. The account selection prompt is shown for both linking and sign-in.
+For production, set `GOOGLE_REDIRECT_URI` to the public backend URL ending in `/auth/google/callback`. For the local test pages served at `http://localhost:5500`, set it to `http://localhost:5500/google-oauth-callback.html`; that page forwards the callback parameters to the local backend and then routes within the local frontend. Register the redirect URI for the environment you are testing in Google Cloud Console. The Google OAuth consent screen must permit the requested `openid`, `email`, and `profile` scopes. The account selection prompt is shown for both linking and sign-in.
 
 Set a unique `ADMIN_PASSWORD` per environment. When it is not configured, the server generates a 12-character password at startup and writes it to the application log. The administrator account is created the first time that password successfully logs in. Keep the password and logs private.
 

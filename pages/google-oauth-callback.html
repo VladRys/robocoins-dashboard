@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="referrer" content="no-referrer">
+  <title>Вход через Google</title>
+</head>
+<body>
+  <p id="status">Завершаем вход через Google…</p>
+  <script>
+    const isLocal = ['localhost', '127.0.0.1', '::1'].includes(location.hostname);
+    const apiBase = isLocal
+      ? (location.port === '8000' ? '' : `${location.protocol}//${location.hostname}:8000`)
+      : '';
+
+    async function finishGoogleOAuth() {
+      const status = document.getElementById('status');
+      try {
+        const response = await fetch(`${apiBase}/auth/google/callback${location.search}`, {
+          credentials: 'include',
+          cache: 'no-store',
+          headers: { Accept: 'application/json' },
+        });
+        const result = await response.json();
+        if (!response.ok || typeof result.status !== 'string') {
+          throw new Error('Google sign-in could not be completed');
+        }
+
+        if (result.status === 'login') {
+          const dashboards = {
+            student: '/student-dashboard.html',
+            teacher: '/teacher-dashboard.html',
+            admin: '/admin-test.html',
+          };
+          location.replace(dashboards[result.user?.role] || '/student-dashboard.html');
+        } else {
+          const settings = new URL('/account-settings.html', location.origin);
+          settings.searchParams.set('google', result.status);
+          location.replace(settings);
+        }
+      } catch {
+        status.textContent = 'Не удалось завершить вход через Google. Вернитесь в настройки аккаунта и попробуйте ещё раз.';
+        const link = document.createElement('a');
+        link.href = '/account-settings.html';
+        link.textContent = 'Настройки аккаунта';
+        status.append(' ', link);
+      }
+    }
+
+    finishGoogleOAuth();
+  </script>
+</body>
+</html>
