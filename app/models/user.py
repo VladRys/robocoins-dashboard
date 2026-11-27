@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from sqlalchemy import CheckConstraint, Index, Integer, String, text
+from sqlalchemy import BigInteger, CheckConstraint, Index, Integer, String, text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
@@ -26,6 +26,7 @@ class User(Base):
             postgresql_where=text("role = 'admin'"),
             sqlite_where=text("role = 'admin'"),
         ),
+        Index("ix_users_telegram_user_id", "telegram_user_id", unique=True),
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
@@ -34,6 +35,7 @@ class User(Base):
     access_code: Mapped[str] = mapped_column(String, nullable=False, unique=True)
     google_sub: Mapped[str | None] = mapped_column(String, unique=True)
     google_email: Mapped[str | None] = mapped_column(String)
+    telegram_user_id: Mapped[int | None] = mapped_column(BigInteger)
 
     student: Mapped["Student | None"] = relationship(
         back_populates="user",

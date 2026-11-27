@@ -7,6 +7,7 @@ from app.api.dependencies import (
     get_google_oauth_service,
     get_session_service,
     get_student_service,
+    get_telegram_link_service,
     get_user_service,
 )
 from app.core.config import Config as cfg
@@ -37,6 +38,7 @@ from app.services.session import SessionService
 from app.services.google_oauth import GoogleOAuthError, GoogleOAuthService
 from app.services.student import StudentService
 from app.services.users import UserService
+from app.services.telegram_link import TelegramLinkService
 
 
 auth_router = APIRouter(
@@ -133,6 +135,37 @@ async def get_google_link_status(
         linked=user.google_sub is not None,
         email=user.google_email,
     )
+
+
+@auth_router.get("/telegram/status")
+async def get_telegram_link_status(
+    response: Response,
+    user: User = Depends(get_authenticated_user),
+    telegram_link: TelegramLinkService = Depends(get_telegram_link_service),
+) -> dict[str, int | bool | None]:
+    response.headers["Cache-Control"] = "no-store"
+    telegram_user_id = await telegram_link.get_linked_id(user.id)
+    return {"linked": telegram_user_id is not None, "telegram_user_id": telegram_user_id}
+
+
+@auth_router.post("/telegram/link")
+async def start_telegram_link(
+    user: User = Depends(get_authenticated_user),
+    telegram_link: TelegramLinkService = Depends(get_telegram_link_service),
+) -> dict[str, str]:
+    if not cfg.BOT_USERNAME:
+        raise HTTPException(status_code=503, detail="Telegram bot username is not configured")
+    link = await telegram_link.create_link(user.id, cfg.BOT_USERNAME)
+    return {"link": link}
+
+
+@auth_router.delete("/telegram/link")
+async def remove_telegram_link(
+    user: User = Depends(get_authenticated_user),
+    telegram_link: TelegramLinkService = Depends(get_telegram_link_service),
+) -> dict[str, bool]:
+    await telegram_link.unlink(user.id)
+    return {"linked": False}
 
 
 @auth_router.delete("/google/link", response_model=GoogleLinkStatusResponse)

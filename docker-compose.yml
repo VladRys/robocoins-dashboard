@@ -27,6 +27,7 @@ services:
       PRODUCT_MODE: DEV
       DEV_DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-robocoins}:${POSTGRES_PASSWORD:-robocoins}@postgres:5432/${POSTGRES_DB:-robocoins}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
+      BOT_USERNAME: ${BOT_USERNAME:-}
     ports:
       - "8000:8000"
     depends_on:

@@ -15,6 +15,7 @@ from app.repositories.streak import StreakRepository
 from app.repositories.student import StudentRepository
 from app.repositories.student_achievement import StudentAchievementRepository
 from app.repositories.transaction import TransactionRepository
+from app.repositories.telegram_link import TelegramLinkRepository
 from app.repositories.users import UserRepository
 from app.services.authorization import AuthorizationService
 from app.services.achievement import AchievementService
@@ -29,10 +30,17 @@ from app.services.daily_task import DailyTaskService
 from app.services.student import StudentService
 from app.services.student_achievement import StudentAchievementService
 from app.services.users import UserService
+from app.services.telegram_link import TelegramLinkService
 
 
 def get_user_service(db: AsyncSession = Depends(get_db)) -> UserService:
     return UserService(UserRepository(db))
+
+
+def get_telegram_link_service(
+    db: AsyncSession = Depends(get_db),
+) -> TelegramLinkService:
+    return TelegramLinkService(TelegramLinkRepository(db))
 
 
 def get_google_oauth_service(

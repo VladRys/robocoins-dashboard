@@ -97,6 +97,8 @@ pip install -r requirements.txt
 
 Configure a PostgreSQL URL in `.env` or the process environment. Development mode requires `DEV_DATABASE_URL`; it does not fall back to `DATABASE_URL` or `TEST_DATABASE_URL`.
 
+To enable Telegram account linking, set `BOT_USERNAME` to the bot's username without `@`. Users can then create a one-time link in account settings and open it from Telegram; the link expires after 10 minutes. Apply database migrations with `alembic upgrade head` before using the feature.
+
 ```dotenv
 PRODUCT_MODE=DEV
 DEV_DATABASE_URL=postgresql+asyncpg://robocoins:robocoins@localhost:5432/robocoins

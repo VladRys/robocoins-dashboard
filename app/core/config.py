@@ -122,3 +122,5 @@ class Config:
     CORS_ORIGINS = CORS_ORIGINS_BY_MODE[PRODUCT_MODE]
     CORS_ORIGIN_REGEX = LOCAL_CORS_ORIGIN_REGEX
     DAILY_TASK_REWARD = 0.1
+    BOT_TOKEN = os.getenv("BOT_TOKEN") or ""
+    BOT_USERNAME = os.getenv("BOT_USERNAME", "").lstrip("@").strip()

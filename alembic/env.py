@@ -16,6 +16,7 @@ from app.models.course import Course
 from app.models.group import Group
 from app.models.session import Session
 from app.models.google_oauth_state import GoogleOAuthState
+from app.models.telegram_link_token import TelegramLinkToken
 from app.models.student import Student
 from app.models.teacher import Teacher
 from app.models.transaction import BalanceTransaction

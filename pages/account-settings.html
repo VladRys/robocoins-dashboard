@@ -26,6 +26,7 @@
     .status.error { background: #fff1f0; color: #b42318; }
     .status.success { background: #ecfdf3; color: #067647; }
     .identity { padding: 12px; border: 1px solid #e1e7f0; border-radius: 10px; background: #f9fbfe; overflow-wrap: anywhere; }
+    .linked-id { font-weight: 650; color: #172033; }
   </style>
 </head>
 <body>
@@ -39,6 +40,10 @@
       <p id="google-status">Проверяем привязку…</p>
       <button id="link-google" type="button">Привязать аккаунт Google</button>
       <button id="unlink-google" class="danger" type="button" hidden>Отвязать Google</button>
+      <h2>Telegram</h2>
+      <p id="telegram-status">Проверяем привязку…</p>
+      <button id="link-telegram" type="button">Привязать Telegram</button>
+      <button id="unlink-telegram" class="danger" type="button" hidden>Отвязать Telegram</button>
     </section>
 
     <form id="code-login" hidden>
@@ -113,6 +118,20 @@
       }
     }
 
+    async function loadTelegramStatus() {
+      const result = await request('/auth/telegram/status');
+      if (result.linked) {
+        $('telegram-status').textContent = `Привязан Telegram ID: ${result.telegram_user_id}`;
+        $('link-telegram').hidden = true;
+        $('unlink-telegram').hidden = false;
+      } else {
+        $('telegram-status').textContent = 'Telegram пока не привязан. Создай ссылку и открой её в своём Telegram.';
+        $('link-telegram').textContent = 'Привязать Telegram';
+        $('link-telegram').hidden = false;
+        $('unlink-telegram').hidden = true;
+      }
+    }
+
     async function load() {
       const hasOAuthResult = showOAuthResult();
       let user;
@@ -137,6 +156,7 @@
       $('dashboard-link').href = dashboards[user.role] || '/';
       try {
         await loadGoogleStatus();
+        await loadTelegramStatus();
       } catch (error) {
         setStatus(error.message, 'error');
       }
@@ -183,6 +203,32 @@
         setStatus(error.message, 'error');
       } finally {
         $('unlink-google').disabled = false;
+      }
+    });
+
+    $('link-telegram').addEventListener('click', async () => {
+      $('link-telegram').disabled = true;
+      try {
+        const result = await request('/auth/telegram/link', { method: 'POST' });
+        location.assign(result.link);
+      } catch (error) {
+        setStatus(error.message, 'error');
+      } finally {
+        $('link-telegram').disabled = false;
+      }
+    });
+
+    $('unlink-telegram').addEventListener('click', async () => {
+      if (!confirm('Отвязать Telegram от аккаунта RoboCoins?')) return;
+      $('unlink-telegram').disabled = true;
+      try {
+        await request('/auth/telegram/link', { method: 'DELETE' });
+        await loadTelegramStatus();
+        setStatus('Telegram отвязан.', 'success');
+      } catch (error) {
+        setStatus(error.message, 'error');
+      } finally {
+        $('unlink-telegram').disabled = false;
       }
     });
 

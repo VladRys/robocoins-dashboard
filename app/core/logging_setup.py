@@ -3,6 +3,11 @@ import logging
 import logging.config
 from datetime import datetime, timezone
 
+class BotLogger(logging.LoggerAdapter):
+    """A logger adapter that adds a 'bot' prefix to log messages."""
+
+    def process(self, msg, kwargs):
+        return f"[bot] {msg}", kwargs
 
 class JsonLogFormatter(logging.Formatter):
     """Format logs as one structured JSON object per line."""
